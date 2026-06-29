@@ -94,7 +94,3 @@ src/
 **Fuente de verdad:** la base estructurada. La "planilla" es una vista + export CSV
 (resuelve el riesgo de la planilla editable libre). Un **margen** solo se muestra si
 es confiable; si faltan ventas o costos, se indica en vez de mostrar un número falso.
-
----
-
-ℹ️ **Este proyecto NO usa git** (decisión del equipo). No correr `git init` ni commitear.
