@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Parva — MVP</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">🌾 <span>Parva</span><small>MVP</small></div>
+    <div class="controls">
+      <label class="field">Productor
+        <select id="selProductor"></select>
+      </label>
+      <span id="variante" class="badge"></span>
+      <button id="btnExport" class="btn-ghost" title="Descargar la planilla en CSV">⬇ Exportar CSV</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="dashboard">
+      <div id="kpis" class="kpis"></div>
+      <div id="panels"></div>
+    </section>
+
+    <aside class="sim">
+      <div class="sim-head">
+        <div>
+          <div class="sim-title">WhatsApp <span class="sim-sub">simulador</span></div>
+          <div class="sim-note">El bot está mockeado — escribí como el productor.</div>
+        </div>
+        <label class="field light">Como
+          <select id="selUsuario"></select>
+        </label>
+      </div>
+      <div id="chat" class="chat"></div>
+      <div id="chips" class="chips"></div>
+      <form id="formMsg" class="composer" autocomplete="off">
+        <input id="inputMsg" placeholder="Escribí un mensaje…" />
+        <button type="submit" aria-label="Enviar">➤</button>
+      </form>
+    </aside>
+  </main>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

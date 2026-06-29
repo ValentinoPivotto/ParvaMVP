@@ -1,0 +1,16 @@
+{
+  "name": "parva-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Parva — MVP: ERP agropecuario por WhatsApp. Web app + backend del bot (WhatsApp e IA mockeados). Cero dependencias.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/server.ts",
+    "dev": "node --watch src/server.ts",
+    "seed": "node src/seed.ts",
+    "reset": "node src/seed.ts --reset"
+  }
+}
