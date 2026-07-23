@@ -61,7 +61,7 @@
   --surface-2:         var(--clr-sand-100);   /* panel header */
   --surface-3:         var(--clr-sand-50);    /* chips bar */
   --border:            var(--clr-sand-300);
-  --border-soft:       var(--clr-sand-200);
+  --border-soft:       var(--clr-sand-100);
   --primary:           var(--clr-green-600);  /* brand green */
   --primary-strong:    var(--clr-green-700);  /* emphasis text */
   --primary-bg:        var(--clr-green-100);
@@ -130,6 +130,7 @@
   --radius-lg:    16px;   /* cards, kpi, panel, sim container */
   --radius-xl:    24px;
   --radius-2xl:   32px;
+  --radius:       var(--radius-md);   /* default radius, matches parva-landing */
   --radius-pill:  9999px; /* fully-round pills: badges, tags, chips, input */
   --radius-round: 50%;    /* circular send button */
   /* WhatsApp chat bubbles keep their own radii (not the brand scale) */
@@ -214,18 +215,18 @@ body {
 
 /* ---- KPIs ---- */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-lg); }
-.kpi { background: var(--surface); border: var(--border-width) solid var(--border); border-radius: var(--radius-lg); padding: var(--space-md); }
-.kpi .v { font-size: var(--text-4xl); font-weight: var(--weight-semibold); color: var(--primary-strong); }
-.kpi .l { font-size: var(--text-sm); color: var(--muted-foreground); margin-top: 2px; text-transform: uppercase; letter-spacing: var(--tracking-wide); font-weight: var(--weight-semibold); }
+.kpi { display: flex; flex-direction: column-reverse; gap: var(--space-xs); background: var(--surface); border: var(--border-width) solid var(--border); border-radius: var(--radius-lg); padding: var(--space-md); }
+.kpi .v { font-size: var(--text-4xl); font-weight: var(--weight-medium); color: var(--primary-strong); }
+.kpi .l { font-size: var(--text-xs); color: var(--muted-foreground); text-transform: uppercase; letter-spacing: var(--tracking-wide); font-weight: var(--weight-semibold); }
 
 /* ---- Panels ---- */
 .panel { background: var(--surface); border: var(--border-width) solid var(--border); border-radius: var(--radius-lg); margin-bottom: var(--space-lg); overflow: hidden; }
-.panel h2 { font-size: var(--text-lg); font-weight: var(--weight-medium); margin: 0; padding: var(--space-md) var(--space-lg); border-bottom: var(--border-width) solid var(--border); background: var(--surface-2); }
+.panel h2 { font-size: var(--text-md); font-weight: var(--weight-medium); margin: 0; padding: var(--space-sm) var(--space-md); border-bottom: var(--border-width) solid var(--clr-sand-200); background: var(--surface-2); }
 .panel-body { padding: var(--space-md) var(--space-lg); }
 
 table { width: 100%; border-collapse: collapse; font-size: var(--text-md); }
-th { text-align: left; color: var(--muted-foreground); font-weight: var(--weight-semibold); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-wide); padding: var(--space-xs) var(--space-sm); border-bottom: var(--border-width) solid var(--border); }
-td { padding: var(--space-xs) var(--space-sm); border-bottom: var(--border-width) solid var(--border-soft); }
+th { text-align: left; color: var(--muted-foreground); font-weight: var(--weight-semibold); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-wide); padding: var(--space-xs) var(--space-md); border-bottom: var(--border-width) solid var(--clr-sand-200); }
+td { padding: var(--space-sm) var(--space-md); border-bottom: var(--border-width) solid var(--border-soft); }
 tr:last-child td { border-bottom: none; }
 .tag { font-size: var(--text-xs); font-weight: var(--weight-medium); text-transform: capitalize; padding: var(--space-2xs) var(--space-xs); border-radius: var(--radius-pill); background: var(--primary-bg); color: var(--primary-strong); }
 .tag.venta { background: var(--primary-bg); color: var(--primary-strong); }
@@ -237,13 +238,15 @@ tr:last-child td { border-bottom: none; }
 
 /* ---- Lotes / márgenes ---- */
 .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-md); }
-.card { border: var(--border-width) solid var(--border); border-radius: var(--radius-lg); padding: var(--space-md); }
-.card .lote { font-weight: var(--weight-semibold); }
-.card .uso { font-size: var(--text-sm); color: var(--muted-foreground); margin-bottom: var(--space-xs); }
-.card .margen { font-size: var(--text-2xl); font-weight: var(--weight-semibold); color: var(--primary-strong); }
-.card .desglose { font-size: var(--text-sm); color: var(--muted-foreground); margin-top: var(--space-2xs); }
-.card.no-confiable .margen { color: var(--warning); font-size: var(--text-base); }
-.alerta { font-size: var(--text-xs2); background: var(--warning-bg); color: var(--warning); padding: var(--space-2xs) var(--space-xs); border-radius: var(--radius-sm); margin-top: var(--space-xs); font-weight: var(--weight-semibold); }
+.card { display: flex; flex-direction: column; border: var(--border-width) solid var(--border); border-radius: var(--radius-lg); padding: var(--space-md); }
+.card-head { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-xs); }
+.card .lote { font-size: var(--text-base); font-weight: var(--weight-medium); }
+.card .uso { font-size: var(--text-2xs); font-weight: var(--weight-medium); text-transform: uppercase; letter-spacing: var(--tracking-wide); color: var(--clr-gray-600); background: var(--surface-2); border: var(--border-width) solid var(--border); padding: 2px var(--space-2xs); border-radius: var(--radius-pill); }
+.card .uso:empty { display: none; }
+.card .margen { font-size: var(--text-2xl); font-weight: var(--weight-medium); color: var(--primary-strong); margin-top: var(--space-sm); }
+.card .desglose { font-size: var(--text-xs); color: var(--muted-foreground); text-transform: capitalize; margin-top: auto; padding-top: var(--space-sm); }
+.card.no-confiable .margen { color: var(--warning); font-size: var(--text-base); margin-bottom: var(--space-md); }
+.alerta { font-size: var(--text-xs2); background: var(--warning-bg); color: var(--warning); text-transform: capitalize; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm); margin-top: auto; font-weight: var(--weight-normal); }
 
 /* ---- Simulador WhatsApp ---- */
 .sim { font-family: var(--wa-font); background: var(--surface); border: var(--border-width) solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: sticky; top: 80px; height: calc(100vh - 110px); }

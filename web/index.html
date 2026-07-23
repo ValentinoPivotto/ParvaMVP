@@ -141,8 +141,28 @@
       syncLabel();
     }
 
+    // Margin cards: put the lote name + crop tag on one header row.
+    function decorateMargenes(panels) {
+      Array.prototype.forEach.call(panels.querySelectorAll('.card'), function (card) {
+        if (card.querySelector('.card-head')) return;
+        var lote = card.querySelector('.lote');
+        if (!lote) return;
+        var uso = card.querySelector('.uso');
+        var head = document.createElement('div');
+        head.className = 'card-head';
+        lote.parentNode.insertBefore(head, lote);
+        head.appendChild(lote);
+        if (uso) { if (uso.textContent.trim()) head.appendChild(uso); else uso.remove(); }
+      });
+    }
+
     function boot() {
       enhance(document.getElementById('selUsuario'), { className: 'dropdown-chat' });
+      var panels = document.getElementById('panels');
+      if (panels) {
+        new MutationObserver(function () { decorateMargenes(panels); }).observe(panels, { childList: true });
+        decorateMargenes(panels);
+      }
       var sp = document.getElementById('selProductor');
       var variante = document.getElementById('variante');
       fetch('/api/productores').then(function (r) { return r.json(); }).then(function (list) {
