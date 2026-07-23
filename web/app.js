@@ -84,7 +84,7 @@ function panelPlanilla() {
       <td class="num">${m.monto != null ? fmtMoney(m.monto) : '—'}</td>
       <td><span class="tag ${m.origen === 'bot' ? 'bot' : ''}">${esc(m.origen)}</span></td>
     </tr>`).join('');
-  return `<div class="panel"><h2>Planilla — gestión diaria</h2><div class="panel-body" style="padding:0">
+  return `<div class="panel"><h2>Planilla · gestión diaria</h2><div class="panel-body" style="padding:0">
     <table><thead><tr><th>Fecha</th><th>Tipo</th><th>Lote</th><th>Detalle</th><th class="num">Monto</th><th>Origen</th></tr></thead>
     <tbody>${rows || '<tr><td colspan="6" class="empty">Sin movimientos.</td></tr>'}</tbody></table></div></div>`;
 }
@@ -106,7 +106,7 @@ function panelMargenes() {
 function panelHacienda() {
   const total = current.hacienda.reduce((a, h) => a + h.cantidad, 0);
   const rows = current.hacienda.map((h) => `<tr><td>${esc(h.categoria)}</td><td class="num">${esc(h.cantidad)}</td></tr>`).join('');
-  return `<div class="panel"><h2>Hacienda — stock actual (${total} cabezas)</h2><div class="panel-body" style="padding:0">
+  return `<div class="panel"><h2>Hacienda · stock actual (${total} cabezas)</h2><div class="panel-body" style="padding:0">
     <table><thead><tr><th>Categoría</th><th class="num">Cantidad</th></tr></thead><tbody>${rows || '<tr><td colspan="2" class="empty">Sin hacienda.</td></tr>'}</tbody></table></div></div>`;
 }
 

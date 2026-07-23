@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Parva — Brandbook</title>
+<title>Parva Brandbook</title>
 <!--
-  Static design-system reference. Open by double-clicking this file (file://) —
+  Static design-system reference. Open by double-clicking this file (file://),
   it needs no server. It links web/styles.css and reads every token live via
   getComputedStyle, so it always reflects the real stylesheet. Not served by
   src/server.ts and never imported by the app, so it cannot affect runtime.
 -->
 <link rel="stylesheet" href="styles.css">
 <style>
-  /* Brandbook chrome — dogfoods the same tokens. */
+  /* Brandbook chrome, dogfoods the same tokens. */
   body { max-width: 1080px; margin: 0 auto; padding: var(--space-xl) var(--space-xl) 80px; }
   header.bb { margin-bottom: var(--space-xl); }
   header.bb h1 { font-size: var(--text-4xl); margin: 0 0 var(--space-2xs); }
@@ -49,7 +49,7 @@
 </head>
 <body>
   <header class="bb">
-    <h1>🌾 Parva — Brandbook</h1>
+    <h1>🌾 Parva Brandbook</h1>
     <p>Design tokens for the MVP web app, read live from <code>styles.css</code>. This is move 1 (tokenized, current look). When we re-skin toward the shared brand, this page updates itself. The WhatsApp chrome tokens stay independent so the simulator keeps its WhatsApp look.</p>
   </header>
   <div id="app"></div>
@@ -88,9 +88,9 @@
   };
 
   section('Color · scales',
-    ramp('Blue / Celeste — action', ['--clr-blue-50','--clr-blue-100','--clr-blue-200','--clr-blue-300','--clr-blue-400','--clr-blue-500','--clr-blue-600','--clr-blue-700','--clr-blue-800','--clr-blue-900'])
-    + ramp('Green — brand / surfaces', ['--clr-green-50','--clr-green-100','--clr-green-200','--clr-green-300','--clr-green-400','--clr-green-500','--clr-green-600','--clr-green-700','--clr-green-800','--clr-green-900','--clr-green-950','--clr-green-975'])
-    + ramp('Clay / Terracotta — accent', ['--clr-clay-50','--clr-clay-100','--clr-clay-200','--clr-clay-300','--clr-clay-400','--clr-clay-500','--clr-clay-600','--clr-clay-700','--clr-clay-800','--clr-clay-900'])
+    ramp('Blue / Celeste (action)', ['--clr-blue-50','--clr-blue-100','--clr-blue-200','--clr-blue-300','--clr-blue-400','--clr-blue-500','--clr-blue-600','--clr-blue-700','--clr-blue-800','--clr-blue-900'])
+    + ramp('Green (brand / surfaces)', ['--clr-green-50','--clr-green-100','--clr-green-200','--clr-green-300','--clr-green-400','--clr-green-500','--clr-green-600','--clr-green-700','--clr-green-800','--clr-green-900','--clr-green-950','--clr-green-975'])
+    + ramp('Clay / Terracotta (accent)', ['--clr-clay-50','--clr-clay-100','--clr-clay-200','--clr-clay-300','--clr-clay-400','--clr-clay-500','--clr-clay-600','--clr-clay-700','--clr-clay-800','--clr-clay-900'])
     + ramp('Sand / Neutral (brand)', ['--clr-sand-50','--clr-sand-100','--clr-sand-200','--clr-sand-300','--clr-sand-400','--clr-sand-500'])
     + ramp('Gray / Neutral (app canvas)', ['--clr-gray-50','--clr-gray-100','--clr-gray-200','--clr-gray-300','--clr-gray-400','--clr-gray-500','--clr-gray-600','--clr-gray-700','--clr-gray-800','--clr-gray-900'])
     + ramp('Ink / Cream', ['--clr-sand-muted','--clr-ink','--clr-cream-muted','--clr-cream','--clr-white']));
