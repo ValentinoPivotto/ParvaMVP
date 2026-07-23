@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parva — Brandbook</title>
+<!--
+  Static design-system reference. Open by double-clicking this file (file://) —
+  it needs no server. It links web/styles.css and reads every token live via
+  getComputedStyle, so it always reflects the real stylesheet. Not served by
+  src/server.ts and never imported by the app, so it cannot affect runtime.
+-->
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* Brandbook chrome — dogfoods the same tokens. */
+  body { max-width: 1080px; margin: 0 auto; padding: var(--space-22) var(--space-22) 80px; }
+  header.bb { margin-bottom: var(--space-22); }
+  header.bb h1 { font-size: var(--text-4xl); margin: 0 0 var(--space-4); }
+  header.bb p { color: var(--muted-foreground); font-size: var(--text-md); margin: 0; max-width: 60ch; }
+  section.bb { margin-top: 40px; }
+  section.bb > h2 {
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: var(--tracking-wider);
+    color: var(--muted-foreground); font-weight: var(--weight-bold);
+    border-bottom: var(--border-width) solid var(--border); padding-bottom: var(--space-6); margin: 0 0 var(--space-16);
+  }
+  .bb-grid { display: grid; gap: var(--space-12); grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .tok { border: var(--border-width) solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
+  .tok .chip-box { height: 64px; border-bottom: var(--border-width) solid var(--border); }
+  .tok .meta { padding: var(--space-8) var(--space-10); }
+  .tok .name { font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+  .tok .val { font-size: var(--text-xs); color: var(--muted-foreground); font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .checker { background-image:
+      linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%);
+    background-size: 14px 14px; background-position: 0 0, 0 7px, 7px -7px, -7px 0; }
+  .type-row { display: flex; align-items: baseline; gap: var(--space-16); padding: var(--space-8) 0; border-bottom: var(--border-width) solid var(--border-soft); }
+  .type-row .lbl { width: 120px; flex: none; font-size: var(--text-xs); color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+  .space-row { display: flex; align-items: center; gap: var(--space-12); padding: var(--space-3) 0; }
+  .space-row .lbl { width: 120px; flex: none; font-size: var(--text-xs); color: var(--muted-foreground); }
+  .space-row .bar { height: 14px; background: var(--primary); border-radius: var(--radius-xs); }
+  .radius-grid, .shadow-grid { display: flex; flex-wrap: wrap; gap: var(--space-16); }
+  .radius-box { width: 96px; height: 72px; background: var(--primary-bg); border: var(--border-width) solid var(--primary); }
+  .shadow-box { width: 140px; height: 72px; background: var(--surface); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); color: var(--muted-foreground); }
+  .cap { font-size: var(--text-xs); color: var(--muted-foreground); margin-top: var(--space-6); text-align: center; }
+  .gallery { display: grid; gap: var(--space-16); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; }
+  .demo-chat { background: var(--wa-surface); padding: var(--space-16); border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: var(--space-8); }
+  .demo-row { display: flex; flex-wrap: wrap; gap: var(--space-8); align-items: center; }
+</style>
+</head>
+<body>
+  <header class="bb">
+    <h1>🌾 Parva — Brandbook</h1>
+    <p>Design tokens for the MVP web app, read live from <code>styles.css</code>. This is move 1 (tokenized, current look). When we re-skin toward the shared brand, this page updates itself. The WhatsApp chrome tokens stay independent so the simulator keeps its WhatsApp look.</p>
+  </header>
+  <div id="app"></div>
+
+<script>
+  const root = getComputedStyle(document.documentElement);
+  const val = (n) => root.getPropertyValue(n).trim();
+  const app = document.getElementById('app');
+
+  function section(title, innerHTML) {
+    const s = document.createElement('section');
+    s.className = 'bb';
+    s.innerHTML = '<h2>' + title + '</h2>' + innerHTML;
+    app.appendChild(s);
+  }
+
+  // ---- Color groups ----
+  const colorSwatch = (name) => '<div class="tok">'
+      + '<div class="chip-box checker"><div style="height:100%;background:var(' + name + ');box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)"></div></div>'
+      + '<div class="meta"><div class="name">' + name + '</div><div class="val">' + (val(name) || '—') + '</div></div>'
+      + '</div>';
+  const colorGrid = (tokens) => '<div class="bb-grid">' + tokens.map(colorSwatch).join('') + '</div>';
+
+  section('Color · primitives', colorGrid([
+    '--c-white','--c-sand','--c-sand-soft','--c-sand-softer','--c-line','--c-line-soft',
+    '--c-ink','--c-gray','--c-green','--c-green-dark','--c-green-tint',
+    '--c-amber','--c-amber-tint','--c-red','--c-red-tint','--c-blue','--c-blue-tint','--c-purple','--c-purple-tint'
+  ]));
+
+  section('Color · semantic roles', colorGrid([
+    '--background','--foreground','--muted-foreground','--surface','--surface-2','--surface-3',
+    '--border','--border-soft','--primary','--primary-strong','--primary-bg','--on-primary','--ring',
+    '--danger','--danger-bg','--warning','--warning-bg','--info','--info-bg','--labor','--labor-bg'
+  ]));
+
+  section('Color · WhatsApp chrome (independent of the brand)', colorGrid([
+    '--wa-header','--wa-header-strong','--wa-surface','--wa-outgoing','--wa-incoming'
+  ]));
+
+  // ---- Typography ----
+  const typeRow = (name) => '<div class="type-row"><div class="lbl">' + name.replace('--text-','') + ' · ' + val(name) + '</div>'
+    + '<div style="font-size:var(' + name + ')">Parva agrogestión 123</div></div>';
+  const weightRow = (name) => '<div class="type-row"><div class="lbl">' + name.replace('--weight-','') + ' · ' + val(name) + '</div>'
+    + '<div style="font-weight:var(' + name + '); font-size:var(--text-xl)">Parva agrogestión</div></div>';
+  section('Typography · size scale',
+    '<div style="font-size:var(--text-sm);color:var(--muted-foreground);margin-bottom:var(--space-12)">Font: <code>--font-sans</code> = ' + val('--font-sans') + '</div>'
+    + ['--text-2xs','--text-xs','--text-xs2','--text-sm','--text-md','--text-md2','--text-base','--text-lg','--text-xl','--text-2xl','--text-3xl','--text-4xl'].map(typeRow).join(''));
+  section('Typography · weights',
+    ['--weight-normal','--weight-medium','--weight-semibold','--weight-bold'].map(weightRow).join(''));
+
+  // ---- Spacing ----
+  const spaceRow = (name) => '<div class="space-row"><div class="lbl">' + name.replace('--','') + ' · ' + val(name) + '</div>'
+    + '<div class="bar" style="width:var(' + name + ')"></div></div>';
+  section('Spacing',
+    ['--space-2','--space-3','--space-4','--space-5','--space-6','--space-7','--space-8','--space-9','--space-10','--space-12','--space-14','--space-16','--space-18','--space-20','--space-22'].map(spaceRow).join(''));
+
+  // ---- Radius ----
+  const radiusBox = (name) => '<div><div class="radius-box" style="border-radius:var(' + name + ')"></div><div class="cap">' + name.replace('--radius-','') + ' · ' + val(name) + '</div></div>';
+  section('Radius',
+    '<div class="radius-grid">' + ['--radius-xs','--radius-sm','--radius-md','--radius-lg','--radius-xl','--radius-pill','--radius-round'].map(radiusBox).join('') + '</div>');
+
+  // ---- Shadow ----
+  const shadowBox = (name) => '<div><div class="shadow-box" style="box-shadow:var(' + name + ')">' + name.replace('--shadow-','') + '</div><div class="cap">' + name + '</div></div>';
+  section('Shadow',
+    '<div class="shadow-grid">' + ['--shadow-xs','--shadow-sm'].map(shadowBox).join('') + '</div>');
+
+  // ---- Component gallery (real classes from styles.css) ----
+  section('Components',
+    '<div class="gallery">'
+    + '<div>'
+      + '<div class="kpis" style="grid-template-columns:1fr 1fr">'
+        + '<div class="kpi"><div class="v">$ 1.240.000</div><div class="l">Ingresos</div></div>'
+        + '<div class="kpi"><div class="v">18</div><div class="l">Movimientos</div></div>'
+      + '</div>'
+    + '</div>'
+    + '<div>'
+      + '<div class="demo-row">'
+        + '<span class="tag">insumo</span><span class="tag venta">venta</span>'
+        + '<span class="tag gasto">gasto</span><span class="tag labor">labor</span><span class="tag bot">bot</span>'
+      + '</div>'
+      + '<div class="demo-row" style="margin-top:var(--space-12)">'
+        + '<span class="badge">agrícola</span><button class="btn-ghost">Exportar</button>'
+        + '<button class="chip">¿Cuál es el margen?</button>'
+      + '</div>'
+      + '<div class="alerta" style="max-width:260px">Faltan ventas: margen no confiable.</div>'
+    + '</div>'
+    + '<div class="demo-chat">'
+      + '<div class="bubble out">Compré 200 litros de gasoil<div class="meta">10:24</div></div>'
+      + '<div class="bubble in">Registrado en el lote 4.<div class="meta">10:24</div></div>'
+      + '<div class="bubble in denied">No tenés permiso para ver márgenes.<div class="meta">10:25</div></div>'
+    + '</div>'
+    + '</div>');
+</script>
+</body>
+</html>
