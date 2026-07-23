@@ -19,8 +19,8 @@
     <div class="controls">
       <label class="field">Productor
         <select id="selProductor"></select>
+        <span id="variante" class="badge"></span>
       </label>
-      <span id="variante" class="badge"></span>
       <button id="btnExport" class="btn-ghost" title="Descargar la planilla en CSV">⬇ Exportar CSV</button>
     </div>
   </header>
@@ -51,5 +51,111 @@
   </main>
 
   <script src="/app.js" type="module"></script>
+  <script>
+  // Dropdown component (design system). Progressive enhancement: the native
+  // <select> elements stay in the DOM as the source of truth for app.js; this
+  // only draws a styled UI on top and syncs the native value + change event.
+  (function () {
+    function enhance(select, opts) {
+      opts = opts || {};
+      if (!select || select.dataset.enhanced) return;
+      select.dataset.enhanced = '1';
+      var dd = document.createElement('div');
+      dd.className = 'dropdown' + (opts.className ? ' ' + opts.className : '');
+      var trigger = document.createElement('button');
+      trigger.type = 'button';
+      trigger.className = 'dd-trigger';
+      trigger.setAttribute('aria-haspopup', 'listbox');
+      trigger.setAttribute('aria-expanded', 'false');
+      var label = document.createElement('span');
+      label.className = 'dd-label';
+      trigger.appendChild(label);
+      if (opts.slot) trigger.appendChild(opts.slot);
+      var chevron = document.createElement('span');
+      chevron.className = 'dd-chevron';
+      chevron.setAttribute('aria-hidden', 'true');
+      trigger.appendChild(chevron);
+      var menu = document.createElement('div');
+      menu.className = 'dd-menu';
+      menu.setAttribute('role', 'listbox');
+      menu.hidden = true;
+
+      select.parentNode.insertBefore(dd, select);
+      dd.appendChild(trigger);
+      dd.appendChild(menu);
+      dd.appendChild(select); // keep the native select, just move it inside (hidden)
+
+      function syncLabel() {
+        var opt = select.options[select.selectedIndex];
+        label.textContent = opt ? opt.textContent : '';
+      }
+      function buildMenu() {
+        menu.innerHTML = '';
+        Array.prototype.forEach.call(select.options, function (opt, i) {
+          var item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'dd-option';
+          item.setAttribute('role', 'option');
+          item.setAttribute('aria-selected', i === select.selectedIndex ? 'true' : 'false');
+          var name = document.createElement('span');
+          name.className = 'dd-opt-name';
+          name.textContent = opt.textContent;
+          item.appendChild(name);
+          var meta = opts.optionMeta ? opts.optionMeta(opt) : null;
+          if (meta) {
+            var chip = document.createElement('span');
+            chip.className = 'dd-opt-chip';
+            chip.textContent = meta;
+            item.appendChild(chip);
+          }
+          item.addEventListener('click', function () {
+            if (select.value !== opt.value) {
+              select.value = opt.value;
+              select.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            close();
+          });
+          menu.appendChild(item);
+        });
+      }
+      function place() {
+        var r = trigger.getBoundingClientRect();
+        menu.style.top = (r.bottom + 4) + 'px';
+        menu.style.minWidth = r.width + 'px';
+        menu.style.left = '0px';
+        var mw = menu.offsetWidth;
+        var left = r.left;
+        if (left + mw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - mw - 8);
+        menu.style.left = left + 'px';
+      }
+      function open() { buildMenu(); menu.hidden = false; dd.classList.add('open'); trigger.setAttribute('aria-expanded', 'true'); place(); }
+      function close() { menu.hidden = true; dd.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); }
+      trigger.addEventListener('click', function (e) { e.preventDefault(); if (menu.hidden) open(); else close(); });
+      document.addEventListener('click', function (e) { if (!dd.contains(e.target) && !menu.contains(e.target)) close(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+      window.addEventListener('scroll', function () { if (!menu.hidden) close(); }, true);
+      window.addEventListener('resize', function () { if (!menu.hidden) close(); });
+      select.addEventListener('change', syncLabel);
+      new MutationObserver(function () { syncLabel(); if (!menu.hidden) buildMenu(); })
+        .observe(select, { childList: true });
+      syncLabel();
+    }
+
+    function boot() {
+      enhance(document.getElementById('selUsuario'), { className: 'dropdown-chat' });
+      var sp = document.getElementById('selProductor');
+      var variante = document.getElementById('variante');
+      fetch('/api/productores').then(function (r) { return r.json(); }).then(function (list) {
+        var byId = {};
+        list.forEach(function (p) { byId[String(p.id)] = p.tipo_campo; });
+        enhance(sp, { slot: variante, className: 'dropdown-productor', optionMeta: function (opt) { return byId[opt.value] || null; } });
+      }).catch(function () {
+        enhance(sp, { slot: variante, className: 'dropdown-productor' });
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  })();
+  </script>
 </body>
 </html>
