@@ -8,9 +8,10 @@
     "node": ">=24"
   },
   "scripts": {
-    "start": "node src/server.ts",
-    "dev": "node --watch src/server.ts",
-    "seed": "node src/seed.ts",
-    "reset": "node src/seed.ts --reset"
+    "start": "node --env-file-if-exists=.env src/server.ts",
+    "dev": "node --env-file-if-exists=.env --watch src/server.ts",
+    "seed": "node --env-file-if-exists=.env src/seed.ts",
+    "reset": "node --env-file-if-exists=.env src/seed.ts --reset",
+    "link-phone": "node --env-file-if-exists=.env src/link-phone.ts"
   }
 }
