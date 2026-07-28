@@ -1,25 +1,33 @@
 // Repositorio: única puerta de acceso a los datos. TODA lectura/escritura va
 // filtrada por productor_id => aislamiento por tenant (guardrail principal).
 import { db, lastId } from './db.ts';
+import { phoneVariants } from './phone.ts';
 import type { Sender } from './types.ts';
 
 // --- Identidad / tenant ---------------------------------------------------
 
+// Busca por variantes (no por match exacto) porque el wa_id argentino de Meta
+// suele venir sin el 9 de móvil. Loop ordenado en vez de `IN (...)`: con `IN` el
+// motor elegiría arbitrariamente si dos filas matchean variantes distintas.
 export function getSenderByTelefono(telefono: string): Sender | null {
-  const row = db.prepare(`
+  const stmt = db.prepare(`
     SELECT u.id AS usuarioId, u.nombre AS usuarioNombre, u.rol AS rol,
            p.id AS productorId, p.tipo_campo AS tipoCampo
     FROM usuario u JOIN productor p ON p.id = u.productor_id
     WHERE u.telefono = ?
-  `).get(telefono) as any;
-  if (!row) return null;
-  return {
-    productorId: row.productorId,
-    tipoCampo: row.tipoCampo,
-    usuarioId: row.usuarioId,
-    usuarioNombre: row.usuarioNombre,
-    rol: row.rol,
-  };
+  `);
+  for (const variante of phoneVariants(telefono)) {
+    const row = stmt.get(variante) as any;
+    if (!row) continue;
+    return {
+      productorId: row.productorId,
+      tipoCampo: row.tipoCampo,
+      usuarioId: row.usuarioId,
+      usuarioNombre: row.usuarioNombre,
+      rol: row.rol,
+    };
+  }
+  return null;
 }
 
 export function listProductores(): any[] {
@@ -189,10 +197,24 @@ export function listEventosSanitarios(productorId: number): any[] {
 
 // --- Mensajes crudos + confirmación ---------------------------------------
 
-export function insertRawMessage(productorId: number, usuarioId: number, texto: string): number {
+/**
+ * Inserta el mensaje entrante. Devuelve el id nuevo, o `null` si `waMessageId`
+ * ya existía: Meta reintenta los webhooks (entrega at-least-once) y sin esto
+ * cada reintento duplicaría el registro.
+ *
+ * El índice único de `wa_message_id` es el que arbitra, no un SELECT previo, así
+ * que no hay ventana de carrera entre dos reintentos concurrentes.
+ */
+export function insertRawMessage(
+  productorId: number, usuarioId: number, texto: string, waMessageId?: string | null,
+): number | null {
   const info = db.prepare(
-    'INSERT INTO raw_message (productor_id, usuario_id, texto) VALUES (?,?,?)'
-  ).run(productorId, usuarioId, texto);
+    'INSERT OR IGNORE INTO raw_message (productor_id, usuario_id, texto, wa_message_id) VALUES (?,?,?,?)'
+  ).run(productorId, usuarioId, texto, waMessageId ?? null);
+  // ⚠ Con INSERT OR IGNORE hay que mirar `changes`: en un insert ignorado
+  // lastInsertRowid conserva el rowid ANTERIOR, así que lastId() devolvería el
+  // id de otra fila y el pipeline mutaría un raw_message ajeno en silencio.
+  if (info.changes === 0) return null;
   return lastId(info);
 }
 

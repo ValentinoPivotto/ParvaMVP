@@ -79,9 +79,16 @@ function persistir(sender: Sender, n: Normalized): string {
   }
 }
 
-export async function processMessage(sender: Sender, textoEntrada: string): Promise<ProcessResult> {
+/**
+ * Procesa un mensaje entrante. Devuelve `null` si `waMessageId` ya fue procesado
+ * (reintento de Meta); el simulador no pasa waMessageId, así que nunca es null.
+ */
+export async function processMessage(
+  sender: Sender, textoEntrada: string, waMessageId?: string | null,
+): Promise<ProcessResult | null> {
   const texto = await transcribe({ texto: textoEntrada });
-  const rawId = repo.insertRawMessage(sender.productorId, sender.usuarioId, texto);
+  const rawId = repo.insertRawMessage(sender.productorId, sender.usuarioId, texto, waMessageId);
+  if (rawId === null) return null;
   const parsed = await parse(texto);
 
   // 1) Confirmación de un pendiente

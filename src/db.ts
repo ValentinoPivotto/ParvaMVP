@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS raw_message (
   parsed_json TEXT,
   confidence REAL,
   estado TEXT NOT NULL DEFAULT 'pending',         -- pending | confirmed | discarded
+  wa_message_id TEXT,                             -- id de Meta (wamid.…); NULL en sim/CLI
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS audit_log (
@@ -124,8 +125,27 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 `;
 
+function tieneColumna(tabla: string, col: string): boolean {
+  // PRAGMA no admite parámetros: `tabla` es siempre una constante del código.
+  const cols = db.prepare(`PRAGMA table_info(${tabla})`).all() as { name: string }[];
+  return cols.some((c) => c.name === col);
+}
+
+// Migraciones sobre bases ya creadas (el SCHEMA usa IF NOT EXISTS, así que una
+// tabla existente no se actualiza sola). Idempotente: corre en cada arranque.
+function migrate(): void {
+  // SQLite NO permite `ADD COLUMN ... UNIQUE`: primero la columna, después el
+  // índice. El índice único es lo que hace el dedup a prueba de carreras, y
+  // admite infinitos NULL (las filas del simulador conviven sin problema).
+  if (!tieneColumna('raw_message', 'wa_message_id')) {
+    db.exec('ALTER TABLE raw_message ADD COLUMN wa_message_id TEXT;');
+  }
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS ux_raw_message_wa_id ON raw_message(wa_message_id);');
+}
+
 export function initSchema(): void {
   db.exec(SCHEMA);
+  migrate();
 }
 
 export function isEmpty(): boolean {
