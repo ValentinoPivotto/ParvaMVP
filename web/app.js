@@ -63,14 +63,21 @@ function renderDashboard() {
   const cabezas = hacienda.reduce((a, h) => a + h.cantidad, 0);
   const ha = lotes.reduce((a, l) => a + (l.hectareas || 0), 0);
 
+  // La variante define qué paneles se muestran por default, pero si hay datos de
+  // la otra actividad hay que mostrarlos igual. El bot no mira tipo_campo: un
+  // productor agrícola que carga hacienda por WhatsApp recibía el ✅ y no veía
+  // ningún cambio en la página (el dato estaba guardado, el panel no se dibujaba).
+  const verAgro = p.tipo_campo !== 'ganadero' || lotes.length > 0;
+  const verHacienda = p.tipo_campo !== 'agricola' || hacienda.length > 0 || current.sanidad.length > 0;
+
   const kpis = [['Movimientos', movimientos.length], ['Gastos', fmtMoney(gasto)], ['Ventas', fmtMoney(venta)]];
-  if (p.tipo_campo !== 'ganadero') kpis.push(['Hectáreas', `${ha} ha`]);
-  if (p.tipo_campo !== 'agricola') kpis.push(['Hacienda', `${cabezas} cabezas`]);
+  if (verAgro) kpis.push(['Hectáreas', `${ha} ha`]);
+  if (verHacienda) kpis.push(['Hacienda', `${cabezas} cabezas`]);
   $('kpis').innerHTML = kpis.map(([l, v]) => `<div class="kpi"><div class="v">${esc(v)}</div><div class="l">${l}</div></div>`).join('');
 
   let html = panelPlanilla();
-  if (p.tipo_campo !== 'ganadero') html += panelMargenes();
-  if (p.tipo_campo !== 'agricola') html += panelHacienda() + panelSanidad();
+  if (verAgro) html += panelMargenes();
+  if (verHacienda) html += panelHacienda() + panelSanidad();
   $('panels').innerHTML = html;
 }
 
