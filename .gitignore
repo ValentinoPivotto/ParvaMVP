@@ -1,0 +1,10 @@
+# Secrets: contiene el App Secret y el access token de Meta
+.env
+
+# Base de datos local (se regenera con `npm run seed`)
+data/*.db
+data/*.db-journal
+data/*.db-wal
+
+.DS_Store
+node_modules/
