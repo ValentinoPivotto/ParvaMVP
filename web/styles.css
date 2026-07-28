@@ -1,17 +1,73 @@
+/* =========================================================================
+   Parva — Design tokens
+   PR1: color tokens only. Every value below equals the previous hardcoded
+   one, so this change is visually a no-op. Structure mirrors parva-landing
+   (primitives -> semantic roles) so both apps share one vocabulary.
+   Typography, spacing, radius, shadow and motion tokens come in later PRs.
+   ========================================================================= */
 :root {
-  --verde: #2e7d32;
-  --verde-osc: #1b5e20;
-  --verde-claro: #e8f3e9;
-  --crema: #f6f4ee;
-  --tinta: #26302a;
-  --gris: #6b746e;
-  --linea: #e4e1d8;
-  --ambar: #b97a0e;
-  --ambar-bg: #fdf3e0;
-  --rojo: #b3261e;
-  --wa-bg: #ece5dd;
-  --wa-head: #128c4a;
-  --wa-out: #d8fdd2;
+  /* --- Tier 1: color primitives (raw MVP palette) --- */
+  --c-white:        #fff;
+  --c-sand:         #f6f4ee;   /* page background */
+  --c-sand-soft:    #fafaf7;   /* subtle surface (chips bar) */
+  --c-sand-softer:  #fcfbf8;   /* subtle surface (panel header) */
+  --c-line:         #e4e1d8;   /* hairline border */
+  --c-line-soft:    #f1efe8;   /* softer hairline (table rows) */
+  --c-ink:          #26302a;   /* primary text */
+  --c-gray:         #6b746e;   /* muted text */
+  --c-green:        #2e7d32;   /* brand green */
+  --c-green-dark:   #1b5e20;   /* brand green, darker */
+  --c-green-tint:   #e8f3e9;   /* brand green, tint */
+  --c-amber:        #b97a0e;
+  --c-amber-tint:   #fdf3e0;
+  --c-red:          #b3261e;
+  --c-red-tint:     #fdeceb;
+  --c-blue:         #1565a7;
+  --c-blue-tint:    #e3f0fb;
+  --c-purple:       #6a3fb0;
+  --c-purple-tint:  #f0ecfb;
+  /* WhatsApp chrome (realistic simulator — stays WhatsApp, not Parva brand) */
+  --c-wa-green:      #128c4a;
+  --c-wa-green-dark: #1b5e20;   /* send-button hover */
+  --c-wa-bg:         #ece5dd;
+  --c-wa-out:        #d8fdd2;
+  --c-wa-in:         #fff;      /* incoming bubble */
+  /* overlays: controls/text sitting on a colored header */
+  --overlay-strong: rgba(255, 255, 255, .85);
+  --overlay-soft:   rgba(255, 255, 255, .15);
+  --overlay-hair:   rgba(255, 255, 255, .3);
+
+  /* --- Tier 2: semantic roles (what components reference) --- */
+  --background:        var(--c-sand);
+  --foreground:        var(--c-ink);
+  --muted-foreground:  var(--c-gray);
+  --surface:           var(--c-white);
+  --surface-2:         var(--c-sand-softer);   /* panel header */
+  --surface-3:         var(--c-sand-soft);     /* chips bar */
+  --border:            var(--c-line);
+  --border-soft:       var(--c-line-soft);
+  --primary:           var(--c-green);
+  --primary-strong:    var(--c-green-dark);
+  --primary-bg:        var(--c-green-tint);
+  --on-primary:        var(--c-white);
+  --ring:              var(--c-green);
+  /* state / category */
+  --danger:            var(--c-red);
+  --danger-bg:         var(--c-red-tint);
+  --warning:           var(--c-amber);
+  --warning-bg:        var(--c-amber-tint);
+  --info:              var(--c-blue);
+  --info-bg:           var(--c-blue-tint);
+  --labor:             var(--c-purple);
+  --labor-bg:          var(--c-purple-tint);
+  /* whatsapp chrome roles (kept independent of the brand tokens above) */
+  --wa-header:         var(--c-wa-green);
+  --wa-header-strong:  var(--c-wa-green-dark);
+  --wa-surface:        var(--c-wa-bg);
+  --wa-outgoing:       var(--c-wa-out);
+  --wa-incoming:       var(--c-wa-in);
+
+  /* --- Not yet tokenized (see later PRs): shadow, radius --- */
   --sombra: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .04);
   --radio: 12px;
 }
@@ -21,31 +77,31 @@
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: var(--crema);
-  color: var(--tinta);
+  background: var(--background);
+  color: var(--foreground);
   line-height: 1.45;
 }
 
 /* ---- Topbar ---- */
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 22px; background: #fff; border-bottom: 1px solid var(--linea);
+  padding: 12px 22px; background: var(--surface); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 10;
 }
 .brand { font-size: 22px; font-weight: 700; letter-spacing: -.3px; display: flex; align-items: baseline; gap: 8px; }
-.brand span { color: var(--verde-osc); }
-.brand small { font-size: 11px; font-weight: 600; color: #fff; background: var(--verde); padding: 2px 7px; border-radius: 20px; letter-spacing: .5px; }
+.brand span { color: var(--primary-strong); }
+.brand small { font-size: 11px; font-weight: 600; color: var(--on-primary); background: var(--primary); padding: 2px 7px; border-radius: 20px; letter-spacing: .5px; }
 .controls { display: flex; align-items: center; gap: 14px; }
-.field { font-size: 12px; color: var(--gris); display: flex; flex-direction: column; gap: 3px; font-weight: 600; }
-.field.light { color: rgba(255,255,255,.85); }
+.field { font-size: 12px; color: var(--muted-foreground); display: flex; flex-direction: column; gap: 3px; font-weight: 600; }
+.field.light { color: var(--overlay-strong); }
 .field select {
-  font-size: 14px; padding: 6px 10px; border: 1px solid var(--linea); border-radius: 8px;
-  background: #fff; color: var(--tinta); font-weight: 500; min-width: 180px;
+  font-size: 14px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--foreground); font-weight: 500; min-width: 180px;
 }
-.field.light select { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.3); min-width: 130px; }
-.badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--verde-osc); background: var(--verde-claro); padding: 4px 10px; border-radius: 20px; }
-.btn-ghost { background: #fff; border: 1px solid var(--linea); color: var(--tinta); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
-.btn-ghost:hover { background: var(--verde-claro); border-color: var(--verde); }
+.field.light select { background: var(--overlay-soft); color: var(--c-white); border-color: var(--overlay-hair); min-width: 130px; }
+.badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--primary-strong); background: var(--primary-bg); padding: 4px 10px; border-radius: 20px; }
+.btn-ghost { background: var(--surface); border: 1px solid var(--border); color: var(--foreground); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.btn-ghost:hover { background: var(--primary-bg); border-color: var(--primary); }
 
 /* ---- Layout ---- */
 .layout { display: grid; grid-template-columns: 1fr 380px; gap: 22px; padding: 22px; max-width: 1300px; margin: 0 auto; align-items: start; }
@@ -53,54 +109,54 @@ body {
 
 /* ---- KPIs ---- */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
-.kpi { background: #fff; border: 1px solid var(--linea); border-radius: var(--radio); padding: 16px; box-shadow: var(--sombra); }
-.kpi .v { font-size: 24px; font-weight: 700; color: var(--verde-osc); }
-.kpi .l { font-size: 12px; color: var(--gris); margin-top: 2px; text-transform: uppercase; letter-spacing: .4px; font-weight: 600; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio); padding: 16px; box-shadow: var(--sombra); }
+.kpi .v { font-size: 24px; font-weight: 700; color: var(--primary-strong); }
+.kpi .l { font-size: 12px; color: var(--muted-foreground); margin-top: 2px; text-transform: uppercase; letter-spacing: .4px; font-weight: 600; }
 
 /* ---- Panels ---- */
-.panel { background: #fff; border: 1px solid var(--linea); border-radius: var(--radio); margin-bottom: 20px; box-shadow: var(--sombra); overflow: hidden; }
-.panel h2 { font-size: 15px; margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--linea); background: #fcfbf8; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio); margin-bottom: 20px; box-shadow: var(--sombra); overflow: hidden; }
+.panel h2 { font-size: 15px; margin: 0; padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
 .panel-body { padding: 14px 18px; }
 
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { text-align: left; color: var(--gris); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; padding: 8px 10px; border-bottom: 1px solid var(--linea); }
-td { padding: 9px 10px; border-bottom: 1px solid #f1efe8; }
+th { text-align: left; color: var(--muted-foreground); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--border-soft); }
 tr:last-child td { border-bottom: none; }
-.tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: var(--verde-claro); color: var(--verde-osc); }
-.tag.venta { background: #e3f0fb; color: #1565a7; }
-.tag.gasto, .tag.insumo { background: #fdeceb; color: var(--rojo); }
-.tag.labor { background: #f0ecfb; color: #6a3fb0; }
-.tag.bot { background: var(--wa-out); color: var(--wa-head); }
+.tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: var(--primary-bg); color: var(--primary-strong); }
+.tag.venta { background: var(--info-bg); color: var(--info); }
+.tag.gasto, .tag.insumo { background: var(--danger-bg); color: var(--danger); }
+.tag.labor { background: var(--labor-bg); color: var(--labor); }
+.tag.bot { background: var(--wa-outgoing); color: var(--wa-header); }
 .num { font-variant-numeric: tabular-nums; text-align: right; }
 
 /* ---- Lotes / márgenes ---- */
 .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
-.card { border: 1px solid var(--linea); border-radius: 10px; padding: 14px; }
+.card { border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
 .card .lote { font-weight: 700; }
-.card .uso { font-size: 12px; color: var(--gris); margin-bottom: 8px; }
-.card .margen { font-size: 20px; font-weight: 700; color: var(--verde-osc); }
-.card .desglose { font-size: 12px; color: var(--gris); margin-top: 4px; }
-.card.no-confiable .margen { color: var(--ambar); font-size: 14px; }
-.alerta { font-size: 11.5px; background: var(--ambar-bg); color: var(--ambar); padding: 5px 9px; border-radius: 7px; margin-top: 8px; font-weight: 600; }
+.card .uso { font-size: 12px; color: var(--muted-foreground); margin-bottom: 8px; }
+.card .margen { font-size: 20px; font-weight: 700; color: var(--primary-strong); }
+.card .desglose { font-size: 12px; color: var(--muted-foreground); margin-top: 4px; }
+.card.no-confiable .margen { color: var(--warning); font-size: 14px; }
+.alerta { font-size: 11.5px; background: var(--warning-bg); color: var(--warning); padding: 5px 9px; border-radius: 7px; margin-top: 8px; font-weight: 600; }
 
 /* ---- Simulador WhatsApp ---- */
-.sim { background: #fff; border: 1px solid var(--linea); border-radius: var(--radio); box-shadow: var(--sombra); overflow: hidden; display: flex; flex-direction: column; position: sticky; top: 80px; height: calc(100vh - 110px); }
-.sim-head { background: var(--wa-head); color: #fff; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sim { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio); box-shadow: var(--sombra); overflow: hidden; display: flex; flex-direction: column; position: sticky; top: 80px; height: calc(100vh - 110px); }
+.sim-head { background: var(--wa-header); color: var(--c-white); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .sim-title { font-weight: 700; font-size: 15px; }
 .sim-sub { font-weight: 400; opacity: .8; font-size: 12px; }
 .sim-note { font-size: 11px; opacity: .85; }
-.chat { flex: 1; overflow-y: auto; padding: 16px; background: var(--wa-bg); display: flex; flex-direction: column; gap: 8px; }
+.chat { flex: 1; overflow-y: auto; padding: 16px; background: var(--wa-surface); display: flex; flex-direction: column; gap: 8px; }
 .bubble { max-width: 82%; padding: 8px 12px; border-radius: 10px; font-size: 13.5px; box-shadow: 0 1px 1px rgba(0,0,0,.08); white-space: pre-wrap; word-wrap: break-word; }
-.bubble.out { align-self: flex-end; background: var(--wa-out); border-top-right-radius: 2px; }
-.bubble.in { align-self: flex-start; background: #fff; border-top-left-radius: 2px; }
-.bubble .meta { font-size: 10px; color: var(--gris); margin-top: 3px; }
-.bubble.denied { background: #fdeceb; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--linea); background: #fafaf7; }
-.chip { font-size: 11.5px; background: var(--verde-claro); color: var(--verde-osc); border: none; padding: 5px 10px; border-radius: 20px; cursor: pointer; }
-.chip:hover { background: var(--verde); color: #fff; }
-.composer { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--linea); }
-.composer input { flex: 1; border: 1px solid var(--linea); border-radius: 20px; padding: 10px 14px; font-size: 14px; }
-.composer input:focus { outline: none; border-color: var(--verde); }
-.composer button { background: var(--wa-head); color: #fff; border: none; width: 40px; border-radius: 50%; font-size: 16px; cursor: pointer; }
-.composer button:hover { background: var(--verde-osc); }
-.empty { color: var(--gris); font-size: 13px; padding: 8px 0; }
+.bubble.out { align-self: flex-end; background: var(--wa-outgoing); border-top-right-radius: 2px; }
+.bubble.in { align-self: flex-start; background: var(--wa-incoming); border-top-left-radius: 2px; }
+.bubble .meta { font-size: 10px; color: var(--muted-foreground); margin-top: 3px; }
+.bubble.denied { background: var(--danger-bg); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--border); background: var(--surface-3); }
+.chip { font-size: 11.5px; background: var(--primary-bg); color: var(--primary-strong); border: none; padding: 5px 10px; border-radius: 20px; cursor: pointer; }
+.chip:hover { background: var(--primary); color: var(--on-primary); }
+.composer { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
+.composer input { flex: 1; border: 1px solid var(--border); border-radius: 20px; padding: 10px 14px; font-size: 14px; }
+.composer input:focus { outline: none; border-color: var(--ring); }
+.composer button { background: var(--wa-header); color: var(--c-white); border: none; width: 40px; border-radius: 50%; font-size: 16px; cursor: pointer; }
+.composer button:hover { background: var(--wa-header-strong); }
+.empty { color: var(--muted-foreground); font-size: 13px; padding: 8px 0; }
