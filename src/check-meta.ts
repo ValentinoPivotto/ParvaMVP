@@ -217,7 +217,12 @@ if (salteados.length) {
   console.log('  No es un OK: lo que no se chequeó es donde suele estar la falla.\n');
 }
 if (!problemas.length && !salteados.length) {
-  console.log('\n✅ Todo listo. Escribile al número y mirá el log `[wa] ←` en la terminal del server.\n');
+  console.log('\n✅ Lado Meta OK. Escribile al número y mirá el log `[wa] ←` en la terminal.');
+  // El otro lado del fallo silencioso: Meta entrega perfecto, pero si el
+  // REMITENTE no está en la base el bot no contesta nada (META_REPLY_TO_UNKNOWN=0).
+  console.log('   Falta un paso fuera de Meta: el número DESDE el que escribís tiene que');
+  console.log('   estar vinculado en la base, o el bot lo ignora en silencio. Chequealo con:');
+  console.log('     npm run link-phone -- --list\n');
 } else {
   process.exit(1);
 }
