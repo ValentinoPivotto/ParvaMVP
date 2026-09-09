@@ -13,6 +13,7 @@
     "seed": "node --env-file-if-exists=.env src/seed.ts",
     "reset": "node --env-file-if-exists=.env src/seed.ts --reset",
     "link-phone": "node --env-file-if-exists=.env src/link-phone.ts",
-    "check-meta": "node --env-file-if-exists=.env src/check-meta.ts"
+    "check-meta": "node --env-file-if-exists=.env src/check-meta.ts",
+    "tunnel": "cloudflared tunnel --url http://localhost:${PORT:-3000}"
   }
 }

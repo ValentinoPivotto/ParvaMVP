@@ -86,9 +86,16 @@ npm run link-phone -- --list
 npm run link-phone -- 1 +54911XXXXXXXX     # tu celular → Juan Pérez (owner)
 npm start                                   # verificá que diga "modo meta" sin faltantes
 
-cloudflared tunnel --url http://localhost:3000    # sin cuenta
+npm run tunnel                              # cloudflared, sin cuenta
 # o: ngrok http 3000   (requiere cuenta, pero su inspector en :4040 muestra
 #                       los bytes crudos y la firma que mandó Meta)
+```
+
+Antes de pegar la URL en Meta, comprobá que el handshake ya funciona — si esto no
+devuelve `ok`, el "Verify and save" del panel va a fallar:
+
+```bash
+curl -sS "https://<túnel>/webhook/whatsapp?hub.mode=subscribe&hub.verify_token=$META_VERIFY_TOKEN&hub.challenge=ok"
 ```
 
 En ambos túneles gratis la URL cambia en cada restart y hay que re-pegarla en Meta.
