@@ -116,20 +116,20 @@ async function manejarEntrante(m: MensajeEntrante): Promise<void> {
     // Meta, que es como se detecta el tema del 9 argentino) y el workflow de alta.
     console.warn(`[wa] número no registrado: ${m.from} — vinculalo con: npm run link-phone -- <usuarioId> +${m.from}`);
     if (config.metaReplyToUnknown) {
-      await enviarTexto(m.from, 'Hola 👋 Este número no está registrado en Parva. Pedile a tu administrador que te dé de alta.');
+      await enviarTexto(m.from, 'Hola 👋 Este número no está registrado en Parva. Pedile a tu administrador que te dé de alta.', undefined, m.phoneNumberId);
     }
     return;
   }
 
   if (m.tipo !== 'text') {
-    await enviarTexto(m.from, 'Por ahora solo entiendo mensajes de texto 🙏 Las notas de voz llegan pronto.', m.waMessageId);
+    await enviarTexto(m.from, 'Por ahora solo entiendo mensajes de texto 🙏 Las notas de voz llegan pronto.', m.waMessageId, m.phoneNumberId);
     return;
   }
   if (!m.texto.trim()) return;
 
   const r = await processMessage(sender, m.texto, m.waMessageId);
   if (!r) { console.log(`[wa] duplicado ignorado: ${m.waMessageId}`); return; }
-  await enviarTexto(m.from, r.reply, m.waMessageId);
+  await enviarTexto(m.from, r.reply, m.waMessageId, m.phoneNumberId);
 }
 
 const server = createServer(async (req, res) => {
@@ -213,7 +213,12 @@ const server = createServer(async (req, res) => {
         // ACK primero: Meta reintenta durante días si el webhook tarda, y el
         // pipeline puede esperar a OpenAI. Recién después se procesa.
         sendJson(res, 200, { status: 'received', procesados: entrantes.length });
-        for (const m of entrantes) encolar(m.from, () => manejarEntrante(m));
+        for (const m of entrantes) {
+          // Qué número propio recibió el mensaje: es el dato que falta cuando la
+          // WABA tiene el de test y el propio y uno de los dos "no contesta".
+          console.log(`[wa] ← ${m.from} → nuestro número ${m.phoneNumberId || '(sin metadata)'}`);
+          encolar(m.from, () => manejarEntrante(m));
+        }
         return;
       }
 

@@ -33,6 +33,7 @@ export function verificarFirma(raw: Buffer, header: string | undefined): boolean
 export interface MensajeEntrante {
   waMessageId: string;   // msg.id ('wamid.…'); '' si falta (curl de prueba)
   from: string;          // wa_id TAL CUAL lo mandó Meta — es a donde se responde
+  phoneNumberId: string; // número NUESTRO que lo recibió — es DESDE donde se responde
   tipo: string;          // 'text' | 'audio' | 'image' | …
   texto: string;         // '' si no es texto
   timestamp: string;
@@ -49,10 +50,15 @@ export function extraerEntrantes(payload: any): MensajeEntrante[] {
   const out: MensajeEntrante[] = [];
   for (const entry of payload?.entry ?? []) {
     for (const change of entry?.changes ?? []) {
+      // `metadata.phone_number_id` es el número NUESTRO al que le escribieron.
+      // Una WABA puede tener varios (el de test que regala Meta + el propio) y
+      // TODOS entran por este mismo webhook, indistinguibles salvo por acá.
+      const metadata = change?.value?.metadata ?? {};
       for (const msg of change?.value?.messages ?? []) {
         out.push({
           waMessageId: msg?.id ?? '',
           from: msg?.from ?? '',
+          phoneNumberId: metadata?.phone_number_id ?? '',
           tipo: msg?.type ?? 'text',
           texto: msg?.text?.body ?? '',
           timestamp: msg?.timestamp ?? '',
@@ -82,17 +88,22 @@ const TIMEOUT_MS = 10_000;
  * propio identificador esquiva el problema del 9 argentino (error 131030).
  */
 export async function enviarTexto(
-  to: string, cuerpo: string, responderA?: string,
+  to: string, cuerpo: string, responderA?: string, desde?: string,
 ): Promise<ResultadoEnvio> {
+  // `desde` es el phone_number_id que sale del webhook: se contesta SIEMPRE
+  // desde el número al que le escribieron. Sin esto el bot respondía desde
+  // META_PHONE_NUMBER_ID pasara lo que pasara, así que escribirle al número
+  // propio dejaba ese chat mudo y la respuesta caía en el del número de test.
+  const numeroPropio = desde || config.metaPhoneNumberId;
   const faltan: string[] = [];
   if (!config.metaAccessToken) faltan.push('META_ACCESS_TOKEN');
-  if (!config.metaPhoneNumberId) faltan.push('META_PHONE_NUMBER_ID');
+  if (!numeroPropio) faltan.push('META_PHONE_NUMBER_ID');
   if (faltan.length) {
     console.error(`[wa] no se puede enviar: falta ${faltan.join(', ')}`);
     return { ok: false, error: `falta ${faltan.join(', ')}` };
   }
 
-  const url = `https://graph.facebook.com/${config.metaGraphVersion}/${config.metaPhoneNumberId}/messages`;
+  const url = `https://graph.facebook.com/${config.metaGraphVersion}/${numeroPropio}/messages`;
   const body: Record<string, unknown> = {
     messaging_product: 'whatsapp',
     recipient_type: 'individual',
@@ -125,7 +136,7 @@ export async function enviarTexto(
       console.error(`[wa] error de Meta ${res.status}: código ${e.code ?? '?'} · ${e.message ?? 'sin mensaje'}${detalle}`);
       return { ok: false, error: `${e.code ?? res.status}: ${e.message ?? 'error'}` };
     }
-    console.log(`[wa] → respuesta enviada a ${toWaId(to)} (id ${json?.messages?.[0]?.id?.slice(0, 24) ?? '?'})`);
+    console.log(`[wa] → respuesta a ${toWaId(to)} desde ${numeroPropio} (id ${json?.messages?.[0]?.id?.slice(0, 24) ?? '?'})`);
     return { ok: true, id: json?.messages?.[0]?.id };
   } catch (err) {
     // Nunca loguear headers ni el access token.

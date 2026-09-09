@@ -112,6 +112,41 @@ entrantes, todo envío cae dentro de la ventana → texto libre permitido, sin
 necesidad de aprobar templates. Si el token vence (error 190), regeneralo en el
 panel o creá uno permanente en Business Settings → System Users.
 
+### 4. Pasar del número de test al número propio
+
+El `+1 555…` que da Meta es un número de test: sólo habla con 5 destinatarios
+allow-listeados y no se puede renombrar. Para que el bot aparezca como **Parva**:
+
+1. **WhatsApp Manager → Números de teléfono → Agregar número.** Cargá tu número,
+   elegí el nombre a mostrar y verificá con el código que llega por SMS o llamada.
+   El número queda en estado **Conectado**.
+2. **Copiá el Phone number ID nuevo** (el de tu número, no el del de test) a
+   `META_PHONE_NUMBER_ID`.
+3. **Suscribí la app a la WABA de ese número.** Si el número quedó en una WABA
+   distinta de la de test, la suscripción del webhook **no se hereda** y no llega
+   ni un mensaje. Se chequea con:
+
+   ```bash
+   curl -s "https://graph.facebook.com/$META_GRAPH_VERSION/<WABA_ID>/subscribed_apps" \
+     -H "Authorization: Bearer $META_ACCESS_TOKEN"
+   # vacío => suscribir:
+   curl -s -X POST "https://graph.facebook.com/$META_GRAPH_VERSION/<WABA_ID>/subscribed_apps" \
+     -H "Authorization: Bearer $META_ACCESS_TOKEN"
+   ```
+
+4. **Usá un token que alcance esa WABA.** El token temporal del panel API Setup
+   está scopeado a la WABA de test: contra la propia da error 190 o 200. Creá uno
+   permanente en *Business Settings → System Users* con la WABA asignada.
+
+> El bot responde **desde el número que recibió el mensaje**, no desde
+> `META_PHONE_NUMBER_ID`. Con el número de test y el propio en la misma WABA, los
+> dos entran por el mismo webhook y cada uno contesta en su propio chat. El log
+> `[wa] ← <remitente> → nuestro número <id>` dice cuál recibió qué.
+
+**No hace falta verificar el negocio para esto.** La verificación sirve para subir
+los límites (>250 contactos únicos/24 h) y sumar números; el nombre que se muestra
+es el *display name* del número, que es un trámite aparte.
+
 ## Probalo (mensajes de ejemplo)
 
 **Agrícola** (productor *Estancia La Esperanza*):
