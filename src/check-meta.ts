@@ -98,6 +98,31 @@ if (esTest) {
 // sin un solo error visible de este lado.
 const EFIMEROS = ['trycloudflare.com', 'ngrok-free.app', 'ngrok.io', 'loca.lt'];
 
+/**
+ * Le pega a la URL que Meta tiene guardada con el mismo handshake que usa Meta.
+ * Es la única forma de saber si el webhook llega: del lado del server, una URL
+ * muerta no produce ningún error — simplemente no pasa nada.
+ */
+async function probarHandshake(url: string): Promise<{ ok: boolean; detalle: string }> {
+  const challenge = `parva-${Date.now()}`;
+  const sep = url.includes('?') ? '&' : '?';
+  const full = `${url}${sep}hub.mode=subscribe&hub.verify_token=${encodeURIComponent(config.metaVerifyToken)}&hub.challenge=${challenge}`;
+  try {
+    const res = await fetch(full, { signal: AbortSignal.timeout(10_000) });
+    const body = (await res.text().catch(() => '')).trim();
+    if (res.ok && body === challenge) return { ok: true, detalle: 'ok' };
+    // El 403 solo es nuestro si viene con el cuerpo que manda server.ts; si no,
+    // es algún intermediario (proxy, Cloudflare) y afirmar "verify token mal"
+    // mandaría a buscar el problema al lugar equivocado.
+    if (res.status === 403 && body === 'forbidden') {
+      return { ok: false, detalle: 'el server contesta 403: el META_VERIFY_TOKEN que tiene corriendo no coincide con el de este .env' };
+    }
+    return { ok: false, detalle: `devuelve HTTP ${res.status}${body ? ` · ${body.slice(0, 60)}` : ''} — no es este server (túnel caído, o algo en el medio)` };
+  } catch (err) {
+    return { ok: false, detalle: `no responde — ${(err as Error).message}` };
+  }
+}
+
 if (config.metaAppId && config.metaAppSecret) {
   const appToken = `${config.metaAppId}|${config.metaAppSecret}`;
   const subs = await graph(`${config.metaAppId}/subscriptions`, appToken);
@@ -113,11 +138,17 @@ if (config.metaAppId && config.metaAppSecret) {
     if (!String(campos).includes('messages')) {
       problemas.push('El webhook no está suscrito al campo `messages`: verificar la URL es un paso, suscribirse es otro.');
     }
-    if (EFIMEROS.some((h) => String(wa.callback_url).includes(h))) {
+    const efimero = EFIMEROS.some((h) => String(wa.callback_url).includes(h));
+    const hs = await probarHandshake(wa.callback_url);
+    if (hs.ok) {
+      console.log(`✓ Esa URL contesta el handshake ahora mismo${efimero ? ' (túnel efímero: cambia en cada restart, re-pegala cuando reinicies)' : ''}`);
+    } else {
       problemas.push(
-        `Esa URL es de un túnel efímero y cambia en CADA restart de cloudflared/ngrok.\n` +
-        '     Comprobalo:  curl -sS "' + wa.callback_url + '?hub.mode=subscribe&hub.verify_token=' + config.metaVerifyToken + '&hub.challenge=ok"\n' +
-        '     Tiene que devolver "ok". Si no, re-pegá la URL nueva del túnel en Meta.',
+        `La URL que Meta tiene guardada NO responde: ${hs.detalle}\n` +
+        '     Meta está entregando los webhooks a la nada y del lado del server no se ve ningún error.\n' +
+        (efimero
+          ? '     Es un túnel efímero: levantá cloudflared, copiá la URL NUEVA y re-pegala en\n     WhatsApp → Configuration → Webhook (y revisá Manage → campo `messages`).'
+          : '     Verificá que el server esté corriendo y que la URL sea alcanzable desde afuera.'),
       );
     }
   }
@@ -158,8 +189,15 @@ if (!wabas.length && !argWaba) {
       const exp = info.expires_at ? new Date(info.expires_at * 1000) : null;
       if (info.expires_at === 0) console.log('✓ Token permanente (no vence)');
       else if (exp) console.log(`${exp > new Date() ? '✓' : '✗'} Token vence ${exp.toLocaleString('es-AR')}`);
-      wabas = (info.granular_scopes ?? []).find((s: any) => s.scope === 'whatsapp_business_messaging')?.target_ids ?? [];
+      // Un token de System User suele traer whatsapp_business_management además
+      // de _messaging, y a veces la WABA sólo figura en uno de los dos.
+      const scopes = info.granular_scopes ?? [];
+      wabas = [...new Set(
+        scopes.filter((x: any) => String(x.scope).startsWith('whatsapp_business'))
+              .flatMap((x: any) => x.target_ids ?? []),
+      )] as string[];
       if (wabas.length) console.log(`✓ WABA que alcanza el token: ${wabas.join(', ')}`);
+      else console.log(`  · El token no expone ninguna WABA (scopes: ${scopes.map((x: any) => x.scope).join(', ') || 'ninguno'})`);
     }
   } else {
     console.log('  · Para deducir la WABA sola, cargá META_APP_ID en .env (Settings → Basic).');
@@ -167,7 +205,11 @@ if (!wabas.length && !argWaba) {
 }
 
 if (!wabas.length) {
-  salteados.push('si la app está suscrita a la WABA del número (no sé qué WABA es).\n     Corré: npm run check-meta -- <WABA_ID>, o cargá META_APP_ID en .env');
+  salteados.push(
+    'si la app está suscrita a la WABA del número (no pude averiguar qué WABA es).\n' +
+    '     El ID está en el panel de Meta → WhatsApp → API Setup, arriba de todo:\n' +
+    '     "WhatsApp Business Account ID". Después:  npm run check-meta -- <WABA_ID>',
+  );
 } else {
   let dueña: string | null = null;
 
