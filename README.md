@@ -112,7 +112,19 @@ entrantes, todo envío cae dentro de la ventana → texto libre permitido, sin
 necesidad de aprobar templates. Si el token vence (error 190), regeneralo en el
 panel o creá uno permanente en Business Settings → System Users.
 
-### 4. Pasar del número de test al número propio
+### 4. Chequear el setup antes de la demo
+
+```bash
+npm run check-meta                 # deduce la WABA del token
+npm run check-meta -- <WABA_ID>    # o pasásela a mano
+```
+
+Valida las tres cosas que hacen que un número "Conectado" no conteste: que el
+token llegue al `META_PHONE_NUMBER_ID`, en qué WABA está ese número, y si la app
+está suscrita **a esa** WABA. Traduce los códigos de Meta (100, 190, 200, 133010)
+al arreglo que corresponde.
+
+### 5. Pasar del número de test al número propio
 
 El `+1 555…` que da Meta es un número de test: sólo habla con 5 destinatarios
 allow-listeados y no se puede renombrar. Para que el bot aparezca como **Parva**:
@@ -137,6 +149,8 @@ allow-listeados y no se puede renombrar. Para que el bot aparezca como **Parva**
 4. **Usá un token que alcance esa WABA.** El token temporal del panel API Setup
    está scopeado a la WABA de test: contra la propia da error 190 o 200. Creá uno
    permanente en *Business Settings → System Users* con la WABA asignada.
+
+`npm run check-meta` verifica los cuatro pasos de una.
 
 > El bot responde **desde el número que recibió el mensaje**, no desde
 > `META_PHONE_NUMBER_ID`. Con el número de test y el propio en la misma WABA, los
