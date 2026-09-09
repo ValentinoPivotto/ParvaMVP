@@ -115,9 +115,13 @@ panel o creá uno permanente en Business Settings → System Users.
 ### 4. Chequear el setup antes de la demo
 
 ```bash
-npm run check-meta                 # deduce la WABA del token
+npm run check-meta                 # deduce la WABA del token (necesita META_APP_ID)
 npm run check-meta -- <WABA_ID>    # o pasásela a mano
 ```
+
+El argumento es el **WABA ID**, no el `phone_number_id`: son dos IDs numéricos
+largos indistinguibles a ojo. Si cargás `META_APP_ID` en el `.env`, el script se
+la pregunta a Meta y no hace falta pasarla.
 
 Valida las tres cosas que hacen que un número "Conectado" no conteste: que el
 token llegue al `META_PHONE_NUMBER_ID`, en qué WABA está ese número, y si la app

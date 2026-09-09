@@ -26,6 +26,7 @@ export const config = {
   whatsappMode: (process.env.WHATSAPP_MODE ?? 'sim') as 'sim' | 'meta',
 
   metaVerifyToken: process.env.META_VERIFY_TOKEN ?? 'parva-dev',
+  metaAppId: process.env.META_APP_ID ?? '',
   metaAppSecret: process.env.META_APP_SECRET ?? '',
   metaAccessToken: process.env.META_ACCESS_TOKEN ?? '',
   metaPhoneNumberId: process.env.META_PHONE_NUMBER_ID ?? '',

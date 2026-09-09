@@ -4,23 +4,35 @@
 //   npm run check-meta -- <WABA_ID>
 //
 // Contesta las tres preguntas detrás de "el número figura Conectado pero el bot
-// no responde": ¿el token llega a este número?, ¿en qué WABA está?, ¿la app está
+// no responde": ¿a qué número apunta el .env?, ¿en qué WABA está?, ¿la app está
 // suscrita a ESA WABA? Cada falla imprime el arreglo concreto, porque los errores
 // de Meta son códigos numéricos sin contexto.
 import { config } from './config.ts';
 
 const G = `https://graph.facebook.com/${config.metaGraphVersion}`;
 
-// Los códigos que aparecen en este flujo, traducidos al arreglo que corresponde.
-const HINTS: Record<number, string> = {
-  100: 'el ID no existe o no es un phone_number_id (¿pegaste el número de teléfono en vez del ID?)',
-  190: 'access token vencido o revocado — el temporal del panel dura 24 h',
-  200: 'el token no alcanza este recurso — creá uno de System User con la WABA asignada',
-  133010: 'el número no está registrado en la Cloud API — falta el paso del PIN',
-};
+// El mismo código de Meta significa cosas distintas según qué nodo pediste, así
+// que los hints van por contexto. El 100 sobre una WABA es casi siempre haber
+// pasado un phone_number_id, y el hint genérico decía justo lo contrario.
+const HINTS = {
+  numero: {
+    100: 'ese ID no es un phone_number_id (¿pegaste el número de teléfono, o un WABA ID?)',
+    190: 'access token vencido o revocado — el temporal del panel dura 24 h',
+    200: 'el token no alcanza este número — creá uno de System User con la WABA asignada',
+    133010: 'el número no está registrado en la Cloud API — falta el paso del PIN',
+  },
+  waba: {
+    100: 'ese ID no es una WABA — un phone_number_id no tiene edge `phone_numbers`',
+    190: 'access token vencido o revocado — el temporal del panel dura 24 h',
+    200: 'el token no alcanza esta WABA — creá uno de System User con la WABA asignada',
+  },
+} as const;
 
-function hint(code?: number): string {
-  return code && HINTS[code] ? `\n     → ${HINTS[code]}` : '';
+type Contexto = keyof typeof HINTS;
+
+function hint(ctx: Contexto, code?: number): string {
+  const h = code ? (HINTS[ctx] as Record<number, string>)[code] : undefined;
+  return h ? `\n     → ${h}` : '';
 }
 
 async function graph(path: string): Promise<{ ok: boolean; data?: any; code?: number; message?: string }> {
@@ -58,58 +70,98 @@ if (config.whatsappMode !== 'meta') {
   problemas.push('WHATSAPP_MODE no es "meta": el bot va a contestar en el body del webhook, no por WhatsApp.');
 }
 
-// --- 2. El número: ¿existe y el token llega? --------------------------------
+// --- 2. El número al que apunta el .env -------------------------------------
 const num = await graph(`${config.metaPhoneNumberId}?fields=display_phone_number,verified_name,quality_rating,code_verification_status`);
 if (!num.ok) {
-  console.error(`✗ META_PHONE_NUMBER_ID=${config.metaPhoneNumberId} — ${num.message} (código ${num.code ?? '?'})${hint(num.code)}\n`);
+  console.error(`✗ META_PHONE_NUMBER_ID=${config.metaPhoneNumberId} — ${num.message} (código ${num.code ?? '?'})${hint('numero', num.code)}\n`);
   process.exit(1);
 }
 const d = num.data;
-console.log(`✓ Número ${d.display_phone_number} · nombre "${d.verified_name}" · calidad ${d.quality_rating ?? 'n/d'} · ${d.code_verification_status ?? 'n/d'}`);
-if (d.display_phone_number?.startsWith('+1 555')) {
-  problemas.push('Estás apuntando al número de TEST: sólo habla con los 5 destinatarios allow-listeados y no se puede renombrar.');
+console.log(`✓ META_PHONE_NUMBER_ID=${config.metaPhoneNumberId}`);
+console.log(`  ${d.display_phone_number} · nombre "${d.verified_name}" · calidad ${d.quality_rating ?? 'n/d'} · ${d.code_verification_status ?? 'n/d'}`);
+
+const esTest = String(d.display_phone_number ?? '').replace(/[^0-9+]/g, '').startsWith('+1555');
+if (esTest) {
+  problemas.push(
+    `El .env apunta al número de TEST (${d.display_phone_number}), no al tuyo.\n` +
+    '     Sólo habla con los 5 destinatarios allow-listeados y no se puede renombrar.\n' +
+    '     Cambiá META_PHONE_NUMBER_ID por el ID de tu número y volvé a correr esto.',
+  );
 }
 
-// --- 3. La WABA: ¿cuál tiene este número? -----------------------------------
-// Por CLI, por env, o deducida de los granular_scopes del token (ahí Meta lista
-// las WABA que el token puede tocar).
-let wabas: string[] = [process.argv[2] ?? process.env.META_WABA_ID ?? ''].filter(Boolean);
+// --- 3. La WABA que contiene ese número -------------------------------------
+// Por CLI/env, o preguntándole a Meta a qué WABA llega el token.
+let wabas: string[] = [];
+const argWaba = (process.argv[2] ?? process.env.META_WABA_ID ?? '').trim();
 
-if (!wabas.length) {
-  const dbg = await graph(`debug_token?input_token=${encodeURIComponent(config.metaAccessToken)}`);
-  const scopes = dbg.data?.data?.granular_scopes ?? [];
-  wabas = scopes.find((s: any) => s.scope === 'whatsapp_business_messaging')?.target_ids ?? [];
-  if (wabas.length) console.log(`✓ WABA detectadas en el token: ${wabas.join(', ')}`);
+if (argWaba) {
+  // Confusión habitual: pasar el phone_number_id donde va el WABA ID. Son dos
+  // IDs numéricos largos indistinguibles a ojo, así que lo detectamos.
+  const quizasNumero = await graph(`${argWaba}?fields=display_phone_number`);
+  if (quizasNumero.ok && quizasNumero.data?.display_phone_number) {
+    problemas.push(
+      `${argWaba} es un phone_number_id (${quizasNumero.data.display_phone_number}), no un WABA ID.\n` +
+      '     Ese va en META_PHONE_NUMBER_ID. El WABA ID está en WhatsApp Manager →\n' +
+      '     Configuración de la cuenta, o lo deduce solo si cargás META_APP_ID en .env.',
+    );
+  } else {
+    wabas = [argWaba];
+  }
+}
+
+if (!wabas.length && !argWaba) {
+  // debug_token necesita un app access token (`APP_ID|APP_SECRET`); con el token
+  // de usuario solo, Meta devuelve los scopes vacíos y no se deduce nada.
+  if (config.metaAppId && config.metaAppSecret) {
+    const app = encodeURIComponent(`${config.metaAppId}|${config.metaAppSecret}`);
+    const dbg = await graph(`debug_token?input_token=${encodeURIComponent(config.metaAccessToken)}&access_token=${app}`);
+    if (!dbg.ok) {
+      console.log(`  · No pude inspeccionar el token: ${dbg.message}`);
+    } else {
+      const info = dbg.data?.data ?? {};
+      const exp = info.expires_at ? new Date(info.expires_at * 1000) : null;
+      if (info.expires_at === 0) console.log('✓ Token permanente (no vence)');
+      else if (exp) console.log(`${exp > new Date() ? '✓' : '✗'} Token vence ${exp.toLocaleString('es-AR')}`);
+      wabas = (info.granular_scopes ?? []).find((s: any) => s.scope === 'whatsapp_business_messaging')?.target_ids ?? [];
+      if (wabas.length) console.log(`✓ WABA que alcanza el token: ${wabas.join(', ')}`);
+    }
+  } else {
+    console.log('  · Para deducir la WABA sola, cargá META_APP_ID en .env (Settings → Basic).');
+  }
 }
 
 if (!wabas.length) {
-  console.log('\n⚠ No pude deducir la WABA del token.');
-  console.log('  Buscá el ID en WhatsApp Manager y volvé a correr:  npm run check-meta -- <WABA_ID>');
+  console.log('\n⚠ Sin WABA que chequear: salteo la suscripción del webhook.');
+  console.log('  Corré:  npm run check-meta -- <WABA_ID>   (o cargá META_APP_ID en .env)');
 } else {
   let dueña: string | null = null;
 
   for (const waba of wabas) {
     const nums = await graph(`${waba}/phone_numbers?fields=id,display_phone_number,verified_name`);
-    if (!nums.ok) { console.log(`  · WABA ${waba}: no la puedo leer — ${nums.message}${hint(nums.code)}`); continue; }
-
+    if (!nums.ok) {
+      console.log(`  · WABA ${waba}: no la puedo leer — ${nums.message}${hint('waba', nums.code)}`);
+      continue;
+    }
     const lista = nums.data?.data ?? [];
     const tiene = lista.some((n: any) => n.id === config.metaPhoneNumberId);
     if (tiene) dueña = waba;
-    console.log(`  · WABA ${waba}: ${lista.length} número(s)${tiene ? ' ← contiene el tuyo' : ''}`);
-    for (const n of lista) console.log(`      ${n.id === config.metaPhoneNumberId ? '▸' : ' '} ${n.id}  ${n.display_phone_number}  "${n.verified_name}"`);
+    console.log(`  · WABA ${waba}: ${lista.length} número(s)${tiene ? ' ← contiene el del .env' : ''}`);
+    for (const n of lista) {
+      console.log(`      ${n.id === config.metaPhoneNumberId ? '▸' : ' '} ${n.id}  ${n.display_phone_number}  "${n.verified_name}"`);
+    }
   }
 
   if (!dueña) {
-    problemas.push(`Ninguna WABA visible contiene el número ${config.metaPhoneNumberId}. Pasá el WABA ID a mano: npm run check-meta -- <WABA_ID>`);
+    problemas.push(`Ninguna WABA visible contiene el número del .env (${config.metaPhoneNumberId}). Si tenés más de una WABA, pasá la otra: npm run check-meta -- <WABA_ID>`);
   } else {
-    // --- 4. La suscripción: es POR WABA y no se hereda de la de test ---------
+    // --- 4. La suscripción, que es POR WABA y no se hereda de la de test -----
     const subs = await graph(`${dueña}/subscribed_apps`);
     const apps = subs.data?.data ?? [];
     if (!subs.ok) {
       problemas.push(`No pude leer subscribed_apps de la WABA ${dueña}: ${subs.message}`);
     } else if (!apps.length) {
       problemas.push(
-        `La app NO está suscrita a la WABA ${dueña} — por eso no llega ni un mensaje a este número. Arreglo:\n` +
+        `La app NO está suscrita a la WABA ${dueña} — por eso no llega ni un mensaje. Arreglo:\n` +
         `     curl -X POST "${G}/${dueña}/subscribed_apps" -H "Authorization: Bearer $META_ACCESS_TOKEN"`,
       );
     } else {
