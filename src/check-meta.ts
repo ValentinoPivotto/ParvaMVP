@@ -35,10 +35,10 @@ function hint(ctx: Contexto, code?: number): string {
   return h ? `\n     → ${h}` : '';
 }
 
-async function graph(path: string): Promise<{ ok: boolean; data?: any; code?: number; message?: string }> {
+async function graph(path: string, token = config.metaAccessToken): Promise<{ ok: boolean; data?: any; code?: number; message?: string }> {
   try {
     const res = await fetch(`${G}/${path}`, {
-      headers: { Authorization: `Bearer ${config.metaAccessToken}` },
+      headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(10_000),
     });
     const json: any = await res.json().catch(() => ({}));
@@ -50,6 +50,9 @@ async function graph(path: string): Promise<{ ok: boolean; data?: any; code?: nu
 }
 
 const problemas: string[] = [];
+// Lo que no se pudo chequear. Sin esto el veredicto daba "✅ Todo listo" tras
+// saltear la suscripción del webhook, que es la falla más común de todas.
+const salteados: string[] = [];
 
 console.log(`\n🔎 Chequeo de Meta Cloud API (Graph ${config.metaGraphVersion})\n`);
 
@@ -89,7 +92,40 @@ if (esTest) {
   );
 }
 
-// --- 3. La WABA que contiene ese número -------------------------------------
+// --- 3. La callback URL que Meta tiene guardada -----------------------------
+// Los túneles gratis (trycloudflare, ngrok free) cambian de URL en CADA restart,
+// y Meta se queda con la vieja: el webhook entrega a la nada y el bot enmudece
+// sin un solo error visible de este lado.
+const EFIMEROS = ['trycloudflare.com', 'ngrok-free.app', 'ngrok.io', 'loca.lt'];
+
+if (config.metaAppId && config.metaAppSecret) {
+  const appToken = `${config.metaAppId}|${config.metaAppSecret}`;
+  const subs = await graph(`${config.metaAppId}/subscriptions`, appToken);
+  const wa = (subs.data?.data ?? []).find((x: any) => x.object === 'whatsapp_business_account');
+  if (!subs.ok) {
+    salteados.push(`la callback URL registrada (no pude leer las subscriptions de la app: ${subs.message})`);
+  } else if (!wa) {
+    problemas.push('La app no tiene webhook de `whatsapp_business_account`. Configuralo en WhatsApp → Configuration → Webhook.');
+  } else {
+    const campos = (wa.fields ?? []).map((f: any) => f?.name ?? f).join(', ');
+    console.log(`✓ Webhook en Meta: ${wa.callback_url}`);
+    console.log(`  campos: ${campos || '(ninguno)'}${wa.active === false ? ' · INACTIVO' : ''}`);
+    if (!String(campos).includes('messages')) {
+      problemas.push('El webhook no está suscrito al campo `messages`: verificar la URL es un paso, suscribirse es otro.');
+    }
+    if (EFIMEROS.some((h) => String(wa.callback_url).includes(h))) {
+      problemas.push(
+        `Esa URL es de un túnel efímero y cambia en CADA restart de cloudflared/ngrok.\n` +
+        '     Comprobalo:  curl -sS "' + wa.callback_url + '?hub.mode=subscribe&hub.verify_token=' + config.metaVerifyToken + '&hub.challenge=ok"\n' +
+        '     Tiene que devolver "ok". Si no, re-pegá la URL nueva del túnel en Meta.',
+      );
+    }
+  }
+} else {
+  salteados.push('la callback URL registrada (falta META_APP_ID en .env)');
+}
+
+// --- 4. La WABA que contiene ese número -------------------------------------
 // Por CLI/env, o preguntándole a Meta a qué WABA llega el token.
 let wabas: string[] = [];
 const argWaba = (process.argv[2] ?? process.env.META_WABA_ID ?? '').trim();
@@ -131,8 +167,7 @@ if (!wabas.length && !argWaba) {
 }
 
 if (!wabas.length) {
-  console.log('\n⚠ Sin WABA que chequear: salteo la suscripción del webhook.');
-  console.log('  Corré:  npm run check-meta -- <WABA_ID>   (o cargá META_APP_ID en .env)');
+  salteados.push('si la app está suscrita a la WABA del número (no sé qué WABA es).\n     Corré: npm run check-meta -- <WABA_ID>, o cargá META_APP_ID en .env');
 } else {
   let dueña: string | null = null;
 
@@ -154,7 +189,7 @@ if (!wabas.length) {
   if (!dueña) {
     problemas.push(`Ninguna WABA visible contiene el número del .env (${config.metaPhoneNumberId}). Si tenés más de una WABA, pasá la otra: npm run check-meta -- <WABA_ID>`);
   } else {
-    // --- 4. La suscripción, que es POR WABA y no se hereda de la de test -----
+    // --- 5. La suscripción, que es POR WABA y no se hereda de la de test -----
     const subs = await graph(`${dueña}/subscribed_apps`);
     const apps = subs.data?.data ?? [];
     if (!subs.ok) {
@@ -172,10 +207,17 @@ if (!wabas.length) {
 }
 
 // --- Veredicto --------------------------------------------------------------
-if (!problemas.length) {
-  console.log('\n✅ Todo listo. Escribile al número y mirá el log `[wa] ←` en la terminal del server.\n');
-} else {
+if (problemas.length) {
   console.log(`\n⚠ ${problemas.length} cosa(s) para arreglar:\n`);
   for (const p of problemas) console.log(`  • ${p}\n`);
+}
+if (salteados.length) {
+  console.log(`\n⚠ Chequeo INCOMPLETO — no pude verificar:\n`);
+  for (const p of salteados) console.log(`  • ${p}\n`);
+  console.log('  No es un OK: lo que no se chequeó es donde suele estar la falla.\n');
+}
+if (!problemas.length && !salteados.length) {
+  console.log('\n✅ Todo listo. Escribile al número y mirá el log `[wa] ←` en la terminal del server.\n');
+} else {
   process.exit(1);
 }

@@ -123,10 +123,14 @@ El argumento es el **WABA ID**, no el `phone_number_id`: son dos IDs numéricos
 largos indistinguibles a ojo. Si cargás `META_APP_ID` en el `.env`, el script se
 la pregunta a Meta y no hace falta pasarla.
 
-Valida las tres cosas que hacen que un número "Conectado" no conteste: que el
-token llegue al `META_PHONE_NUMBER_ID`, en qué WABA está ese número, y si la app
-está suscrita **a esa** WABA. Traduce los códigos de Meta (100, 190, 200, 133010)
-al arreglo que corresponde.
+Valida las cuatro cosas que hacen que un número "Conectado" no conteste: que el
+token llegue al `META_PHONE_NUMBER_ID`, que la callback URL guardada en Meta siga
+viva (los túneles gratis cambian de URL en cada restart), en qué WABA está el
+número, y si la app está suscrita **a esa** WABA. Traduce los códigos de Meta
+(100, 190, 200, 133010) al arreglo que corresponde.
+
+Si algo no se puede chequear lo dice como **chequeo incompleto** y sale con
+código 1: un check salteado nunca se reporta como OK.
 
 ### 5. Pasar del número de test al número propio
 
