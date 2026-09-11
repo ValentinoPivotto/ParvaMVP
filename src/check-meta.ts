@@ -96,7 +96,13 @@ if (esTest) {
 // Los túneles gratis (trycloudflare, ngrok free) cambian de URL en CADA restart,
 // y Meta se queda con la vieja: el webhook entrega a la nada y el bot enmudece
 // sin un solo error visible de este lado.
-const EFIMEROS = ['trycloudflare.com', 'ngrok-free.app', 'ngrok.io', 'loca.lt'];
+const EFIMEROS = ['trycloudflare.com', 'ngrok-free.app', 'ngrok-free.dev', 'ngrok.io', 'loca.lt'];
+
+// Un dominio ngrok RESERVADO vive en el mismo sufijo que los aleatorios, así que
+// el sufijo solo no distingue. Si la URL registrada usa el NGROK_DOMAIN del .env
+// es fija, y avisar "cambia en cada restart" mandaría a re-pegar algo que no hay
+// que tocar.
+const DOMINIO_FIJO = (process.env.NGROK_DOMAIN ?? '').trim().replace(/^https?:\/\//, '');
 
 /**
  * Le pega a la URL que Meta tiene guardada con el mismo handshake que usa Meta.
@@ -138,7 +144,8 @@ if (config.metaAppId && config.metaAppSecret) {
     if (!String(campos).includes('messages')) {
       problemas.push('El webhook no está suscrito al campo `messages`: verificar la URL es un paso, suscribirse es otro.');
     }
-    const efimero = EFIMEROS.some((h) => String(wa.callback_url).includes(h));
+    const esFijo = Boolean(DOMINIO_FIJO) && String(wa.callback_url).includes(DOMINIO_FIJO);
+    const efimero = !esFijo && EFIMEROS.some((h) => String(wa.callback_url).includes(h));
     const hs = await probarHandshake(wa.callback_url);
     if (hs.ok) {
       console.log(`✓ Esa URL contesta el handshake ahora mismo${efimero ? ' (túnel efímero: cambia en cada restart, re-pegala cuando reinicies)' : ''}`);
