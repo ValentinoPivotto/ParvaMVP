@@ -34,6 +34,7 @@ export interface MensajeEntrante {
   waMessageId: string;   // msg.id ('wamid.…'); '' si falta (curl de prueba)
   from: string;          // wa_id TAL CUAL lo mandó Meta — es a donde se responde
   phoneNumberId: string; // número NUESTRO que lo recibió — es DESDE donde se responde
+  wabaId: string;        // `entry.id` = el WhatsApp Business Account ID (según Meta)
   tipo: string;          // 'text' | 'audio' | 'image' | …
   texto: string;         // '' si no es texto
   timestamp: string;
@@ -59,6 +60,10 @@ export function extraerEntrantes(payload: any): MensajeEntrante[] {
           waMessageId: msg?.id ?? '',
           from: msg?.from ?? '',
           phoneNumberId: metadata?.phone_number_id ?? '',
+          // `entry.id` es el WABA ID. Vale loguearlo: es el dato que hay que
+          // buscar a mano en el panel para chequear la suscripción de la app,
+          // y acá viene gratis con el primer mensaje que entra.
+          wabaId: entry?.id ?? '',
           tipo: msg?.type ?? 'text',
           texto: msg?.text?.body ?? '',
           timestamp: msg?.timestamp ?? '',

@@ -216,7 +216,7 @@ const server = createServer(async (req, res) => {
         for (const m of entrantes) {
           // Qué número propio recibió el mensaje: es el dato que falta cuando la
           // WABA tiene el de test y el propio y uno de los dos "no contesta".
-          console.log(`[wa] ← ${m.from} → nuestro número ${m.phoneNumberId || '(sin metadata)'}`);
+          console.log(`[wa] ← ${m.from} → nuestro número ${m.phoneNumberId || '(sin metadata)'}${m.wabaId ? ` · WABA ${m.wabaId}` : ''}`);
           encolar(m.from, () => manejarEntrante(m));
         }
         return;
