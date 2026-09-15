@@ -135,17 +135,21 @@ Medición al 2026-09-15, sobre los 43 casos:
 | Motor | Correctos |
 | :---- | ----: |
 | mock (reglas) | 19/43 (44 %) |
-| Nova Lite | 40/43 y 42/43 en dos corridas |
+| Nova Lite | 41/43 (95 %), igual en dos corridas |
 
-**Una sola corrida no alcanza para concluir nada.** Dos corridas idénticas de
-Nova Lite pueden dar el mismo total fallando casos distintos, y acá el rango
-entre corridas fue de dos casos. Antes de atribuirle una diferencia a un cambio
-de prompt, correlo al menos dos veces.
+**Una sola corrida no alcanza para concluir nada.** Dos corridas idénticas
+pueden dar el mismo total fallando casos distintos. Antes de atribuirle una
+diferencia a un cambio de prompt, correlo al menos dos veces.
 
-Falla estable conocida: `labor-rastra` ("rastreé el lote 3"). En español general
-"rastrear" es seguir un rastro, y el sentido agronómico (pasar la rastra) no le
-sale. Se arregla listándole los verbos de labor en el prompt, pero eso sería
-parchear el único caso que el eval todavía marca: queda como señal a propósito.
+Fallas estables conocidas:
+
+- `labor-rastra` ("rastreé el lote 3"). En español general "rastrear" es seguir
+  un rastro, y el sentido agronómico (pasar la rastra) no le sale. Se arregla
+  listándole los verbos de labor en el prompt, pero eso sería parchear el único
+  caso de su tipo que el eval marca: queda como señal a propósito.
+- `venta-maiz-ayer` ("entregué 25 tn de maíz"). La regla de dirección de la
+  plata funciona en general —`"despaché 10 tn de cebada"` pasa siempre— pero
+  "entregué" lo sigue leyendo como mercadería que entra.
 
 ## WhatsApp real (Meta Cloud API)
 
