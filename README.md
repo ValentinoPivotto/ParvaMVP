@@ -95,11 +95,32 @@ Micro y Pro exigen perfil de inferencia entre regiones, esos perfiles rutean a
 `us-west-2`, y el rol de SSO del curso tiene un deny explícito fuera de
 `us-east-2`. Con una cuenta propia habría que volver a medirlo.
 
-### Lo que falta
+## Eval del parser
 
-No hay todavía un set de mensajes anotados para comparar mock, Nova Lite, GPT-4o
-mini y el modelo local sobre la misma entrada. Sin eso, la elección de motor es
-una intuición y no una medición.
+`eval/casos.json` tiene 40 mensajes anotados con lo que el parser debería sacar
+de cada uno. Ninguno replica los ejemplos few-shot del prompt: todos miden
+generalización, no memoria.
+
+```bash
+npm run eval -- --motor=mock      # baseline, sin credenciales ni costo
+npm run eval -- --motor=bedrock   # Nova Lite
+npm run eval -- --caso=hacienda-singular
+npm run eval -- --strict          # exit 1 si algo falla
+```
+
+No es un test unitario y no corre solo: los motores con modelo cuestan plata y
+no son determinísticos. Se corre a mano al tocar el prompt o cambiar de modelo.
+
+Medición al 2026-09-15, sobre los 40 casos:
+
+| Motor | Correctos |
+| :---- | ----: |
+| mock (reglas) | 19/40 (48 %) |
+| Nova Lite | 35/40 (88 %) |
+
+Dos corridas seguidas de Nova Lite dieron 35/40 las dos veces, pero **fallando
+casos distintos**. El número agregado es estable; cuál caso falla, no. Conviene
+leer cualquier diferencia de una corrida contra otra con esa varianza en mente.
 
 ## WhatsApp real (Meta Cloud API)
 
