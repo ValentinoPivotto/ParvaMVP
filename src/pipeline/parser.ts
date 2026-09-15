@@ -10,23 +10,9 @@ import { firmarAws } from '../services/sigv4.ts';
 // siempre. Mismo criterio que el timeout de whatsapp.ts.
 const TIMEOUT_MODELO_MS = 10_000;
 import type { ParsedIntent, ParsedFields, RecordType, EventoHaciendaTipo } from '../types.ts';
-
-const CATEGORIAS_ANIMAL: Record<string, string> = {
-  ternero: 'ternero', terneros: 'ternero', ternera: 'ternero', terneras: 'ternero',
-  vaca: 'vaca', vacas: 'vaca',
-  novillo: 'novillo', novillos: 'novillo',
-  vaquillona: 'vaquillona', vaquillonas: 'vaquillona',
-  toro: 'toro', toros: 'toro',
-};
+import { detectarCategoriaAnimal } from '../types.ts';
 
 const UNIDADES = 'litros?|lts?|l|kg|kilos?|tn|toneladas?|ton|bolsas?|cabezas?|unidades?|has?|hect[aá]reas?';
-
-function detectarCategoriaAnimal(t: string): string | undefined {
-  for (const palabra of Object.keys(CATEGORIAS_ANIMAL)) {
-    if (new RegExp(`\\b${palabra}\\b`).test(t)) return CATEGORIAS_ANIMAL[palabra];
-  }
-  return undefined;
-}
 
 function num(s: string): number {
   // Tolera "1.200.000" (miles con punto) y "2,5" (decimal con coma).

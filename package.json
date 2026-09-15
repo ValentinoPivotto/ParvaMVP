@@ -13,6 +13,7 @@
     "seed": "node --env-file-if-exists=.env src/seed.ts",
     "reset": "node --env-file-if-exists=.env src/seed.ts --reset",
     "eval": "node --env-file-if-exists=.env eval/run.ts",
+    "test": "node --test tests/",
     "link-phone": "node --env-file-if-exists=.env src/link-phone.ts",
     "check-meta": "node --env-file-if-exists=.env src/check-meta.ts",
     "tunnel": "node --env-file-if-exists=.env src/tunnel.ts"

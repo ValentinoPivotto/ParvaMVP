@@ -106,6 +106,18 @@ Micro y Pro exigen perfil de inferencia entre regiones, esos perfiles rutean a
 `us-west-2`, y el rol de SSO del curso tiene un deny explícito fuera de
 `us-east-2`. Con una cuenta propia habría que volver a medirlo.
 
+## Tests
+
+```bash
+npm test
+```
+
+Cubren el guard de hacienda en `validate()`: un registro cuyo producto son
+animales no se persiste como movimiento, porque `persistir()` insertaría un
+movimiento sin tocar `insertEventoHacienda` y el stock quedaría sin actualizar,
+sin ningún error visible. Es una red bajo el prompt, no un reemplazo: el prompt
+pide la clasificación correcta, pero un modelo no la garantiza.
+
 ## Eval del parser
 
 `eval/casos.json` tiene 43 mensajes anotados con lo que el parser debería sacar

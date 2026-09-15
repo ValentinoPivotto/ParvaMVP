@@ -15,6 +15,26 @@ export type Intent = 'create_record' | 'query' | 'confirm' | 'unknown';
 export type RecordType = MovTipo | 'evento_hacienda' | 'evento_sanitario';
 export type QueryMetric = 'stock_animal' | 'margen' | 'gasto_total' | 'venta_total';
 
+/** Palabra del productor → categoría canónica de hacienda. Única fuente de
+ *  verdad: la usan el parser (para extraer) y el validator (para detectar un
+ *  registro de animales mal tipado). */
+export const CATEGORIAS_ANIMAL: Record<string, string> = {
+  ternero: 'ternero', terneros: 'ternero', ternera: 'ternero', terneras: 'ternero',
+  vaca: 'vaca', vacas: 'vaca',
+  novillo: 'novillo', novillos: 'novillo',
+  vaquillona: 'vaquillona', vaquillonas: 'vaquillona',
+  toro: 'toro', toros: 'toro',
+};
+
+/** Categoría canónica si el texto nombra animales, si no `undefined`. */
+export function detectarCategoriaAnimal(texto: string): string | undefined {
+  const t = texto.toLowerCase();
+  for (const palabra of Object.keys(CATEGORIAS_ANIMAL)) {
+    if (new RegExp(`\\b${palabra}\\b`).test(t)) return CATEGORIAS_ANIMAL[palabra];
+  }
+  return undefined;
+}
+
 export interface ParsedFields {
   producto?: string;
   cantidad?: number;

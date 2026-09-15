@@ -3,6 +3,7 @@
 import { config } from '../config.ts';
 import { puedeCrear } from '../permissions.ts';
 import type { Rol } from '../types.ts';
+import { detectarCategoriaAnimal } from '../types.ts';
 import type { Normalized } from './normalizer.ts';
 
 export interface Validation {
@@ -10,6 +11,9 @@ export interface Validation {
   needsConfirmation: boolean;  // ambiguo / baja confianza => preguntar
   denied: boolean;             // sin permiso por rol
   motivo: string;              // mensaje para el usuario
+  /** No ofrecer "¿lo registro igual?": confirmarlo guardaría el registro
+   *  equivocado. Hay que reformular el mensaje. */
+  reformular?: boolean;
 }
 
 function camposRequeridos(n: Normalized): string | null {
@@ -39,21 +43,46 @@ function camposRequeridos(n: Normalized): string | null {
   }
 }
 
+// Un registro cuyo PRODUCTO son animales tiene que ir a evento_hacienda. Si se
+// persiste como venta/insumo/gasto, `persistir()` inserta un movimiento y nunca
+// llama a insertEventoHacienda: la plata queda registrada y el stock no se
+// mueve. El error es silencioso —la planilla cuadra, los animales no— y el
+// prompt solo lo pide, no lo garantiza.
+//
+// Mira `producto` (lo que se transa) y no la descripción, para no disparar con
+// "compré 500 kg de ración para las vacas", que es un insumo legítimo.
+const TIPOS_CON_MERCADERIA = new Set(['venta', 'insumo', 'gasto']);
+
+function transaccionDeAnimales(n: Normalized): string | undefined {
+  if (!TIPOS_CON_MERCADERIA.has(n.recordType)) return undefined;
+  if (n.producto) return detectarCategoriaAnimal(n.producto);
+  return n.categoria ? detectarCategoriaAnimal(n.categoria) : undefined;
+}
+
 export function validate(n: Normalized, rol: Rol, confidence: number): Validation {
   // 1) Permiso por rol (guardrail).
   if (!puedeCrear(rol, n.recordType)) {
     return { ok: false, needsConfirmation: false, denied: true, motivo: `Tu rol (${rol}) no puede registrar ${n.recordType}.` };
   }
-  // 2) Lote mencionado pero no resuelto => ambiguo.
+  // 2) Animales tipados como movimiento => no se puede registrar así.
+  const animal = transaccionDeAnimales(n);
+  if (animal) {
+    return {
+      ok: false, needsConfirmation: true, denied: false, reformular: true,
+      motivo: `entendí "${n.recordType}" pero ${animal} es hacienda, y así el stock no se actualiza`,
+    };
+  }
+
+  // 3) Lote mencionado pero no resuelto => ambiguo.
   if (n.loteRef && !n.loteResuelto) {
     return { ok: false, needsConfirmation: true, denied: false, motivo: `no encontré el lote "${n.loteRef}"` };
   }
-  // 3) Campos requeridos.
+  // 4) Campos requeridos.
   const falta = camposRequeridos(n);
   if (falta) {
     return { ok: false, needsConfirmation: true, denied: false, motivo: falta };
   }
-  // 4) Confianza por debajo del umbral => confirmar antes de guardar.
+  // 5) Confianza por debajo del umbral => confirmar antes de guardar.
   if (confidence < config.confidenceThreshold) {
     return { ok: false, needsConfirmation: true, denied: false, motivo: 'no estoy seguro de haber entendido bien' };
   }

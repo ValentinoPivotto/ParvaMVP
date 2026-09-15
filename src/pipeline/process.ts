@@ -120,6 +120,14 @@ export async function processMessage(
       repo.updateRawMessage(rawId, 'create_record', norm.recordType, JSON.stringify(norm), parsed.confidence, 'discarded');
       return { reply: `🚫 ${val.motivo}`, intent: 'create_record', status: 'denied', confidence: parsed.confidence };
     }
+    if (val.reformular) {
+      // Guardarlo como pendiente sería peor: un "sí" lo persistiría mal.
+      repo.updateRawMessage(rawId, 'create_record', norm.recordType, JSON.stringify(norm), parsed.confidence, 'discarded');
+      return {
+        reply: `🤔 ${val.motivo}. Repetímelo diciendo qué pasó con los animales: compra, venta, nacimiento, muerte o traslado.`,
+        intent: 'create_record', status: 'needs_confirmation', confidence: parsed.confidence,
+      };
+    }
     if (val.needsConfirmation) {
       repo.updateRawMessage(rawId, 'create_record', norm.recordType, JSON.stringify(norm), parsed.confidence, 'pending');
       return {
