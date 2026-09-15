@@ -38,6 +38,9 @@ export interface ParsedQuery {
 
 // Salida del parser (mismo shape que daría GPT-4o mini con structured outputs).
 export interface ParsedIntent {
+  /** Motor que produjo este resultado. Un modelo que falla cae al mock en
+   *  silencio, así que sin esto no hay forma de saber qué lo parseó. */
+  motor?: 'mock' | 'bedrock' | 'openai' | 'local';
   intent: Intent;
   recordType: RecordType | null;
   fields: ParsedFields;

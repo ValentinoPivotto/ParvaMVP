@@ -5,6 +5,7 @@
     "espera.fields.fecha": "\"hoy\" | \"-1\" | \"-2\" | \"-7\" (días atrás) | \"*\" (presente, valor no verificable)",
     "espera.contiene": "campos de texto libre: basta con que incluyan el substring (case-insensitive)",
     "_regla": "ningún caso replica los ejemplos few-shot del prompt: todos miden generalización",
+    "espera.prohibe": "campos que NO deben venir: sin esto solo se mide recall de los slots elegidos, no corrección",
     "_nuevos": "insumo-decimal-girasol, venta-despache y venta-producto-implicito se agregaron después de ajustar el prompt: prueban las mismas tres reglas con otra redacción, para distinguir generalización de memorización"
   },
   "casos": [
@@ -101,7 +102,11 @@
         "fields": {
           "loteRef": "4",
           "fecha": "hoy"
-        }
+        },
+        "prohibe": [
+          "monto",
+          "cantidad"
+        ]
       }
     },
     {
@@ -114,7 +119,11 @@
         "fields": {
           "loteRef": "6",
           "fecha": "-2"
-        }
+        },
+        "prohibe": [
+          "monto",
+          "cantidad"
+        ]
       }
     },
     {
@@ -140,7 +149,11 @@
         "fields": {
           "loteRef": "3",
           "fecha": "hoy"
-        }
+        },
+        "prohibe": [
+          "monto",
+          "cantidad"
+        ]
       }
     },
     {
@@ -252,7 +265,10 @@
         },
         "contiene": {
           "producto": "soja"
-        }
+        },
+        "prohibe": [
+          "cantidad"
+        ]
       }
     },
     {
@@ -452,7 +468,10 @@
         },
         "contiene": {
           "producto": "parasit"
-        }
+        },
+        "prohibe": [
+          "cantidad"
+        ]
       }
     },
     {
@@ -499,7 +518,10 @@
         },
         "contiene": {
           "producto": "aftosa"
-        }
+        },
+        "prohibe": [
+          "cantidad"
+        ]
       }
     },
     {
@@ -512,7 +534,12 @@
         "query": {
           "metric": "stock_animal",
           "categoriaAnimal": "ternero"
-        }
+        },
+        "prohibe": [
+          "cantidad",
+          "monto",
+          "producto"
+        ]
       }
     },
     {
@@ -525,7 +552,12 @@
         "query": {
           "metric": "margen",
           "loteRef": "6"
-        }
+        },
+        "prohibe": [
+          "cantidad",
+          "monto",
+          "producto"
+        ]
       }
     },
     {
@@ -537,7 +569,12 @@
         "recordType": null,
         "query": {
           "metric": "gasto_total"
-        }
+        },
+        "prohibe": [
+          "cantidad",
+          "monto",
+          "producto"
+        ]
       }
     },
     {
@@ -549,7 +586,12 @@
         "recordType": null,
         "query": {
           "metric": "venta_total"
-        }
+        },
+        "prohibe": [
+          "cantidad",
+          "monto",
+          "producto"
+        ]
       }
     },
     {
@@ -561,7 +603,12 @@
         "recordType": null,
         "query": {
           "metric": "stock_animal"
-        }
+        },
+        "prohibe": [
+          "cantidad",
+          "monto",
+          "producto"
+        ]
       }
     },
     {
@@ -569,7 +616,12 @@
       "texto": "dale, confirmo",
       "nota": "confirmación",
       "espera": {
-        "intent": "confirm"
+        "intent": "confirm",
+        "prohibe": [
+          "cantidad",
+          "monto",
+          "producto"
+        ]
       }
     },
     {
@@ -577,7 +629,12 @@
       "texto": "buenas, cómo va?",
       "nota": "saludo: no es consulta ni registro",
       "espera": {
-        "intent": "unknown"
+        "intent": "unknown",
+        "prohibe": [
+          "cantidad",
+          "monto",
+          "producto"
+        ]
       }
     },
     {
@@ -627,7 +684,10 @@
         },
         "contiene": {
           "producto": "maiz"
-        }
+        },
+        "prohibe": [
+          "cantidad"
+        ]
       }
     }
   ]

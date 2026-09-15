@@ -84,7 +84,18 @@ En el arranque el log dice qué motor quedó activo:
 Parser activo: Bedrock · amazon.nova-lite-v1:0 (us-east-2, auto)
 ```
 
-Si dice `mock`, faltan las credenciales o venció la sesión.
+Ese log dice qué motor **se eligió**, no que funcione: solo comprueba que las
+variables de AWS no estén vacías. Con la sesión vencida las variables siguen
+cargadas, así que va a decir `Bedrock` igual y recién va a fallar al primer
+mensaje. La señal real es el warning por mensaje:
+
+```
+⚠️  parser: bedrock falló (bedrock 403: ...) — cae al mock
+```
+
+Si aparece eso, el bot sigue contestando con el mock (peor calidad, sin errores
+visibles para el productor) y hay que renovar la sesión. Si el log de arranque
+dice `mock`, directamente no había credenciales.
 
 ### Por qué Nova Lite y no Micro
 
@@ -110,6 +121,14 @@ npm run eval -- --strict          # exit 1 si algo falla
 
 No es un test unitario y no corre solo: los motores con modelo cuestan plata y
 no son determinísticos. Se corre a mano al tocar el prompt o cambiar de modelo.
+
+Al final informa el **motor real** por caso, no el elegido al arrancar: `parse()`
+cae al mock ante cualquier error, así que una corrida puede mezclar motores sin
+avisar y el número dejaría de ser atribuible a uno solo. Si eso pasa, lo dice.
+
+Los casos también declaran qué campos **no** deben venir. Sin eso solo se mide
+recall de los slots elegidos: un caso "sin cantidad" pasaría igual si el modelo
+la alucina.
 
 Medición al 2026-09-15, sobre los 43 casos:
 
