@@ -122,6 +122,14 @@ npm run eval -- --strict          # exit 1 si algo falla
 No es un test unitario y no corre solo: los motores con modelo cuestan plata y
 no son determinísticos. Se corre a mano al tocar el prompt o cambiar de modelo.
 
+Al final informa el **motor real** por caso, no el elegido al arrancar: `parse()`
+cae al mock ante cualquier error, así que una corrida puede mezclar motores sin
+avisar y el número dejaría de ser atribuible a uno solo. Si eso pasa, lo dice.
+
+Los casos también declaran qué campos **no** deben venir. Sin eso solo se mide
+recall de los slots elegidos: un caso "sin cantidad" pasaría igual si el modelo
+la alucina.
+
 Medición al 2026-09-15, sobre los 40 casos:
 
 | Motor | Correctos |
