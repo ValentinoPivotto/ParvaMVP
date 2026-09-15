@@ -57,3 +57,16 @@ test('el permiso por rol sigue teniendo prioridad sobre el guard', () => {
   const v = validate(normalizado({ recordType: 'venta', producto: 'novillo', monto: 100 }), 'gestor_campo', 0.95);
   assert.equal(v.denied, true, 'un rol sin permiso no debería recibir un consejo de reformulación');
 });
+
+test('no estalla si el modelo manda un producto que no es string', () => {
+  // `fields` sale de JSON.parse: el tipo es una promesa, no una garantía. Antes
+  // esto tiraba TypeError dentro de processMessage y el productor no recibía
+  // ninguna respuesta.
+  const v = validate(normalizado({ recordType: 'venta', producto: 25 as any, monto: 1000 }), 'owner', 0.95);
+  assert.equal(v.ok, true);
+});
+
+test('tampoco estalla con una categoría que no es string', () => {
+  const v = validate(normalizado({ recordType: 'insumo', producto: null as any, categoria: { x: 1 } as any, cantidad: 5 }), 'owner', 0.95);
+  assert.notEqual(v.reformular, true);
+});

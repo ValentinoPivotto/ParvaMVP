@@ -99,6 +99,18 @@ export async function processMessage(
       return { reply: 'No tengo nada pendiente para confirmar.', intent: 'confirm', status: 'unknown', confidence: parsed.confidence };
     }
     const norm = JSON.parse(pend.parsed_json) as Normalized;
+
+    // Revalidar antes de escribir. El pendiente pudo guardarse con una versión
+    // anterior del validator, y confirmar no debería saltear un guard. Solo
+    // frena lo que confirmar no arregla —reformular, o sin permiso—; el resto
+    // de los needsConfirmation es justamente lo que se está confirmando, así
+    // que va con confianza 1 para no volver a chocar contra el umbral.
+    const rev = validate(norm, sender.rol, 1);
+    if (rev.denied || rev.reformular) {
+      repo.setRawEstado(pend.id, 'discarded');
+      return { reply: `🚫 ${rev.motivo}.`, intent: 'confirm', status: 'denied', confidence: parsed.confidence };
+    }
+
     const reply = persistir(sender, norm);
     repo.setRawEstado(pend.id, 'confirmed');
     return { reply, intent: 'confirm', status: 'confirmed', confidence: parsed.confidence };

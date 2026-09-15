@@ -26,8 +26,14 @@ export const CATEGORIAS_ANIMAL: Record<string, string> = {
   toro: 'toro', toros: 'toro',
 };
 
-/** Categoría canónica si el texto nombra animales, si no `undefined`. */
-export function detectarCategoriaAnimal(texto: string): string | undefined {
+/** Categoría canónica si el texto nombra animales, si no `undefined`.
+ *
+ *  Acepta `unknown` a propósito: los `fields` llegan de `JSON.parse` de la
+ *  respuesta del modelo, donde el tipo es una promesa y no una garantía. Un
+ *  número en `producto` haría estallar `processMessage()` antes de contestarle
+ *  al productor. */
+export function detectarCategoriaAnimal(texto: unknown): string | undefined {
+  if (typeof texto !== 'string') return undefined;
   const t = texto.toLowerCase();
   for (const palabra of Object.keys(CATEGORIAS_ANIMAL)) {
     if (new RegExp(`\\b${palabra}\\b`).test(t)) return CATEGORIAS_ANIMAL[palabra];
