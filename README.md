@@ -84,7 +84,18 @@ En el arranque el log dice qué motor quedó activo:
 Parser activo: Bedrock · amazon.nova-lite-v1:0 (us-east-2, auto)
 ```
 
-Si dice `mock`, faltan las credenciales o venció la sesión.
+Ese log dice qué motor **se eligió**, no que funcione: solo comprueba que las
+variables de AWS no estén vacías. Con la sesión vencida las variables siguen
+cargadas, así que va a decir `Bedrock` igual y recién va a fallar al primer
+mensaje. La señal real es el warning por mensaje:
+
+```
+⚠️  parser: bedrock falló (bedrock 403: ...) — cae al mock
+```
+
+Si aparece eso, el bot sigue contestando con el mock (peor calidad, sin errores
+visibles para el productor) y hay que renovar la sesión. Si el log de arranque
+dice `mock`, directamente no había credenciales.
 
 ### Por qué Nova Lite y no Micro
 

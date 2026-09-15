@@ -4,6 +4,11 @@
 // todos con el mismo shape de salida.
 import { useRealAI, useBedrock, config } from '../config.ts';
 import { firmarAws } from '../services/sigv4.ts';
+
+// Un modelo colgado no puede dejar esperando al webhook: Meta reintenta y el
+// productor se queda sin respuesta. Cortamos y caemos al mock, que contesta
+// siempre. Mismo criterio que el timeout de whatsapp.ts.
+const TIMEOUT_MODELO_MS = 10_000;
 import type { ParsedIntent, ParsedFields, RecordType, EventoHaciendaTipo } from '../types.ts';
 
 const CATEGORIAS_ANIMAL: Record<string, string> = {
@@ -210,6 +215,7 @@ async function parseOpenAI(texto: string): Promise<ParsedIntent> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.openaiApiKey}` },
     body: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0, response_format: { type: 'json_object' }, messages: construirMensajes(texto) }),
+    signal: AbortSignal.timeout(TIMEOUT_MODELO_MS),
   });
   if (!res.ok) throw new Error('openai ' + res.status);
   const json = (await res.json()) as any;
@@ -223,6 +229,7 @@ async function parseLocal(texto: string): Promise<ParsedIntent> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: config.localModel, stream: false, format: 'json', options: { temperature: 0 }, messages: construirMensajes(texto) }),
+    signal: AbortSignal.timeout(TIMEOUT_MODELO_MS),
   });
   if (!res.ok) throw new Error('ollama ' + res.status);
   const json = (await res.json()) as any;
@@ -258,7 +265,10 @@ async function parseBedrock(texto: string): Promise<ParsedIntent> {
     },
   });
 
-  const res = await fetch(req.url, { method: 'POST', headers: req.headers, body: req.body });
+  const res = await fetch(req.url, {
+    method: 'POST', headers: req.headers, body: req.body,
+    signal: AbortSignal.timeout(TIMEOUT_MODELO_MS),
+  });
   if (!res.ok) throw new Error(`bedrock ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const json = (await res.json()) as any;
   return normalizarSalida(JSON.parse(recortarJson(json?.output?.message?.content?.[0]?.text ?? '')), texto);
@@ -300,11 +310,15 @@ export async function parse(texto: string): Promise<ParsedIntent> {
   const mode = config.parserMode;
   const motor = mode === 'auto' ? await motorAuto() : mode === 'mock' ? null : mode;
   try {
-    if (motor === 'bedrock') return await parseBedrock(texto);
-    if (motor === 'openai') return await parseOpenAI(texto);
-    if (motor === 'local') return await parseLocal(texto);
-  } catch { /* fallback */ }
-  return parseMock(texto);
+    if (motor === 'bedrock') return { ...(await parseBedrock(texto)), motor: 'bedrock' };
+    if (motor === 'openai') return { ...(await parseOpenAI(texto)), motor: 'openai' };
+    if (motor === 'local') return { ...(await parseLocal(texto)), motor: 'local' };
+  } catch (e) {
+    // Caer al mock sin decir nada deja al bot parseando con reglas y a nadie
+    // enterado: la calidad baja y el log se ve igual que siempre.
+    console.warn(`⚠️  parser: ${motor} falló (${e instanceof Error ? e.message : e}) — cae al mock`);
+  }
+  return { ...parseMock(texto), motor: 'mock' };
 }
 
 // Describe qué motor quedará activo (para el log de arranque).
