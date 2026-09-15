@@ -108,7 +108,7 @@ Micro y Pro exigen perfil de inferencia entre regiones, esos perfiles rutean a
 
 ## Eval del parser
 
-`eval/casos.json` tiene 40 mensajes anotados con lo que el parser debería sacar
+`eval/casos.json` tiene 43 mensajes anotados con lo que el parser debería sacar
 de cada uno. Ninguno replica los ejemplos few-shot del prompt: todos miden
 generalización, no memoria.
 
@@ -135,7 +135,7 @@ Medición al 2026-09-15, sobre los 43 casos:
 | Motor | Correctos |
 | :---- | ----: |
 | mock (reglas) | 19/43 (44 %) |
-| Nova Lite | 41/43 (95 %), igual en dos corridas |
+| Nova Lite | 40/43 y 39/43 en dos corridas |
 
 **Una sola corrida no alcanza para concluir nada.** Dos corridas idénticas
 pueden dar el mismo total fallando casos distintos. Antes de atribuirle una
@@ -148,8 +148,14 @@ Fallas estables conocidas:
   listándole los verbos de labor en el prompt, pero eso sería parchear el único
   caso de su tipo que el eval marca: queda como señal a propósito.
 - `venta-maiz-ayer` ("entregué 25 tn de maíz"). La regla de dirección de la
-  plata funciona en general —`"despaché 10 tn de cebada"` pasa siempre— pero
-  "entregué" lo sigue leyendo como mercadería que entra.
+  plata funciona en general —`"despaché 10 tn de cebada"` pasa, y ese verbo no
+  figura en el prompt— pero "entregué" lo sigue leyendo como mercadería que
+  entra.
+
+Declarar la precedencia entre SANIDAD, ANIMALES y DIRECCIÓN DE LA PLATA costó
+uno o dos casos (antes daba 41/43 estable). Se mantiene igual: un prompt con dos
+reglas que se contradicen funciona hasta que deja de funcionar, y cuando falla lo
+hace en silencio.
 
 ## WhatsApp real (Meta Cloud API)
 

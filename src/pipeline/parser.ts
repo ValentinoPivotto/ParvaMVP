@@ -166,10 +166,11 @@ Reglas: preguntas => intent "query".
 LOTE: si el mensaje nombra un lote, completá siempre "loteRef" con su número, sea cual sea el recordType. "lote 4" => loteRef "4".
 NÚMEROS: la coma SIEMPRE es decimal, nunca separa miles. "3,5" es 3.5 y NO 3500. El punto sí separa miles: "1.800" es 1800; "4.250.000" es 4250000. Nunca conviertas un decimal en un entero.
 CANTIDADES EN PALABRAS: contá también las escritas con letras. "un"/"una" es 1, "dos" es 2, "cuatro" es 4.
-DIRECCIÓN DE LA PLATA: entre "venta" e "insumo" no decide el verbo sino hacia dónde va la plata. Si sale mercadería del campo y entra plata ("por $X", "a $X") => "venta", sea cual sea el verbo (vendí, entregué, despaché, mandé). Si el productor paga para recibir mercadería => "insumo".
-PRODUCTO: en "venta" e "insumo" completá siempre "producto" con la mercadería, aunque la cantidad quede implícita.
-ANIMALES: solo si el mensaje nombra animales (terneros, vacas, novillos, vaquillonas, toros) el recordType es "evento_hacienda" con su "eventoTipo", también cuando se compran o se venden. Nunca "venta" ni "gasto": si no es evento_hacienda, el stock no se descuenta.
-SANIDAD (vacunas, dosis, antiparasitarios como ivermectina, tratamientos) => "evento_sanitario", nunca "labor".
+PRODUCTO: en "venta", "insumo" y "evento_sanitario" completá siempre "producto" —la mercadería, o el producto aplicado— aunque la cantidad quede implícita.
+Las tres reglas que siguen pueden aplicar al mismo mensaje. Cuando chocan, gana la que aparece PRIMERO.
+1) SANIDAD (vacunas, dosis, antiparasitarios como ivermectina, tratamientos) => "evento_sanitario". Vale aunque el mensaje nombre animales y aunque el verbo parezca una labor.
+2) ANIMALES: si el mensaje nombra animales (terneros, vacas, novillos, vaquillonas, toros) y no es sanidad, el recordType es "evento_hacienda" con su "eventoTipo", también cuando se compran o se venden. Nunca "venta", "insumo" ni "gasto": si no es evento_hacienda, el stock no se descuenta.
+3) DIRECCIÓN DE LA PLATA: para mercadería que no son animales, entre "venta" e "insumo" no decide el verbo sino hacia dónde va la plata. Si sale mercadería del campo y entra plata ("por $X", "a $X") => "venta". Si el productor paga para recibir mercadería => "insumo".
 FECHAS: devolvé siempre "fecha" en YYYY-MM-DD. "ayer" es el día anterior a ${hoy}; "anteayer", dos días antes. Si el mensaje no menciona ninguna fecha, usá ${hoy}.
 Respondé SOLO el JSON, sin texto extra.`;
 }
