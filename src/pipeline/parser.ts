@@ -157,8 +157,13 @@ function instrucciones(hoy: string): string {
  "query": { "metric": "stock_animal"|"margen"|"gasto_total"|"venta_total", "loteRef"?, "categoriaAnimal"? } | null,
  "confidence": number 0..1
 }
-Reglas: montos como número sin separador de miles. "lote 4" => loteRef "4". Preguntas => intent "query".
-ANIMALES (terneros, vacas, novillos, vaquillonas, toros): recordType SIEMPRE "evento_hacienda" con su "eventoTipo", también cuando se compran o se venden. Nunca "venta" ni "gasto": si no es evento_hacienda, el stock no se descuenta.
+Reglas: preguntas => intent "query".
+LOTE: si el mensaje nombra un lote, completá siempre "loteRef" con su número, sea cual sea el recordType. "lote 4" => loteRef "4".
+NÚMEROS: la coma SIEMPRE es decimal, nunca separa miles. "3,5" es 3.5 y NO 3500. El punto sí separa miles: "1.800" es 1800; "4.250.000" es 4250000. Nunca conviertas un decimal en un entero.
+CANTIDADES EN PALABRAS: contá también las escritas con letras. "un"/"una" es 1, "dos" es 2, "cuatro" es 4.
+DIRECCIÓN DE LA PLATA: entre "venta" e "insumo" no decide el verbo sino hacia dónde va la plata. Si sale mercadería del campo y entra plata ("por $X", "a $X") => "venta", sea cual sea el verbo (vendí, entregué, despaché, mandé). Si el productor paga para recibir mercadería => "insumo".
+PRODUCTO: en "venta" e "insumo" completá siempre "producto" con la mercadería, aunque la cantidad quede implícita.
+ANIMALES: solo si el mensaje nombra animales (terneros, vacas, novillos, vaquillonas, toros) el recordType es "evento_hacienda" con su "eventoTipo", también cuando se compran o se venden. Nunca "venta" ni "gasto": si no es evento_hacienda, el stock no se descuenta.
 SANIDAD (vacunas, dosis, antiparasitarios como ivermectina, tratamientos) => "evento_sanitario", nunca "labor".
 FECHAS: devolvé siempre "fecha" en YYYY-MM-DD. "ayer" es el día anterior a ${hoy}; "anteayer", dos días antes. Si el mensaje no menciona ninguna fecha, usá ${hoy}.
 Respondé SOLO el JSON, sin texto extra.`;
@@ -169,6 +174,7 @@ Respondé SOLO el JSON, sin texto extra.`;
 function ejemplos(hoy: string, ayer: string): { u: string; a: Record<string, unknown> }[] {
   return [
     { u: 'Compré 200 litros de gasoil para el lote 4', a: { intent: 'create_record', recordType: 'insumo', fields: { producto: 'gasoil', cantidad: 200, unidad: 'L', loteRef: '4', fecha: hoy }, query: null, confidence: 0.95 } },
+    { u: 'compré 3,2 tn de balanceado', a: { intent: 'create_record', recordType: 'insumo', fields: { producto: 'balanceado', cantidad: 3.2, unidad: 'tn', fecha: hoy }, query: null, confidence: 0.95 } },
     { u: 'Nacieron 8 terneros', a: { intent: 'create_record', recordType: 'evento_hacienda', fields: { categoriaAnimal: 'ternero', eventoTipo: 'nacimiento', cantidad: 8, fecha: hoy }, query: null, confidence: 0.95 } },
     { u: 'ayer vendí 30 novillos a 1.200.000 en total', a: { intent: 'create_record', recordType: 'evento_hacienda', fields: { categoriaAnimal: 'novillo', eventoTipo: 'venta', cantidad: 30, monto: 1200000, fecha: ayer }, query: null, confidence: 0.95 } },
     { u: 'le di 3 dosis de ivermectina a las vacas del lote 2', a: { intent: 'create_record', recordType: 'evento_sanitario', fields: { producto: 'ivermectina', categoriaAnimal: 'vaca', cantidad: 3, loteRef: '2', fecha: hoy }, query: null, confidence: 0.9 } },

@@ -111,16 +111,22 @@ npm run eval -- --strict          # exit 1 si algo falla
 No es un test unitario y no corre solo: los motores con modelo cuestan plata y
 no son determinísticos. Se corre a mano al tocar el prompt o cambiar de modelo.
 
-Medición al 2026-09-15, sobre los 40 casos:
+Medición al 2026-09-15, sobre los 43 casos:
 
 | Motor | Correctos |
 | :---- | ----: |
-| mock (reglas) | 19/40 (48 %) |
-| Nova Lite | 35/40 (88 %) |
+| mock (reglas) | 19/43 (44 %) |
+| Nova Lite | 40/43 y 42/43 en dos corridas |
 
-Dos corridas seguidas de Nova Lite dieron 35/40 las dos veces, pero **fallando
-casos distintos**. El número agregado es estable; cuál caso falla, no. Conviene
-leer cualquier diferencia de una corrida contra otra con esa varianza en mente.
+**Una sola corrida no alcanza para concluir nada.** Dos corridas idénticas de
+Nova Lite pueden dar el mismo total fallando casos distintos, y acá el rango
+entre corridas fue de dos casos. Antes de atribuirle una diferencia a un cambio
+de prompt, correlo al menos dos veces.
+
+Falla estable conocida: `labor-rastra` ("rastreé el lote 3"). En español general
+"rastrear" es seguir un rastro, y el sentido agronómico (pasar la rastra) no le
+sale. Se arregla listándole los verbos de labor en el prompt, pero eso sería
+parchear el único caso que el eval todavía marca: queda como señal a propósito.
 
 ## WhatsApp real (Meta Cloud API)
 

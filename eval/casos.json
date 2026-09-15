@@ -4,95 +4,631 @@
     "nota": "qué pone a prueba este caso",
     "espera.fields.fecha": "\"hoy\" | \"-1\" | \"-2\" | \"-7\" (días atrás) | \"*\" (presente, valor no verificable)",
     "espera.contiene": "campos de texto libre: basta con que incluyan el substring (case-insensitive)",
-    "_regla": "ningún caso replica los ejemplos few-shot del prompt: todos miden generalización"
+    "_regla": "ningún caso replica los ejemplos few-shot del prompt: todos miden generalización",
+    "_nuevos": "insumo-decimal-girasol, venta-despache y venta-producto-implicito se agregaron después de ajustar el prompt: prueban las mismas tres reglas con otra redacción, para distinguir generalización de memorización"
   },
   "casos": [
-    { "id": "insumo-urea-lote", "texto": "Compré 300 kg de urea para el lote 2", "nota": "insumo completo con unidad y lote",
-      "espera": { "intent": "create_record", "recordType": "insumo", "fields": { "cantidad": 300, "loteRef": "2", "fecha": "hoy" }, "contiene": { "producto": "urea" } } },
-    { "id": "insumo-gasoil-sin-lote", "texto": "cargué 150 litros de gasoil", "nota": "verbo alternativo (cargué), sin lote",
-      "espera": { "intent": "create_record", "recordType": "insumo", "fields": { "cantidad": 150, "fecha": "hoy" }, "contiene": { "producto": "gasoil" } } },
-    { "id": "insumo-semilla-ayer", "texto": "compré 20 bolsas de semilla de maíz ayer", "nota": "fecha relativa al final",
-      "espera": { "intent": "create_record", "recordType": "insumo", "fields": { "cantidad": 20, "fecha": "-1" }, "contiene": { "producto": "maiz" } } },
-    { "id": "insumo-glifosato", "texto": "traje 5 tambores de glifosato para el lote 9", "nota": "unidad no canónica (tambores)",
-      "espera": { "intent": "create_record", "recordType": "insumo", "fields": { "cantidad": 5, "loteRef": "9", "fecha": "hoy" }, "contiene": { "producto": "glifosato" } } },
-    { "id": "insumo-decimal", "texto": "compré 2,5 tn de fertilizante a 900 mil", "nota": "decimal con coma + monto coloquial",
-      "espera": { "intent": "create_record", "recordType": "insumo", "fields": { "cantidad": 2.5, "monto": 900000, "fecha": "hoy" }, "contiene": { "producto": "fertilizante" } } },
-
-    { "id": "labor-siembra", "texto": "sembré el lote 4 de soja", "nota": "labor simple",
-      "espera": { "intent": "create_record", "recordType": "labor", "fields": { "loteRef": "4", "fecha": "hoy" } } },
-    { "id": "labor-pulverizacion-anteayer", "texto": "pulvericé el lote 6 anteayer", "nota": "anteayer = hoy menos 2",
-      "espera": { "intent": "create_record", "recordType": "labor", "fields": { "loteRef": "6", "fecha": "-2" } } },
-    { "id": "labor-cosecha-semana", "texto": "cosechamos el lote 1 la semana pasada", "nota": "fecha vaga: solo se exige que devuelva alguna",
-      "espera": { "intent": "create_record", "recordType": "labor", "fields": { "loteRef": "1", "fecha": "*" } } },
-    { "id": "labor-rastra", "texto": "rastreé el lote 3", "nota": "verbo de labor poco frecuente",
-      "espera": { "intent": "create_record", "recordType": "labor", "fields": { "loteRef": "3", "fecha": "hoy" } } },
-    { "id": "labor-superficie", "texto": "fumigué 80 hectáreas del lote 5", "nota": "superficie no debe confundirse con cantidad de insumo",
-      "espera": { "intent": "create_record", "recordType": "labor", "fields": { "loteRef": "5", "fecha": "hoy" } } },
-
-    { "id": "gasto-flete", "texto": "pagué 120 mil de flete", "nota": "monto coloquial sin signo",
-      "espera": { "intent": "create_record", "recordType": "gasto", "fields": { "monto": 120000, "fecha": "hoy" } } },
-    { "id": "gasto-repuestos-ayer", "texto": "gasté $45.000 en repuestos ayer", "nota": "miles con punto + signo",
-      "espera": { "intent": "create_record", "recordType": "gasto", "fields": { "monto": 45000, "fecha": "-1" } } },
-    { "id": "gasto-millones", "texto": "aboné 2 millones al contratista", "nota": "millones en palabras",
-      "espera": { "intent": "create_record", "recordType": "gasto", "fields": { "monto": 2000000, "fecha": "hoy" } } },
-    { "id": "gasto-alquiler", "texto": "pagué el alquiler del campo, 3.500.000", "nota": "monto separado por coma de la descripción",
-      "espera": { "intent": "create_record", "recordType": "gasto", "fields": { "monto": 3500000, "fecha": "hoy" } } },
-    { "id": "gasto-combustible-anteayer", "texto": "gasté 78 mil en combustible anteayer", "nota": "monto coloquial + anteayer",
-      "espera": { "intent": "create_record", "recordType": "gasto", "fields": { "monto": 78000, "fecha": "-2" } } },
-
-    { "id": "venta-trigo", "texto": "vendí 40 tn de trigo a 12 millones", "nota": "venta de grano: NO es evento_hacienda",
-      "espera": { "intent": "create_record", "recordType": "venta", "fields": { "cantidad": 40, "monto": 12000000, "fecha": "hoy" }, "contiene": { "producto": "trigo" } } },
-    { "id": "venta-soja-lote", "texto": "vendí la soja del lote 8 en 4.200.000", "nota": "venta sin cantidad explícita",
-      "espera": { "intent": "create_record", "recordType": "venta", "fields": { "monto": 4200000, "loteRef": "8", "fecha": "hoy" }, "contiene": { "producto": "soja" } } },
-    { "id": "venta-maiz-ayer", "texto": "entregué 25 tn de maíz por 6 millones ayer", "nota": "verbo entregué en vez de vendí",
-      "espera": { "intent": "create_record", "recordType": "venta", "fields": { "cantidad": 25, "monto": 6000000, "fecha": "-1" } } },
-    { "id": "venta-girasol", "texto": "vendí 500 kg de girasol a 300 mil", "nota": "kg + monto coloquial",
-      "espera": { "intent": "create_record", "recordType": "venta", "fields": { "cantidad": 500, "monto": 300000, "fecha": "hoy" }, "contiene": { "producto": "girasol" } } },
-    { "id": "venta-millon-y-medio", "texto": "vendí grano del lote 2 por un millón y medio", "nota": "\"un millón y medio\" = 1500000",
-      "espera": { "intent": "create_record", "recordType": "venta", "fields": { "monto": 1500000, "loteRef": "2", "fecha": "hoy" } } },
-
-    { "id": "hacienda-nacimiento-anteayer", "texto": "nacieron 12 terneros anteayer", "nota": "nacimiento + anteayer",
-      "espera": { "intent": "create_record", "recordType": "evento_hacienda", "fields": { "categoriaAnimal": "ternero", "eventoTipo": "nacimiento", "cantidad": 12, "fecha": "-2" } } },
-    { "id": "hacienda-compra-vaquillonas", "texto": "compré 25 vaquillonas a 9 millones", "nota": "compra de animales: no es insumo ni gasto",
-      "espera": { "intent": "create_record", "recordType": "evento_hacienda", "fields": { "categoriaAnimal": "vaquillona", "eventoTipo": "compra", "cantidad": 25, "monto": 9000000, "fecha": "hoy" } } },
-    { "id": "hacienda-venta-toros", "texto": "vendí 18 toros la semana pasada", "nota": "venta de animales: evento_hacienda, no venta",
-      "espera": { "intent": "create_record", "recordType": "evento_hacienda", "fields": { "categoriaAnimal": "toro", "eventoTipo": "venta", "cantidad": 18, "fecha": "*" } } },
-    { "id": "hacienda-muerte-palabras", "texto": "se murieron cuatro vacas", "nota": "cantidad en palabras: el mock solo lee dígitos",
-      "espera": { "intent": "create_record", "recordType": "evento_hacienda", "fields": { "categoriaAnimal": "vaca", "eventoTipo": "muerte", "cantidad": 4, "fecha": "hoy" } } },
-    { "id": "hacienda-traslado", "texto": "pasé 60 novillos al lote 5", "nota": "traslado + lote destino",
-      "espera": { "intent": "create_record", "recordType": "evento_hacienda", "fields": { "categoriaAnimal": "novillo", "eventoTipo": "traslado", "cantidad": 60, "loteRef": "5", "fecha": "hoy" } } },
-    { "id": "hacienda-singular", "texto": "nació un ternero", "nota": "\"un\" como cantidad = 1",
-      "espera": { "intent": "create_record", "recordType": "evento_hacienda", "fields": { "categoriaAnimal": "ternero", "eventoTipo": "nacimiento", "cantidad": 1, "fecha": "hoy" } } },
-    { "id": "hacienda-cabezas", "texto": "compré 200 cabezas de novillo ayer a 80 millones", "nota": "\"cabezas de\" + monto grande",
-      "espera": { "intent": "create_record", "recordType": "evento_hacienda", "fields": { "categoriaAnimal": "novillo", "eventoTipo": "compra", "cantidad": 200, "monto": 80000000, "fecha": "-1" } } },
-    { "id": "hacienda-muerte-causa", "texto": "murieron 2 terneros por el frío anoche", "nota": "causa en el medio no debe romper la extracción",
-      "espera": { "intent": "create_record", "recordType": "evento_hacienda", "fields": { "categoriaAnimal": "ternero", "eventoTipo": "muerte", "cantidad": 2, "fecha": "*" } } },
-
-    { "id": "sanidad-brucelosis", "texto": "vacuné 120 vacas contra brucelosis", "nota": "trampa: hay animales, pero manda sanidad",
-      "espera": { "intent": "create_record", "recordType": "evento_sanitario", "fields": { "cantidad": 120, "fecha": "hoy" }, "contiene": { "producto": "brucelosis" } } },
-    { "id": "sanidad-desparasitar-ayer", "texto": "desparasité los terneros del lote 3 ayer", "nota": "sanidad sin cantidad + lote + ayer",
-      "espera": { "intent": "create_record", "recordType": "evento_sanitario", "fields": { "loteRef": "3", "fecha": "-1" }, "contiene": { "producto": "parasit" } } },
-    { "id": "sanidad-dosis", "texto": "apliqué 2 dosis de ivermectina a los novillos", "nota": "dosis no debe leerse como labor",
-      "espera": { "intent": "create_record", "recordType": "evento_sanitario", "fields": { "cantidad": 2, "fecha": "hoy" }, "contiene": { "producto": "ivermectina" } } },
-    { "id": "sanidad-tratamiento", "texto": "tratamiento antiparasitario a 50 vaquillonas", "nota": "frase sin verbo conjugado",
-      "espera": { "intent": "create_record", "recordType": "evento_sanitario", "fields": { "cantidad": 50, "fecha": "hoy" }, "contiene": { "producto": "parasit" } } },
-    { "id": "sanidad-aftosa-toda", "texto": "vacuné contra aftosa toda la hacienda anteayer", "nota": "sin cantidad numerable",
-      "espera": { "intent": "create_record", "recordType": "evento_sanitario", "fields": { "fecha": "-2" }, "contiene": { "producto": "aftosa" } } },
-
-    { "id": "query-stock-ternero", "texto": "¿cuántos terneros tengo?", "nota": "consulta de stock por categoría",
-      "espera": { "intent": "query", "recordType": null, "query": { "metric": "stock_animal", "categoriaAnimal": "ternero" } } },
-    { "id": "query-margen-lote", "texto": "decime el margen del lote 6", "nota": "consulta sin signo de pregunta",
-      "espera": { "intent": "query", "recordType": null, "query": { "metric": "margen", "loteRef": "6" } } },
-    { "id": "query-gasto", "texto": "cuánto gasté este mes?", "nota": "gasto_total",
-      "espera": { "intent": "query", "recordType": null, "query": { "metric": "gasto_total" } } },
-    { "id": "query-venta", "texto": "cuánto vendí hasta ahora", "nota": "venta_total: \"vendí\" no debe crear un registro",
-      "espera": { "intent": "query", "recordType": null, "query": { "metric": "venta_total" } } },
-    { "id": "query-hacienda-total", "texto": "qué stock de hacienda tengo", "nota": "stock sin categoría",
-      "espera": { "intent": "query", "recordType": null, "query": { "metric": "stock_animal" } } },
-
-    { "id": "confirm-dale", "texto": "dale, confirmo", "nota": "confirmación",
-      "espera": { "intent": "confirm" } },
-    { "id": "unknown-saludo", "texto": "buenas, cómo va?", "nota": "saludo: no es consulta ni registro",
-      "espera": { "intent": "unknown" } }
+    {
+      "id": "insumo-urea-lote",
+      "texto": "Compré 300 kg de urea para el lote 2",
+      "nota": "insumo completo con unidad y lote",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "insumo",
+        "fields": {
+          "cantidad": 300,
+          "loteRef": "2",
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "urea"
+        }
+      }
+    },
+    {
+      "id": "insumo-gasoil-sin-lote",
+      "texto": "cargué 150 litros de gasoil",
+      "nota": "verbo alternativo (cargué), sin lote",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "insumo",
+        "fields": {
+          "cantidad": 150,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "gasoil"
+        }
+      }
+    },
+    {
+      "id": "insumo-semilla-ayer",
+      "texto": "compré 20 bolsas de semilla de maíz ayer",
+      "nota": "fecha relativa al final",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "insumo",
+        "fields": {
+          "cantidad": 20,
+          "fecha": "-1"
+        },
+        "contiene": {
+          "producto": "maiz"
+        }
+      }
+    },
+    {
+      "id": "insumo-glifosato",
+      "texto": "traje 5 tambores de glifosato para el lote 9",
+      "nota": "unidad no canónica (tambores)",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "insumo",
+        "fields": {
+          "cantidad": 5,
+          "loteRef": "9",
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "glifosato"
+        }
+      }
+    },
+    {
+      "id": "insumo-decimal",
+      "texto": "compré 2,5 tn de fertilizante a 900 mil",
+      "nota": "decimal con coma + monto coloquial",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "insumo",
+        "fields": {
+          "cantidad": 2.5,
+          "monto": 900000,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "fertilizante"
+        }
+      }
+    },
+    {
+      "id": "labor-siembra",
+      "texto": "sembré el lote 4 de soja",
+      "nota": "labor simple",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "labor",
+        "fields": {
+          "loteRef": "4",
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "labor-pulverizacion-anteayer",
+      "texto": "pulvericé el lote 6 anteayer",
+      "nota": "anteayer = hoy menos 2",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "labor",
+        "fields": {
+          "loteRef": "6",
+          "fecha": "-2"
+        }
+      }
+    },
+    {
+      "id": "labor-cosecha-semana",
+      "texto": "cosechamos el lote 1 la semana pasada",
+      "nota": "fecha vaga: solo se exige que devuelva alguna",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "labor",
+        "fields": {
+          "loteRef": "1",
+          "fecha": "*"
+        }
+      }
+    },
+    {
+      "id": "labor-rastra",
+      "texto": "rastreé el lote 3",
+      "nota": "verbo de labor poco frecuente",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "labor",
+        "fields": {
+          "loteRef": "3",
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "labor-superficie",
+      "texto": "fumigué 80 hectáreas del lote 5",
+      "nota": "superficie no debe confundirse con cantidad de insumo",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "labor",
+        "fields": {
+          "loteRef": "5",
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "gasto-flete",
+      "texto": "pagué 120 mil de flete",
+      "nota": "monto coloquial sin signo",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "gasto",
+        "fields": {
+          "monto": 120000,
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "gasto-repuestos-ayer",
+      "texto": "gasté $45.000 en repuestos ayer",
+      "nota": "miles con punto + signo",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "gasto",
+        "fields": {
+          "monto": 45000,
+          "fecha": "-1"
+        }
+      }
+    },
+    {
+      "id": "gasto-millones",
+      "texto": "aboné 2 millones al contratista",
+      "nota": "millones en palabras",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "gasto",
+        "fields": {
+          "monto": 2000000,
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "gasto-alquiler",
+      "texto": "pagué el alquiler del campo, 3.500.000",
+      "nota": "monto separado por coma de la descripción",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "gasto",
+        "fields": {
+          "monto": 3500000,
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "gasto-combustible-anteayer",
+      "texto": "gasté 78 mil en combustible anteayer",
+      "nota": "monto coloquial + anteayer",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "gasto",
+        "fields": {
+          "monto": 78000,
+          "fecha": "-2"
+        }
+      }
+    },
+    {
+      "id": "venta-trigo",
+      "texto": "vendí 40 tn de trigo a 12 millones",
+      "nota": "venta de grano: NO es evento_hacienda",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "venta",
+        "fields": {
+          "cantidad": 40,
+          "monto": 12000000,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "trigo"
+        }
+      }
+    },
+    {
+      "id": "venta-soja-lote",
+      "texto": "vendí la soja del lote 8 en 4.200.000",
+      "nota": "venta sin cantidad explícita",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "venta",
+        "fields": {
+          "monto": 4200000,
+          "loteRef": "8",
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "soja"
+        }
+      }
+    },
+    {
+      "id": "venta-maiz-ayer",
+      "texto": "entregué 25 tn de maíz por 6 millones ayer",
+      "nota": "verbo entregué en vez de vendí",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "venta",
+        "fields": {
+          "cantidad": 25,
+          "monto": 6000000,
+          "fecha": "-1"
+        }
+      }
+    },
+    {
+      "id": "venta-girasol",
+      "texto": "vendí 500 kg de girasol a 300 mil",
+      "nota": "kg + monto coloquial",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "venta",
+        "fields": {
+          "cantidad": 500,
+          "monto": 300000,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "girasol"
+        }
+      }
+    },
+    {
+      "id": "venta-millon-y-medio",
+      "texto": "vendí grano del lote 2 por un millón y medio",
+      "nota": "\"un millón y medio\" = 1500000",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "venta",
+        "fields": {
+          "monto": 1500000,
+          "loteRef": "2",
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "hacienda-nacimiento-anteayer",
+      "texto": "nacieron 12 terneros anteayer",
+      "nota": "nacimiento + anteayer",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_hacienda",
+        "fields": {
+          "categoriaAnimal": "ternero",
+          "eventoTipo": "nacimiento",
+          "cantidad": 12,
+          "fecha": "-2"
+        }
+      }
+    },
+    {
+      "id": "hacienda-compra-vaquillonas",
+      "texto": "compré 25 vaquillonas a 9 millones",
+      "nota": "compra de animales: no es insumo ni gasto",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_hacienda",
+        "fields": {
+          "categoriaAnimal": "vaquillona",
+          "eventoTipo": "compra",
+          "cantidad": 25,
+          "monto": 9000000,
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "hacienda-venta-toros",
+      "texto": "vendí 18 toros la semana pasada",
+      "nota": "venta de animales: evento_hacienda, no venta",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_hacienda",
+        "fields": {
+          "categoriaAnimal": "toro",
+          "eventoTipo": "venta",
+          "cantidad": 18,
+          "fecha": "*"
+        }
+      }
+    },
+    {
+      "id": "hacienda-muerte-palabras",
+      "texto": "se murieron cuatro vacas",
+      "nota": "cantidad en palabras: el mock solo lee dígitos",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_hacienda",
+        "fields": {
+          "categoriaAnimal": "vaca",
+          "eventoTipo": "muerte",
+          "cantidad": 4,
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "hacienda-traslado",
+      "texto": "pasé 60 novillos al lote 5",
+      "nota": "traslado + lote destino",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_hacienda",
+        "fields": {
+          "categoriaAnimal": "novillo",
+          "eventoTipo": "traslado",
+          "cantidad": 60,
+          "loteRef": "5",
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "hacienda-singular",
+      "texto": "nació un ternero",
+      "nota": "\"un\" como cantidad = 1",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_hacienda",
+        "fields": {
+          "categoriaAnimal": "ternero",
+          "eventoTipo": "nacimiento",
+          "cantidad": 1,
+          "fecha": "hoy"
+        }
+      }
+    },
+    {
+      "id": "hacienda-cabezas",
+      "texto": "compré 200 cabezas de novillo ayer a 80 millones",
+      "nota": "\"cabezas de\" + monto grande",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_hacienda",
+        "fields": {
+          "categoriaAnimal": "novillo",
+          "eventoTipo": "compra",
+          "cantidad": 200,
+          "monto": 80000000,
+          "fecha": "-1"
+        }
+      }
+    },
+    {
+      "id": "hacienda-muerte-causa",
+      "texto": "murieron 2 terneros por el frío anoche",
+      "nota": "causa en el medio no debe romper la extracción",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_hacienda",
+        "fields": {
+          "categoriaAnimal": "ternero",
+          "eventoTipo": "muerte",
+          "cantidad": 2,
+          "fecha": "*"
+        }
+      }
+    },
+    {
+      "id": "sanidad-brucelosis",
+      "texto": "vacuné 120 vacas contra brucelosis",
+      "nota": "trampa: hay animales, pero manda sanidad",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_sanitario",
+        "fields": {
+          "cantidad": 120,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "brucelosis"
+        }
+      }
+    },
+    {
+      "id": "sanidad-desparasitar-ayer",
+      "texto": "desparasité los terneros del lote 3 ayer",
+      "nota": "sanidad sin cantidad + lote + ayer",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_sanitario",
+        "fields": {
+          "loteRef": "3",
+          "fecha": "-1"
+        },
+        "contiene": {
+          "producto": "parasit"
+        }
+      }
+    },
+    {
+      "id": "sanidad-dosis",
+      "texto": "apliqué 2 dosis de ivermectina a los novillos",
+      "nota": "dosis no debe leerse como labor",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_sanitario",
+        "fields": {
+          "cantidad": 2,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "ivermectina"
+        }
+      }
+    },
+    {
+      "id": "sanidad-tratamiento",
+      "texto": "tratamiento antiparasitario a 50 vaquillonas",
+      "nota": "frase sin verbo conjugado",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_sanitario",
+        "fields": {
+          "cantidad": 50,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "parasit"
+        }
+      }
+    },
+    {
+      "id": "sanidad-aftosa-toda",
+      "texto": "vacuné contra aftosa toda la hacienda anteayer",
+      "nota": "sin cantidad numerable",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "evento_sanitario",
+        "fields": {
+          "fecha": "-2"
+        },
+        "contiene": {
+          "producto": "aftosa"
+        }
+      }
+    },
+    {
+      "id": "query-stock-ternero",
+      "texto": "¿cuántos terneros tengo?",
+      "nota": "consulta de stock por categoría",
+      "espera": {
+        "intent": "query",
+        "recordType": null,
+        "query": {
+          "metric": "stock_animal",
+          "categoriaAnimal": "ternero"
+        }
+      }
+    },
+    {
+      "id": "query-margen-lote",
+      "texto": "decime el margen del lote 6",
+      "nota": "consulta sin signo de pregunta",
+      "espera": {
+        "intent": "query",
+        "recordType": null,
+        "query": {
+          "metric": "margen",
+          "loteRef": "6"
+        }
+      }
+    },
+    {
+      "id": "query-gasto",
+      "texto": "cuánto gasté este mes?",
+      "nota": "gasto_total",
+      "espera": {
+        "intent": "query",
+        "recordType": null,
+        "query": {
+          "metric": "gasto_total"
+        }
+      }
+    },
+    {
+      "id": "query-venta",
+      "texto": "cuánto vendí hasta ahora",
+      "nota": "venta_total: \"vendí\" no debe crear un registro",
+      "espera": {
+        "intent": "query",
+        "recordType": null,
+        "query": {
+          "metric": "venta_total"
+        }
+      }
+    },
+    {
+      "id": "query-hacienda-total",
+      "texto": "qué stock de hacienda tengo",
+      "nota": "stock sin categoría",
+      "espera": {
+        "intent": "query",
+        "recordType": null,
+        "query": {
+          "metric": "stock_animal"
+        }
+      }
+    },
+    {
+      "id": "confirm-dale",
+      "texto": "dale, confirmo",
+      "nota": "confirmación",
+      "espera": {
+        "intent": "confirm"
+      }
+    },
+    {
+      "id": "unknown-saludo",
+      "texto": "buenas, cómo va?",
+      "nota": "saludo: no es consulta ni registro",
+      "espera": {
+        "intent": "unknown"
+      }
+    },
+    {
+      "id": "insumo-decimal-girasol",
+      "texto": "compré 1,75 tn de semilla de girasol",
+      "nota": "decimal con coma, superficie distinta al caso original",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "insumo",
+        "fields": {
+          "cantidad": 1.75,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "girasol"
+        }
+      }
+    },
+    {
+      "id": "venta-despache",
+      "texto": "despaché 10 tn de cebada por 3 millones",
+      "nota": "verbo de salida poco frecuente: la plata entra",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "venta",
+        "fields": {
+          "cantidad": 10,
+          "monto": 3000000,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "cebada"
+        }
+      }
+    },
+    {
+      "id": "venta-producto-implicito",
+      "texto": "vendí el maíz del lote 4 en 2.800.000",
+      "nota": "producto sin cantidad, cultivo distinto al caso original",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "venta",
+        "fields": {
+          "monto": 2800000,
+          "loteRef": "4",
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "maiz"
+        }
+      }
+    }
   ]
 }
