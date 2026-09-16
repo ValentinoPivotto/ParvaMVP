@@ -135,13 +135,28 @@ Medición al 2026-09-15, sobre los 43 casos:
 | Motor | Correctos |
 | :---- | ----: |
 | mock (reglas) | 19/43 (44 %) |
-| Nova Lite | 40/43 y 39/43 en dos corridas |
+| Nova Lite | 38,8/43 de media sobre **10 corridas** (banda 38–40) |
 
-**Una sola corrida no alcanza para concluir nada.** Dos corridas idénticas
-pueden dar el mismo total fallando casos distintos. Antes de atribuirle una
-diferencia a un cambio de prompt, correlo al menos dos veces.
+Los 10 puntajes: 38 38 39 40 39 39 38 39 38 40 — mediana 39, desvío 0,79.
 
-Fallas estables conocidas:
+**Una diferencia de uno o dos casos entre corridas no significa nada.** Lo que sí
+se puede leer es la frecuencia por caso, que separa lo determinístico del ruido:
+
+| Falla | Caso |
+| ----: | :---- |
+| 10/10 | `labor-rastra` |
+| 10/10 | `venta-maiz-ayer` |
+| 10/10 | `sanidad-desparasitar-ayer` |
+| 5/10 | `labor-pulverizacion-anteayer` |
+| 5/10 | `hacienda-singular` |
+| 2/10 | `gasto-flete` |
+
+37 de 43 no fallaron nunca. Hay un piso de 3 fallas determinísticas, así que el
+techo alcanzable sin tocar el prompt es 40/43; toda la banda 38–40 la producen
+los tres casos intermitentes. Un caso que anda la mitad de las veces es peor que
+uno que nunca anda, porque no se nota.
+
+Fallas determinísticas (10/10):
 
 - `labor-rastra` ("rastreé el lote 3"). En español general "rastrear" es seguir
   un rastro, y el sentido agronómico (pasar la rastra) no le sale. Se arregla
@@ -152,10 +167,10 @@ Fallas estables conocidas:
   figura en el prompt— pero "entregué" lo sigue leyendo como mercadería que
   entra.
 
-Declarar la precedencia entre SANIDAD, ANIMALES y DIRECCIÓN DE LA PLATA costó
-uno o dos casos (antes daba 41/43 estable). Se mantiene igual: un prompt con dos
-reglas que se contradicen funciona hasta que deja de funcionar, y cuando falla lo
-hace en silencio.
+Declarar la precedencia entre SANIDAD, ANIMALES y DIRECCIÓN DE LA PLATA tuvo un
+costo medible: `sanidad-desparasitar-ayer` pasó de fallar a veces a fallar
+siempre. Se mantiene igual, porque un prompt con dos reglas que se contradicen
+funciona hasta que deja de funcionar, y cuando falla lo hace en silencio.
 
 ## WhatsApp real (Meta Cloud API)
 
