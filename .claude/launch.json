@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "parva-meta",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "PARSER_MODE=local LOCAL_MODEL=llama3.1:8b node --env-file-if-exists=.env src/server.ts"],
+      "port": 3000
+    },
+    {
+      "name": "parva-meta-3b",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "PARSER_MODE=local LOCAL_MODEL=qwen2.5:3b node --env-file-if-exists=.env src/server.ts"],
+      "port": 3000
+    },
+    {
+      "name": "parva-sim",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "WHATSAPP_MODE=sim PARSER_MODE=local LOCAL_MODEL=llama3.1:8b node --env-file-if-exists=.env src/server.ts"],
+      "port": 3000
+    }
+  ]
+}

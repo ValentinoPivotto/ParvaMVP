@@ -5,7 +5,8 @@
     "espera.fields.fecha": "\"hoy\" | \"-1\" | \"-2\" | \"-7\" (días atrás) | \"*\" (presente, valor no verificable)",
     "espera.contiene": "campos de texto libre: basta con que incluyan el substring (case-insensitive)",
     "_regla": "ningún caso replica los ejemplos few-shot del prompt: todos miden generalización",
-    "espera.prohibe": "campos que NO deben venir: sin esto solo se mide recall de los slots elegidos, no corrección"
+    "espera.prohibe": "campos que NO deben venir: sin esto solo se mide recall de los slots elegidos, no corrección",
+    "_nuevos": "insumo-decimal-girasol, venta-despache y venta-producto-implicito se agregaron después de ajustar el prompt: prueban las mismas tres reglas con otra redacción, para distinguir generalización de memorización"
   },
   "casos": [
     {
@@ -633,6 +634,59 @@
           "cantidad",
           "monto",
           "producto"
+        ]
+      }
+    },
+    {
+      "id": "insumo-decimal-girasol",
+      "texto": "compré 1,75 tn de semilla de girasol",
+      "nota": "decimal con coma, superficie distinta al caso original",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "insumo",
+        "fields": {
+          "cantidad": 1.75,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "girasol"
+        }
+      }
+    },
+    {
+      "id": "venta-despache",
+      "texto": "despaché 10 tn de cebada por 3 millones",
+      "nota": "verbo de salida poco frecuente: la plata entra",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "venta",
+        "fields": {
+          "cantidad": 10,
+          "monto": 3000000,
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "cebada"
+        }
+      }
+    },
+    {
+      "id": "venta-producto-implicito",
+      "texto": "vendí el maíz del lote 4 en 2.800.000",
+      "nota": "producto sin cantidad, cultivo distinto al caso original",
+      "espera": {
+        "intent": "create_record",
+        "recordType": "venta",
+        "fields": {
+          "monto": 2800000,
+          "loteRef": "4",
+          "fecha": "hoy"
+        },
+        "contiene": {
+          "producto": "maiz"
+        },
+        "prohibe": [
+          "cantidad"
         ]
       }
     }
