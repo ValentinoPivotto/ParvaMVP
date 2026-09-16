@@ -33,7 +33,7 @@ const motor = opt('motor');
 const soloCaso = opt('caso');
 const strict = args.includes('--strict');
 
-const MOTORES = ['auto', 'mock', 'bedrock', 'openai', 'local'];
+const MOTORES = ['auto', 'mock', 'bedrock', 'local'];
 if (motor && !MOTORES.includes(motor)) {
   // Sin esto, "--motor=bedrok" no matchea ninguna rama de parse(), corre el
   // mock, y el encabezado igual informa Bedrock: una medición falsa con
