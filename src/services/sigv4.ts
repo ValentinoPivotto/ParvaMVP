@@ -1,7 +1,7 @@
 // Firma SigV4 para AWS, sin dependencias.
 //
-// Bedrock no acepta una API key pelada en un header como OpenAI: cada request
-// va firmado con las credenciales (temporales, en el caso del SSO del curso).
+// Bedrock no acepta una API key pelada en un header: cada request va firmado
+// con las credenciales (temporales, en el caso del SSO del curso).
 // Meter el SDK de AWS solo para esto traería medio árbol de dependencias y
 // rompería la premisa del repo, así que el algoritmo va acá. Está fijado por
 // AWS y no tiene variantes: es código que se escribe una vez y no se toca.

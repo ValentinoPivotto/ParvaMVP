@@ -1,8 +1,8 @@
 // Parser: convierte el mensaje informal en un ParsedIntent estructurado.
 // Por default usa un MOCK determinístico (reglas en español). Con credenciales
-// reales usa Nova Lite sobre Bedrock, GPT-4o mini o un modelo local vía Ollama,
-// todos con el mismo shape de salida.
-import { useRealAI, useBedrock, config } from '../config.ts';
+// reales usa Nova Lite sobre Bedrock o un modelo local vía Ollama, los dos con
+// el mismo shape de salida.
+import { useBedrock, config } from '../config.ts';
 import { firmarAws } from '../services/sigv4.ts';
 
 // Un modelo colgado no puede dejar esperando al webhook: Meta reintenta y el
@@ -147,7 +147,7 @@ export function parseMock(texto: string): ParsedIntent {
 
 // --- Caminos con modelo (mismo shape de salida que el mock) --------------
 
-// Prompt e instrucciones compartidos por Bedrock, OpenAI y el modelo local.
+// Prompt e instrucciones compartidos por Bedrock y el modelo local.
 //
 // La fecha de hoy va inyectada porque el modelo no tiene forma de saberla, y sin
 // ella no puede resolver "ayer". El registro terminaba fechado hoy (normalize()
@@ -209,20 +209,7 @@ function normalizarSalida(p: any, texto: string): ParsedIntent {
   };
 }
 
-// Camino A: OpenAI (GPT-4o mini) — corre en los servidores de OpenAI.
-async function parseOpenAI(texto: string): Promise<ParsedIntent> {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.openaiApiKey}` },
-    body: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0, response_format: { type: 'json_object' }, messages: construirMensajes(texto) }),
-    signal: AbortSignal.timeout(TIMEOUT_MODELO_MS),
-  });
-  if (!res.ok) throw new Error('openai ' + res.status);
-  const json = (await res.json()) as any;
-  return normalizarSalida(JSON.parse(json.choices[0].message.content), texto);
-}
-
-// Camino B: modelo chico LOCAL vía Ollama (ej. qwen2.5:3b, llama3.2:3b).
+// Camino local: modelo chico vía Ollama (ej. qwen2.5:3b, llama3.2:3b).
 // Corre en tu propia máquina; no requiere key ni costo por token.
 async function parseLocal(texto: string): Promise<ParsedIntent> {
   const res = await fetch(`${config.ollamaUrl}/api/chat`, {
@@ -294,12 +281,11 @@ function ollamaDisponible(): Promise<boolean> {
   return ollamaProbe;
 }
 
-// Motor elegido en modo 'auto': Bedrock primero porque es el camino financiado
-// por la universidad; OpenAI sale del bolsillo. El probe de Ollama solo corre si
-// no hay ninguna credencial, para no sumarle 800 ms al primer mensaje.
+// Motor elegido en modo 'auto': Bedrock primero, porque es el camino financiado
+// por la universidad. El probe de Ollama solo corre si no hay credenciales de
+// AWS, para no sumarle 800 ms al primer mensaje.
 async function motorAuto(): Promise<string | null> {
   if (useBedrock()) return 'bedrock';
-  if (useRealAI()) return 'openai';
   if (await ollamaDisponible()) return 'local';
   return null;
 }
@@ -311,7 +297,6 @@ export async function parse(texto: string): Promise<ParsedIntent> {
   const motor = mode === 'auto' ? await motorAuto() : mode === 'mock' ? null : mode;
   try {
     if (motor === 'bedrock') return { ...(await parseBedrock(texto)), motor: 'bedrock' };
-    if (motor === 'openai') return { ...(await parseOpenAI(texto)), motor: 'openai' };
     if (motor === 'local') return { ...(await parseLocal(texto)), motor: 'local' };
   } catch (e) {
     // Caer al mock sin decir nada deja al bot parseando con reglas y a nadie
@@ -326,10 +311,8 @@ export async function parserActivo(): Promise<string> {
   const mode = config.parserMode;
   if (mode === 'mock') return 'mock (reglas determinísticas)';
   if (mode === 'bedrock') return useBedrock() ? `Bedrock · ${config.bedrockModelId} (${config.awsRegion})` : 'mock (faltan credenciales AWS)';
-  if (mode === 'openai') return useRealAI() ? 'OpenAI gpt-4o-mini' : 'mock (falta OPENAI_API_KEY)';
   if (mode === 'local') return (await ollamaDisponible()) ? `local · ${config.localModel} (Ollama)` : 'mock (Ollama no responde)';
   if (useBedrock()) return `Bedrock · ${config.bedrockModelId} (${config.awsRegion}, auto)`;
-  if (useRealAI()) return 'OpenAI gpt-4o-mini (auto)';
   if (await ollamaDisponible()) return `local · ${config.localModel} (Ollama, auto)`;
   return 'mock (auto: sin credenciales ni Ollama)';
 }
