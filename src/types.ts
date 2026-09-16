@@ -36,8 +36,11 @@ export interface ParsedQuery {
   categoriaAnimal?: string;
 }
 
-// Salida del parser (mismo shape que daría GPT-4o mini con structured outputs).
+// Salida del parser. Mismo shape para los tres caminos (Bedrock, local, mock).
 export interface ParsedIntent {
+  /** Motor que produjo este resultado. Un modelo que falla cae al mock en
+   *  silencio, así que sin esto no hay forma de saber qué lo parseó. */
+  motor?: 'mock' | 'bedrock' | 'local';
   intent: Intent;
   recordType: RecordType | null;
   fields: ParsedFields;

@@ -1,7 +1,14 @@
 // Parser: convierte el mensaje informal en un ParsedIntent estructurado.
-// Por default usa un MOCK determinístico (reglas en español). Con OPENAI_API_KEY
-// usaría GPT-4o mini con structured outputs (mismo shape de salida).
-import { useRealAI, config } from '../config.ts';
+// Por default usa un MOCK determinístico (reglas en español). Con credenciales
+// reales usa Nova Lite sobre Bedrock o un modelo local vía Ollama, los dos con
+// el mismo shape de salida.
+import { useBedrock, config } from '../config.ts';
+import { firmarAws } from '../services/sigv4.ts';
+
+// Un modelo colgado no puede dejar esperando al webhook: Meta reintenta y el
+// productor se queda sin respuesta. Cortamos y caemos al mock, que contesta
+// siempre. Mismo criterio que el timeout de whatsapp.ts.
+const TIMEOUT_MODELO_MS = 10_000;
 import type { ParsedIntent, ParsedFields, RecordType, EventoHaciendaTipo } from '../types.ts';
 
 const CATEGORIAS_ANIMAL: Record<string, string> = {
@@ -140,8 +147,14 @@ export function parseMock(texto: string): ParsedIntent {
 
 // --- Caminos con modelo (mismo shape de salida que el mock) --------------
 
-// Prompt e instrucciones compartidos por OpenAI y por el modelo local.
-const INSTRUCCIONES = `Sos el parser de un ERP agropecuario argentino. Convertí el mensaje informal del productor en un JSON EXACTO:
+// Prompt e instrucciones compartidos por Bedrock y el modelo local.
+//
+// La fecha de hoy va inyectada porque el modelo no tiene forma de saberla, y sin
+// ella no puede resolver "ayer". El registro terminaba fechado hoy (normalize()
+// completa la fecha faltante), que es peor que fallar: queda mal en la planilla
+// y nadie se entera. El mock resuelve lo mismo en extraerFecha().
+function instrucciones(hoy: string): string {
+  return `Sos el parser de un ERP agropecuario argentino. Hoy es ${hoy}. Convertí el mensaje informal del productor en un JSON EXACTO:
 {
  "intent": "create_record" | "query" | "confirm" | "unknown",
  "recordType": "insumo"|"labor"|"gasto"|"venta"|"evento_hacienda"|"evento_sanitario"|null,
@@ -149,17 +162,35 @@ const INSTRUCCIONES = `Sos el parser de un ERP agropecuario argentino. Convertí
  "query": { "metric": "stock_animal"|"margen"|"gasto_total"|"venta_total", "loteRef"?, "categoriaAnimal"? } | null,
  "confidence": number 0..1
 }
-Reglas: montos como número sin separador de miles. "lote 4" => loteRef "4". Si hay animales (terneros, vacas, novillos) => recordType "evento_hacienda" con eventoTipo. Preguntas => intent "query". Respondé SOLO el JSON, sin texto extra.`;
+Reglas: montos como número sin separador de miles. "lote 4" => loteRef "4". Preguntas => intent "query".
+ANIMALES (terneros, vacas, novillos, vaquillonas, toros): recordType SIEMPRE "evento_hacienda" con su "eventoTipo", también cuando se compran o se venden. Nunca "venta" ni "gasto": si no es evento_hacienda, el stock no se descuenta.
+SANIDAD (vacunas, dosis, antiparasitarios como ivermectina, tratamientos) => "evento_sanitario", nunca "labor".
+FECHAS: devolvé siempre "fecha" en YYYY-MM-DD. "ayer" es el día anterior a ${hoy}; "anteayer", dos días antes. Si el mensaje no menciona ninguna fecha, usá ${hoy}.
+Respondé SOLO el JSON, sin texto extra.`;
+}
 
-const EJEMPLOS: { u: string; a: Record<string, unknown> }[] = [
-  { u: 'Compré 200 litros de gasoil para el lote 4', a: { intent: 'create_record', recordType: 'insumo', fields: { producto: 'gasoil', cantidad: 200, unidad: 'L', loteRef: '4' }, query: null, confidence: 0.95 } },
-  { u: 'Nacieron 8 terneros', a: { intent: 'create_record', recordType: 'evento_hacienda', fields: { categoriaAnimal: 'ternero', eventoTipo: 'nacimiento', cantidad: 8 }, query: null, confidence: 0.95 } },
-  { u: '¿Cuál es el margen del lote 1?', a: { intent: 'query', recordType: null, fields: {}, query: { metric: 'margen', loteRef: '1' }, confidence: 0.95 } },
-];
+// Los ejemplos llevan fecha coherente con el "hoy" inyectado; si no, le estaría
+// mostrando fechas que contradicen la regla que acaba de leer.
+function ejemplos(hoy: string, ayer: string): { u: string; a: Record<string, unknown> }[] {
+  return [
+    { u: 'Compré 200 litros de gasoil para el lote 4', a: { intent: 'create_record', recordType: 'insumo', fields: { producto: 'gasoil', cantidad: 200, unidad: 'L', loteRef: '4', fecha: hoy }, query: null, confidence: 0.95 } },
+    { u: 'Nacieron 8 terneros', a: { intent: 'create_record', recordType: 'evento_hacienda', fields: { categoriaAnimal: 'ternero', eventoTipo: 'nacimiento', cantidad: 8, fecha: hoy }, query: null, confidence: 0.95 } },
+    { u: 'ayer vendí 30 novillos a 1.200.000 en total', a: { intent: 'create_record', recordType: 'evento_hacienda', fields: { categoriaAnimal: 'novillo', eventoTipo: 'venta', cantidad: 30, monto: 1200000, fecha: ayer }, query: null, confidence: 0.95 } },
+    { u: 'le di 3 dosis de ivermectina a las vacas del lote 2', a: { intent: 'create_record', recordType: 'evento_sanitario', fields: { producto: 'ivermectina', categoriaAnimal: 'vaca', cantidad: 3, loteRef: '2', fecha: hoy }, query: null, confidence: 0.9 } },
+    { u: '¿Cuál es el margen del lote 1?', a: { intent: 'query', recordType: null, fields: {}, query: { metric: 'margen', loteRef: '1' }, confidence: 0.95 } },
+  ];
+}
+
+function fechaISO(offsetDias: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDias);
+  return d.toISOString().slice(0, 10);
+}
 
 function construirMensajes(texto: string): { role: string; content: string }[] {
-  const msgs: { role: string; content: string }[] = [{ role: 'system', content: INSTRUCCIONES }];
-  for (const e of EJEMPLOS) {
+  const hoy = fechaISO(0);
+  const msgs: { role: string; content: string }[] = [{ role: 'system', content: instrucciones(hoy) }];
+  for (const e of ejemplos(hoy, fechaISO(-1))) {
     msgs.push({ role: 'user', content: e.u });
     msgs.push({ role: 'assistant', content: JSON.stringify(e.a) });
   }
@@ -178,29 +209,65 @@ function normalizarSalida(p: any, texto: string): ParsedIntent {
   };
 }
 
-// Camino A: OpenAI (GPT-4o mini) — corre en los servidores de OpenAI.
-async function parseOpenAI(texto: string): Promise<ParsedIntent> {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.openaiApiKey}` },
-    body: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0, response_format: { type: 'json_object' }, messages: construirMensajes(texto) }),
-  });
-  if (!res.ok) throw new Error('openai ' + res.status);
-  const json = (await res.json()) as any;
-  return normalizarSalida(JSON.parse(json.choices[0].message.content), texto);
-}
-
-// Camino B: modelo chico LOCAL vía Ollama (ej. qwen2.5:3b, llama3.2:3b).
+// Camino local: modelo chico vía Ollama (ej. qwen2.5:3b, llama3.2:3b).
 // Corre en tu propia máquina; no requiere key ni costo por token.
 async function parseLocal(texto: string): Promise<ParsedIntent> {
   const res = await fetch(`${config.ollamaUrl}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: config.localModel, stream: false, format: 'json', options: { temperature: 0 }, messages: construirMensajes(texto) }),
+    signal: AbortSignal.timeout(TIMEOUT_MODELO_MS),
   });
   if (!res.ok) throw new Error('ollama ' + res.status);
   const json = (await res.json()) as any;
   return normalizarSalida(JSON.parse(json.message.content), texto);
+}
+
+// Camino C: Amazon Nova Lite sobre Bedrock, vía la API Converse. La firma va a
+// mano (services/sigv4.ts) para no traer el SDK de AWS.
+//
+// Converse no tiene un equivalente a `response_format`: el JSON se pide por
+// prompt y recortarlo es responsabilidad nuestra.
+async function parseBedrock(texto: string): Promise<ParsedIntent> {
+  const msgs = construirMensajes(texto);
+  const cuerpo = JSON.stringify({
+    system: msgs.filter((m) => m.role === 'system').map((m) => ({ text: m.content })),
+    messages: msgs
+      .filter((m) => m.role !== 'system')
+      .map((m) => ({ role: m.role, content: [{ text: m.content }] })),
+    inferenceConfig: { temperature: 0, maxTokens: 512 },
+  });
+
+  const req = firmarAws({
+    method: 'POST',
+    host: `bedrock-runtime.${config.awsRegion}.amazonaws.com`,
+    path: `/model/${encodeURIComponent(config.bedrockModelId)}/converse`,
+    region: config.awsRegion,
+    service: 'bedrock',
+    body: cuerpo,
+    creds: {
+      accessKeyId: config.awsAccessKeyId,
+      secretAccessKey: config.awsSecretAccessKey,
+      sessionToken: config.awsSessionToken || undefined,
+    },
+  });
+
+  const res = await fetch(req.url, {
+    method: 'POST', headers: req.headers, body: req.body,
+    signal: AbortSignal.timeout(TIMEOUT_MODELO_MS),
+  });
+  if (!res.ok) throw new Error(`bedrock ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const json = (await res.json()) as any;
+  return normalizarSalida(JSON.parse(recortarJson(json?.output?.message?.content?.[0]?.text ?? '')), texto);
+}
+
+// Sin JSON mode, el modelo a veces envuelve la respuesta en ```json … ``` o le
+// cuelga una frase. Nos quedamos con el objeto más externo.
+function recortarJson(s: string): string {
+  const limpio = s.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+  const i = limpio.indexOf('{');
+  const j = limpio.lastIndexOf('}');
+  return i >= 0 && j > i ? limpio.slice(i, j + 1) : limpio;
 }
 
 // Probe único y cacheado: ¿está Ollama disponible? (no chequea en cada mensaje)
@@ -214,26 +281,38 @@ function ollamaDisponible(): Promise<boolean> {
   return ollamaProbe;
 }
 
-// Selector de modo. En 'auto': OpenAI si hay key → si no, modelo local si Ollama
-// está disponible → si no, el mock. Cualquier falla del modelo cae al mock.
+// Motor elegido en modo 'auto': Bedrock primero, porque es el camino financiado
+// por la universidad. El probe de Ollama solo corre si no hay credenciales de
+// AWS, para no sumarle 800 ms al primer mensaje.
+async function motorAuto(): Promise<string | null> {
+  if (useBedrock()) return 'bedrock';
+  if (await ollamaDisponible()) return 'local';
+  return null;
+}
+
+// Selector de modo. Un modo explícito prueba solo su motor; 'auto' elige por
+// credencial disponible. Cualquier falla del modelo cae al mock.
 export async function parse(texto: string): Promise<ParsedIntent> {
   const mode = config.parserMode;
-  if (mode === 'openai' || (mode === 'auto' && useRealAI())) {
-    try { return await parseOpenAI(texto); } catch { /* fallback */ }
+  const motor = mode === 'auto' ? await motorAuto() : mode === 'mock' ? null : mode;
+  try {
+    if (motor === 'bedrock') return { ...(await parseBedrock(texto)), motor: 'bedrock' };
+    if (motor === 'local') return { ...(await parseLocal(texto)), motor: 'local' };
+  } catch (e) {
+    // Caer al mock sin decir nada deja al bot parseando con reglas y a nadie
+    // enterado: la calidad baja y el log se ve igual que siempre.
+    console.warn(`⚠️  parser: ${motor} falló (${e instanceof Error ? e.message : e}) — cae al mock`);
   }
-  if (mode === 'local' || (mode === 'auto' && !useRealAI() && (await ollamaDisponible()))) {
-    try { return await parseLocal(texto); } catch { /* fallback */ }
-  }
-  return parseMock(texto);
+  return { ...parseMock(texto), motor: 'mock' };
 }
 
 // Describe qué motor quedará activo (para el log de arranque).
 export async function parserActivo(): Promise<string> {
   const mode = config.parserMode;
   if (mode === 'mock') return 'mock (reglas determinísticas)';
-  if (mode === 'openai') return useRealAI() ? 'OpenAI gpt-4o-mini' : 'mock (falta OPENAI_API_KEY)';
+  if (mode === 'bedrock') return useBedrock() ? `Bedrock · ${config.bedrockModelId} (${config.awsRegion})` : 'mock (faltan credenciales AWS)';
   if (mode === 'local') return (await ollamaDisponible()) ? `local · ${config.localModel} (Ollama)` : 'mock (Ollama no responde)';
-  if (useRealAI()) return 'OpenAI gpt-4o-mini (auto)';
+  if (useBedrock()) return `Bedrock · ${config.bedrockModelId} (${config.awsRegion}, auto)`;
   if (await ollamaDisponible()) return `local · ${config.localModel} (Ollama, auto)`;
-  return 'mock (auto: sin key ni Ollama)';
+  return 'mock (auto: sin credenciales ni Ollama)';
 }

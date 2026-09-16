@@ -45,12 +45,72 @@ npm run reset    # borra y recarga la base
 | Pieza | Default (`sim`) | Real (cambio por env) |
 |---|---|---|
 | WhatsApp | Simulador en la web + `POST /webhook/whatsapp` con la forma real de Meta | **Meta Cloud API** con `WHATSAPP_MODE=meta` (ver abajo) |
-| Parser IA | Mock determinístico en español (reglas) | GPT-4o mini con `OPENAI_API_KEY`, o modelo local vía Ollama |
-| Transcripción | Devuelve el texto (no hay audio) | Whisper / gpt-4o-mini-transcribe (aún no cableado) |
+| Parser IA | Mock determinístico en español (reglas) | **Nova Lite sobre Bedrock** con credenciales AWS (ver abajo), o modelo local vía Ollama |
+| Transcripción | Devuelve el texto (no hay audio) | Amazon Transcribe (aún no cableado) |
 | Base de datos | SQLite (`node:sqlite`) | Postgres / Supabase |
 
 Variables en `.env.example`. Los scripts de npm cargan `.env` automáticamente
 (`--env-file-if-exists`); si corrés `node src/server.ts` a mano, no se carga.
+
+## Parser real (Amazon Nova Lite sobre Bedrock)
+
+Es el camino por default cuando hay credenciales AWS en el entorno. Parva corre
+con modelos de Amazon o con un modelo local, y con nada más: el crédito de
+Bedrock está cubierto por la universidad mientras el proyecto sea con fines
+educativos, y un proveedor facturado aparte saldría del bolsillo.
+
+Bedrock no acepta una API key en un header: cada request va firmado con SigV4. La firma está implementada en `src/services/sigv4.ts` con `node:crypto`
+para no traer el SDK de AWS y mantener la promesa de cero dependencias. Está
+verificada contra el canonical request que imprime el propio AWS CLI.
+
+### Correrlo
+
+Las credenciales del SSO son temporales y vencen; cuando el parser vuelva a caer
+al mock sin explicación, es esto. Renovarlas:
+
+```bash
+aws sso login --profile TU_PERFIL
+```
+
+Exportarlas al entorno y levantar el server:
+
+```bash
+eval "$(aws configure export-credentials --profile TU_PERFIL --format env)" && npm start
+```
+
+En el arranque el log dice qué motor quedó activo:
+
+```
+Parser activo: Bedrock · amazon.nova-lite-v1:0 (us-east-2, auto)
+```
+
+Ese log dice qué motor **se eligió**, no que funcione: solo comprueba que las
+variables de AWS no estén vacías. Con la sesión vencida las variables siguen
+cargadas, así que va a decir `Bedrock` igual y recién va a fallar al primer
+mensaje. La señal real es el warning por mensaje:
+
+```
+⚠️  parser: bedrock falló (bedrock 403: ...) — cae al mock
+```
+
+Si aparece eso, el bot sigue contestando con el mock (peor calidad, sin errores
+visibles para el productor) y hay que renovar la sesión. Si el log de arranque
+dice `mock`, directamente no había credenciales.
+
+### Por qué Nova Lite y no Micro
+
+Para extraer slots a JSON en una sola pasada, Nova Micro sería mejor candidato:
+text-only, más barato y con menos latencia, que en un bot donde el productor
+espera la respuesta importa. Queda descartado por permisos, no por criterio:
+Micro y Pro exigen perfil de inferencia entre regiones, esos perfiles rutean a
+`us-west-2`, y el rol de SSO del curso tiene un deny explícito fuera de
+`us-east-2`. Con una cuenta propia habría que volver a medirlo.
+
+### Lo que falta
+
+No hay todavía un set de mensajes anotados para comparar mock, Nova Lite y el
+modelo local sobre la misma entrada. Sin eso, la elección de motor es una
+intuición y no una medición.
 
 ## WhatsApp real (Meta Cloud API)
 

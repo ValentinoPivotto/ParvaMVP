@@ -7,16 +7,24 @@ export const config = {
   port: Number(process.env.PORT ?? 3000),
   dbPath: process.env.DB_PATH ?? dbDefault,
 
-  // IA: si hay key, se podría usar OpenAI (GPT-4o mini) real.
-  // Por default (sin key) el parser es un MOCK determinístico en español.
-  openaiApiKey: process.env.OPENAI_API_KEY ?? '',
-
-  // Modo del parser: auto | mock | local | openai
-  //  - auto  (default): openai si hay key, si no mock.
+  // Modo del parser: auto | mock | local | bedrock
+  //  - auto (default): bedrock si hay credenciales AWS → modelo local si Ollama
+  //    responde → mock.
   //  - local: usa un modelo chico vía Ollama (server local en :11434).
   parserMode: process.env.PARSER_MODE ?? 'auto',
   localModel: process.env.LOCAL_MODEL ?? 'qwen2.5:3b',
   ollamaUrl: process.env.OLLAMA_URL ?? 'http://localhost:11434',
+
+  // Bedrock (Nova Lite). Las credenciales del SSO son temporales y vencen; se
+  // exportan al entorno con `aws configure export-credentials` (ver README).
+  // Región us-east-2 por default: el rol del curso tiene deny explícito fuera
+  // de ahí, y los modelos que exigen perfil de inferencia entre regiones rutean
+  // a us-west-2 y fallan con AccessDenied.
+  awsRegion: process.env.AWS_REGION ?? 'us-east-2',
+  awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID ?? '',
+  awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
+  awsSessionToken: process.env.AWS_SESSION_TOKEN ?? '',
+  bedrockModelId: process.env.BEDROCK_MODEL_ID ?? 'amazon.nova-lite-v1:0',
 
   // Umbral de confianza del parser para pedir confirmación antes de persistir.
   confidenceThreshold: Number(process.env.CONFIDENCE_THRESHOLD ?? 0.7),
@@ -37,8 +45,9 @@ export const config = {
   metaReplyToUnknown: process.env.META_REPLY_TO_UNKNOWN === '1',
 };
 
-export function useRealAI(): boolean {
-  return config.openaiApiKey.trim().length > 0;
+/** ¿Hay credenciales de AWS en el entorno para firmarle a Bedrock? */
+export function useBedrock(): boolean {
+  return config.awsAccessKeyId.trim().length > 0 && config.awsSecretAccessKey.trim().length > 0;
 }
 
 export function modoMeta(): boolean {

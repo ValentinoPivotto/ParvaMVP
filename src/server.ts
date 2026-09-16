@@ -90,7 +90,7 @@ const colas = new Map<string, Promise<void>>();
  *
  * Meta manda cada mensaje en su propio request HTTP, así que "compré gasoil" y
  * el "sí" que lo confirma caen en callbacks independientes. Como el pipeline
- * espera al parser (que puede ser una llamada a OpenAI), sin serializar pueden
+ * espera al parser (que puede ser una llamada al modelo), sin serializar pueden
  * interleavearse y el "sí" no encontraría el pendiente todavía guardado
  * ("No tengo nada pendiente para confirmar", intermitente y sin error).
  */
@@ -211,7 +211,7 @@ const server = createServer(async (req, res) => {
 
       if (modoMeta()) {
         // ACK primero: Meta reintenta durante días si el webhook tarda, y el
-        // pipeline puede esperar a OpenAI. Recién después se procesa.
+        // pipeline puede esperar al modelo. Recién después se procesa.
         sendJson(res, 200, { status: 'received', procesados: entrantes.length });
         for (const m of entrantes) {
           // Qué número propio recibió el mensaje: es el dato que falta cuando la
