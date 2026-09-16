@@ -146,8 +146,8 @@ Package `data` expone un generador que exporta el dato normalizado del tenant a 
 
 ```
 Webhook (forma Meta Cloud API) → guarda RawMessage (pending)
-  → (si audio) Transcripción (Whisper | mock) → texto
-  → Parser (GPT-4o mini structured outputs | mock) → ParsedIntent
+  → (si audio) Transcripción (Amazon Transcribe | mock) → texto
+  → Parser (Nova Lite sobre Bedrock | modelo local | mock) → ParsedIntent
   → Normalizer (resuelve lote/campaña/categoría, unidades canónicas, fechas relativas)
   → Validator (zod + reglas de negocio + permiso por rol + ownership + umbral de confianza)
        ├─ confianza < umbral OR ambigüedad → responde pidiendo confirmación (queda pending)
@@ -175,7 +175,7 @@ Webhook (forma Meta Cloud API) → guarda RawMessage (pending)
 
 El **mock** del parser emula esto con reglas/regex (detecta "compré", "litros/L", "lote N",
 "se murió", "cuántos", "margen", montos y fechas relativas) — suficiente para correr el loop sin
-OpenAI.
+ningún modelo.
 
 ### 5.3 Flujo de lectura (consulta por bot)
 
@@ -221,8 +221,8 @@ Modelo `.xlsx` generado por script, con `assumptions.md` que documenta cada supu
 - WhatsApp (Meta Cloud API): costo por conversación/mensaje para AR/UY. Nota: Meta migró a pricing
   por mensaje (utility/marketing/auth) con mensajes de servicio gratis dentro de la ventana de 24 h;
   un bot mayormente reactivo cae bastante en "servicio". Se modela un costo mensual mezclado.
-- GPT-4o mini: precio por 1M tokens in/out. Parse promedio ≈ 500 in + 150 out.
-- Whisper: precio por minuto. Audio promedio ≈ 0,5 min.
+- Nova Lite: precio por 1M tokens in/out. Parse promedio ≈ 500 in + 150 out.
+- Amazon Transcribe: precio por minuto. Audio promedio ≈ 0,5 min.
 - Infra: Railway + Vercel + Supabase, fijo mensual amortizado entre N usuarios.
 
 **Escenarios de uso:** liviano / promedio / pesado (mensajes/mes, % audio vs texto, tokens/msg).
@@ -233,7 +233,7 @@ Modelo `.xlsx` generado por script, con `assumptions.md` que documenta cada supu
 - **Break-even** de uso (a qué nivel de mensajes el usuario deja de ser rentable).
 - TAM: refinamiento desde 64.206 explotaciones (PRD) × precio; SAM/SOM si el xlsx de Módulo 2 aporta.
 
-Opcional: validar precios de Meta/OpenAI con web search (el PRD lista "analizar pricing de Meta
+Opcional: validar precios de Meta/AWS con web search (el PRD lista "analizar pricing de Meta
 Cloud API" como pendiente).
 
 ## 7. Stack, repo y cómo corre
@@ -258,11 +258,11 @@ parva/
 | Capa | Default (este MVP) | Producción |
 | --- | --- | --- |
 | DB | SQLite (cero infra) | Postgres / Supabase |
-| IA parse | Mock determinístico | GPT-4o mini (`OPENAI_API_KEY`) |
-| Transcripción | Mock | OpenAI Whisper |
+| IA parse | Mock determinístico | Nova Lite sobre Bedrock (credenciales AWS) |
+| Transcripción | Mock | Amazon Transcribe |
 | WhatsApp | Payloads simulados + CLI | Meta Cloud API (tokens + webhook) |
 
-Variables: `DATABASE_URL`, `DB_PROVIDER` (`sqlite`|`postgresql`), `OPENAI_API_KEY` (vacío → mock),
+Variables: `DATABASE_URL`, `DB_PROVIDER` (`sqlite`|`postgresql`), `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` (vacías → mock),
 `WHATSAPP_MODE` (`sim`|`meta`), `META_*` (tokens, phone number id, verify token).
 
 **Portabilidad SQLite/Postgres:** los enums se modelan como `String` con validación en código (los
@@ -273,7 +273,7 @@ enums Prisma no corren en SQLite), para mantener un único schema. El salto a Po
 
 `pnpm dev` levanta la API; el dev-harness manda un "mensaje" (ej. *"compré 200 litros de gasoil para
 el lote 4"*) → parser mock → normalizer → validator → persiste en SQLite → `pnpm gen:sheet`
-regenera el `.xlsx` → consulta del margen por el harness. Loop completo verificable sin OpenAI,
+regenera el `.xlsx` → consulta del margen por el harness. Loop completo verificable sin modelo,
 Docker ni Meta.
 
 ## 8. Estrategia de testing
@@ -286,7 +286,7 @@ Docker ni Meta.
 
 ## 9. Supuestos y preguntas abiertas
 
-- Precios de Meta/OpenAI: supuestos a validar (web search opcional).
+- Precios de Meta/AWS: supuestos a validar (web search opcional).
 - Categorías de hacienda y unidades canónicas: se arranca con un set base (extensible).
 - Umbral de confianza para confirmación: parámetro configurable (arranca en 0,7).
 - El nombre del subdirectorio de código es `parva/` dentro de la carpeta del TFG.

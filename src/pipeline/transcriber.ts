@@ -1,8 +1,9 @@
 // Transcripción de notas de voz.
 // En el MVP el simulador manda texto, así que el mock devuelve el texto tal cual.
-// El camino real (Whisper / gpt-4o-mini-transcribe) queda cableado por env: como
-// la Cloud API entrega el AUDIO (no el texto), Parva transcribe del lado del back.
-import { useRealAI, config } from '../config.ts';
+// La Cloud API entrega el AUDIO (no el texto), así que Parva tendría que
+// transcribir del lado del back. El camino real todavía NO está cableado: iría
+// por Amazon Transcribe, para no depender de un proveedor que no sea AWS.
+// Mientras tanto, un audio devuelve un placeholder.
 
 export interface AudioInput {
   texto?: string;        // en el simulador llega texto directo
@@ -12,21 +13,6 @@ export interface AudioInput {
 export async function transcribe(input: AudioInput): Promise<string> {
   if (input.texto != null) return input.texto;
 
-  if (input.audioUrl && useRealAI()) {
-    // Camino real (no se ejercita en el MVP local sin key).
-    const audio = await fetch(input.audioUrl).then((r) => r.arrayBuffer());
-    const form = new FormData();
-    form.append('model', 'gpt-4o-mini-transcribe');
-    form.append('file', new Blob([audio], { type: 'audio/ogg' }), 'nota.ogg');
-    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${config.openaiApiKey}` },
-      body: form,
-    });
-    const json = (await res.json()) as { text?: string };
-    return json.text ?? '';
-  }
-
-  // Mock sin texto ni key: placeholder.
+  // Sin transcripción cableada, un audio no se puede leer todavía.
   return '[audio sin transcribir]';
 }

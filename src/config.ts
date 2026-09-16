@@ -7,13 +7,9 @@ export const config = {
   port: Number(process.env.PORT ?? 3000),
   dbPath: process.env.DB_PATH ?? dbDefault,
 
-  // IA: si hay key, se podría usar OpenAI (GPT-4o mini) real.
-  // Por default (sin key) el parser es un MOCK determinístico en español.
-  openaiApiKey: process.env.OPENAI_API_KEY ?? '',
-
-  // Modo del parser: auto | mock | local | openai | bedrock
-  //  - auto (default): bedrock si hay credenciales AWS → openai si hay key →
-  //    modelo local si Ollama responde → mock.
+  // Modo del parser: auto | mock | local | bedrock
+  //  - auto (default): bedrock si hay credenciales AWS → modelo local si Ollama
+  //    responde → mock.
   //  - local: usa un modelo chico vía Ollama (server local en :11434).
   parserMode: process.env.PARSER_MODE ?? 'auto',
   localModel: process.env.LOCAL_MODEL ?? 'qwen2.5:3b',
@@ -48,10 +44,6 @@ export const config = {
   // conversación y degrada el quality rating del número.
   metaReplyToUnknown: process.env.META_REPLY_TO_UNKNOWN === '1',
 };
-
-export function useRealAI(): boolean {
-  return config.openaiApiKey.trim().length > 0;
-}
 
 /** ¿Hay credenciales de AWS en el entorno para firmarle a Bedrock? */
 export function useBedrock(): boolean {

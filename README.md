@@ -45,8 +45,8 @@ npm run reset    # borra y recarga la base
 | Pieza | Default (`sim`) | Real (cambio por env) |
 |---|---|---|
 | WhatsApp | Simulador en la web + `POST /webhook/whatsapp` con la forma real de Meta | **Meta Cloud API** con `WHATSAPP_MODE=meta` (ver abajo) |
-| Parser IA | Mock determinístico en español (reglas) | **Nova Lite sobre Bedrock** con credenciales AWS (ver abajo), GPT-4o mini con `OPENAI_API_KEY`, o modelo local vía Ollama |
-| Transcripción | Devuelve el texto (no hay audio) | Whisper / gpt-4o-mini-transcribe (aún no cableado) |
+| Parser IA | Mock determinístico en español (reglas) | **Nova Lite sobre Bedrock** con credenciales AWS (ver abajo), o modelo local vía Ollama |
+| Transcripción | Devuelve el texto (no hay audio) | Amazon Transcribe (aún no cableado) |
 | Base de datos | SQLite (`node:sqlite`) | Postgres / Supabase |
 
 Variables en `.env.example`. Los scripts de npm cargan `.env` automáticamente
@@ -54,12 +54,12 @@ Variables en `.env.example`. Los scripts de npm cargan `.env` automáticamente
 
 ## Parser real (Amazon Nova Lite sobre Bedrock)
 
-Es el camino por default cuando hay credenciales AWS en el entorno, por delante
-de OpenAI: el crédito de Bedrock está cubierto por la universidad mientras el
-proyecto sea con fines educativos, y OpenAI saldría del bolsillo.
+Es el camino por default cuando hay credenciales AWS en el entorno. Parva corre
+con modelos de Amazon o con un modelo local, y con nada más: el crédito de
+Bedrock está cubierto por la universidad mientras el proyecto sea con fines
+educativos, y un proveedor facturado aparte saldría del bolsillo.
 
-Bedrock no acepta una API key en un header como OpenAI: cada request va firmado
-con SigV4. La firma está implementada en `src/services/sigv4.ts` con `node:crypto`
+Bedrock no acepta una API key en un header: cada request va firmado con SigV4. La firma está implementada en `src/services/sigv4.ts` con `node:crypto`
 para no traer el SDK de AWS y mantener la promesa de cero dependencias. Está
 verificada contra el canonical request que imprime el propio AWS CLI.
 
@@ -108,9 +108,9 @@ Micro y Pro exigen perfil de inferencia entre regiones, esos perfiles rutean a
 
 ### Lo que falta
 
-No hay todavía un set de mensajes anotados para comparar mock, Nova Lite, GPT-4o
-mini y el modelo local sobre la misma entrada. Sin eso, la elección de motor es
-una intuición y no una medición.
+No hay todavía un set de mensajes anotados para comparar mock, Nova Lite y el
+modelo local sobre la misma entrada. Sin eso, la elección de motor es una
+intuición y no una medición.
 
 ## WhatsApp real (Meta Cloud API)
 
