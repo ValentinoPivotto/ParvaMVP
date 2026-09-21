@@ -6,8 +6,8 @@
 //
 // Es un script aparte y no una edición del seed porque seed() solo corre con la
 // base vacía o con --reset, y --reset BORRA los datos (incluido este vínculo).
-import { initSchema, db } from './db.ts';
-import { normalizeTelefono, phoneVariants } from './phone.ts';
+import { initSchema, db } from '../repository/db.ts';
+import { normalizeTelefono, phoneVariants } from '../phone.ts';
 
 function listar(): void {
   const filas = db.prepare(`

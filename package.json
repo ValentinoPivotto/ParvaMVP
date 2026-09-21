@@ -8,12 +8,12 @@
     "node": ">=24"
   },
   "scripts": {
-    "start": "node --env-file-if-exists=.env src/server.ts",
-    "dev": "node --env-file-if-exists=.env --watch src/server.ts",
-    "seed": "node --env-file-if-exists=.env src/seed.ts",
-    "reset": "node --env-file-if-exists=.env src/seed.ts --reset",
-    "link-phone": "node --env-file-if-exists=.env src/link-phone.ts",
-    "check-meta": "node --env-file-if-exists=.env src/check-meta.ts",
-    "tunnel": "node --env-file-if-exists=.env src/tunnel.ts"
+    "start": "node --env-file-if-exists=.env backend/handler/server.ts",
+    "dev": "node --env-file-if-exists=.env --watch backend/handler/server.ts",
+    "seed": "node --env-file-if-exists=.env backend/repository/seed.ts",
+    "reset": "node --env-file-if-exists=.env backend/repository/seed.ts --reset",
+    "link-phone": "node --env-file-if-exists=.env backend/scripts/link-phone.ts",
+    "check-meta": "node --env-file-if-exists=.env backend/scripts/check-meta.ts",
+    "tunnel": "node --env-file-if-exists=.env backend/scripts/tunnel.ts"
   }
 }

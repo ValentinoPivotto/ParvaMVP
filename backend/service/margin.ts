@@ -1,7 +1,6 @@
 // Cálculo de márgenes por lote. Principio del spec (§4.4): un margen se muestra
 // solo si es confiable; si faltan ventas o costos, se indica en vez de mentir.
-import { db } from '../db.ts';
-import { listLotes } from '../repo.ts';
+import { listLotes, totalesPorLote } from '../repository/repo.ts';
 
 export interface MargenLote {
   loteId: number;
@@ -14,17 +13,9 @@ export interface MargenLote {
   razon?: string;
 }
 
-function suma(productorId: number, loteId: number, where: string): number {
-  const row = db.prepare(
-    `SELECT COALESCE(SUM(monto),0) AS s FROM movimiento WHERE productor_id=? AND lote_id=? AND ${where}`
-  ).get(productorId, loteId) as { s: number };
-  return row.s;
-}
-
 export function margenPorLote(productorId: number): MargenLote[] {
   return listLotes(productorId).map((l) => {
-    const ventas = suma(productorId, l.id, "tipo='venta'");
-    const costos = suma(productorId, l.id, "tipo IN ('insumo','labor','gasto')");
+    const { ventas, costos } = totalesPorLote(productorId, l.id);
     let confiable = true;
     let razon: string | undefined;
     if (ventas === 0) { confiable = false; razon = 'sin ventas registradas'; }

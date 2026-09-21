@@ -7,7 +7,7 @@
 // hay que re-registrarla a mano — la trampa que deja al bot mudo sin un solo
 // error visible, porque Meta sigue entregando los webhooks a la URL vieja.
 import { spawn } from 'node:child_process';
-import { config } from './config.ts';
+import { config } from '../config.ts';
 
 // El puerto sale del .env porque este script corre bajo `node --env-file-if-exists`.
 // Antes el script era shell puro (`${PORT:-3000}`) y leía el PORT del SHELL, que

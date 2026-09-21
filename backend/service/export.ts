@@ -1,5 +1,5 @@
 // Export del "spreadsheet" a CSV (la planilla del productor, exportable).
-import { listMovimientos, listHacienda } from '../repo.ts';
+import { listMovimientos, listHacienda } from '../repository/repo.ts';
 import { margenPorLote } from './margin.ts';
 
 function fila(vals: unknown[]): string {

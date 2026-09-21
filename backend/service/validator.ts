@@ -1,7 +1,7 @@
 // Validator: reglas de negocio + permisos por rol + umbral de confianza.
 // Decide si un registro se persiste, se rechaza por permiso, o pide confirmación.
 import { config } from '../config.ts';
-import { puedeCrear } from '../permissions.ts';
+import { puedeCrear } from './permissions.ts';
 import type { Rol } from '../types.ts';
 import type { Normalized } from './normalizer.ts';
 

@@ -15,15 +15,17 @@ ninguna cuenta externa.
 ## Cómo correr
 
 ```bash
-node src/server.ts
+node backend/handler/server.ts
 # luego abrir http://localhost:3000
 ```
 
-La base SQLite (`data/parva.db`) y los datos de ejemplo se crean solos en el primer
-arranque. Scripts equivalentes:
+La base SQLite (`data/parva.db`, en la raíz del proyecto) y los datos de ejemplo se
+crean solos en el primer arranque. La ruta por defecto es independiente del
+directorio desde el que se ejecute Node; un `DB_PATH` relativo se resuelve desde
+ese directorio de ejecución. Scripts equivalentes:
 
 ```bash
-npm start        # node src/server.ts
+npm start        # node backend/handler/server.ts
 npm run dev      # con --watch (recarga al editar)
 npm run seed     # recarga datos de ejemplo
 npm run reset    # borra y recarga la base
@@ -31,9 +33,9 @@ npm run reset    # borra y recarga la base
 
 ## Qué tiene el MVP
 
-- **Web app** (`/web`): dashboard con la "planilla" (movimientos), lotes y márgenes,
+- **Web app** (`frontend/`): dashboard con la "planilla" (movimientos), lotes y márgenes,
   hacienda y sanidad — y un **simulador de WhatsApp** embebido para chatear con el bot.
-- **Backend del bot** (`/src`): el flujo completo
+- **Backend del bot** (`backend/`): el flujo completo
   `mensaje → transcribe → parse → normalize → validate → persist`, con permisos por
   rol, guardrails y aislamiento por tenant.
 - **2 productores de ejemplo** que muestran las dos variantes:
@@ -50,7 +52,7 @@ npm run reset    # borra y recarga la base
 | Base de datos | SQLite (`node:sqlite`) | Postgres / Supabase |
 
 Variables en `.env.example`. Los scripts de npm cargan `.env` automáticamente
-(`--env-file-if-exists`); si corrés `node src/server.ts` a mano, no se carga.
+(`--env-file-if-exists`); si corrés `node backend/handler/server.ts` a mano, no se carga.
 
 ## Parser real (Amazon Nova Lite sobre Bedrock)
 
@@ -59,7 +61,7 @@ con modelos de Amazon o con un modelo local, y con nada más: el crédito de
 Bedrock está cubierto por la universidad mientras el proyecto sea con fines
 educativos, y un proveedor facturado aparte saldría del bolsillo.
 
-Bedrock no acepta una API key en un header: cada request va firmado con SigV4. La firma está implementada en `src/services/sigv4.ts` con `node:crypto`
+Bedrock no acepta una API key en un header: cada request va firmado con SigV4. La firma está implementada en `backend/service/sigv4.ts` con `node:crypto`
 para no traer el SDK de AWS y mantener la promesa de cero dependencias. Está
 verificada contra el canonical request que imprime el propio AWS CLI.
 
@@ -263,18 +265,76 @@ curl -X POST http://localhost:3000/webhook/whatsapp -H 'Content-Type: applicatio
   -d '{"entry":[{"changes":[{"value":{"messages":[{"from":"5491100000003","type":"text","text":{"body":"Nacieron 5 terneros"}}]}}]}]}'
 ```
 
-## Arquitectura (resumen)
+## Arquitectura y recorrido de un mensaje
 
+El backend se organiza en las tres capas **handler → service → repository**.
+`handler` cumple el papel de un controller: recibe HTTP y devuelve la respuesta.
+
+| Capa | Responsabilidad | Archivos principales |
+|---|---|---|
+| `backend/handler/` | Rutas HTTP, estáticos, simulador y transporte de Meta | `server.ts`, `whatsapp.ts` |
+| `backend/service/` | Orquestación de mensajes, modelos, reglas y resultados del negocio | `process.ts`, `parser.ts`, `normalizer.ts`, `validator.ts`, `permissions.ts`, `query.ts`, `margin.ts` |
+| `backend/repository/` | Lecturas, escrituras, agregaciones SQL, auditoría y esquema SQLite | `repo.ts`, `db.ts`, `seed.ts` |
+
+```text
+backend/
+  handler/
+    server.ts        Entrada HTTP y arranque del servidor
+    whatsapp.ts      Firma del webhook, lectura del envelope y envío a Meta
+  service/
+    process.ts       Orquesta el recorrido y las confirmaciones
+    transcriber.ts   Devuelve el texto; audio todavía sin conectar
+    parser.ts        Reglas mock, prompts y adaptadores Bedrock/Ollama
+    normalizer.ts    Resuelve lotes y unidades
+    validator.ts     Decide aceptar, pedir confirmación o denegar
+    permissions.ts   Permisos por rol
+    query.ts         Respuestas a consultas del bot
+    margin.ts        Cálculo y confiabilidad del margen
+    export.ts        Generación de CSV
+    dashboard.ts     Arma el estado de la web
+    sigv4.ts         Firma de las llamadas del parser a Bedrock
+  repository/
+    repo.ts          Acceso a los datos y auditoría
+    db.ts            Conexión, esquema y migraciones
+    seed.ts          Datos de ejemplo; también ejecutable con npm run seed/reset
+  scripts/           link-phone.ts, check-meta.ts, tunnel.ts
+  config.ts          Configuración por entorno y ruta de la base
+  types.ts           Tipos compartidos del dominio y mensajes
+  phone.ts           Normalización de teléfonos compartida
+frontend/            index.html, app.js, styles.css y brandbook.html
+data/                SQLite local (ignorado por Git)
 ```
-web/                 Front vanilla (dashboard + simulador WhatsApp)
-src/
-  server.ts          HTTP (node:http): web app, API, webhook Meta
-  db.ts / repo.ts    SQLite + repositorio (toda query filtra por tenant)
-  seed.ts            Datos de ejemplo (agrícola + ganadero)
-  permissions.ts     Matriz de permisos por rol (guardrail)
-  pipeline/          transcriber → parser → normalizer → validator → process
-  services/          margin (márgenes por lote) · query (lecturas del bot) · export (CSV)
-```
+
+El mismo proceso Node sirve `frontend/` y la API. Los scripts npm y `.env` siguen
+en la raíz; no hay un build ni un despliegue separado para el frontend.
+`brandbook.html` sigue siendo una referencia local que se abre directamente.
+
+Para seguir **«Compré 200 litros de gasoil para el lote 4»** en el código:
+
+1. [`handler/server.ts`](backend/handler/server.ts) recibe el mensaje del
+   simulador (`POST /api/whatsapp/sim`) o del webhook. Busca el remitente por
+   teléfono en el repositorio para obtener usuario, rol y productor, y llama a
+   `processMessage(sender, texto)`.
+2. [`service/process.ts`](backend/service/process.ts) llama a `transcribe`
+   (hoy devuelve el texto), guarda el mensaje original en `raw_message` y llama
+   a `parse`. También coordina las consultas y las confirmaciones de pendientes.
+3. [`service/parser.ts`](backend/service/parser.ts) interpreta la intención y
+   extrae los campos: un insumo, gasoil, cantidad 200, unidad litros y referencia
+   al lote 4. Aquí están las reglas mock y los prompts/adaptadores de los modelos.
+4. [`service/normalizer.ts`](backend/service/normalizer.ts) busca ese lote dentro
+   del productor mediante el repositorio y convierte la unidad a `L`.
+5. [`service/validator.ts`](backend/service/validator.ts) aplica
+   [`permissions.ts`](backend/service/permissions.ts), los campos requeridos, la
+   resolución del lote y el umbral de confianza. `processMessage` usa esa decisión
+   para continuar, dejar un pendiente de confirmación o denegar el registro.
+6. Si se acepta, `processMessage` llama a `insertMovimiento` en
+   [`repository/repo.ts`](backend/repository/repo.ts), que guarda el movimiento y
+   su auditoría usando [`db.ts`](backend/repository/db.ts). La respuesta vuelve al
+   handler; el simulador la muestra y vuelve a pedir el estado del dashboard.
+
+Las consultas del bot pasan por `service/query.ts`; las reglas del margen están
+en `service/margin.ts` y las sumas SQL en el repositorio. Las lecturas simples de
+identidad y del listado de productores se hacen desde el handler al repositorio.
 
 **Fuente de verdad:** la base estructurada. La "planilla" es una vista + export CSV
 (resuelve el riesgo de la planilla editable libre). Un **margen** solo se muestra si

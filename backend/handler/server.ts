@@ -4,17 +4,17 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { config, modoMeta, faltaConfigMeta } from './config.ts';
-import { initSchema } from './db.ts';
-import { seedIfEmpty } from './seed.ts';
-import * as repo from './repo.ts';
-import { processMessage } from './pipeline/process.ts';
-import { parserActivo } from './pipeline/parser.ts';
-import { margenPorLote } from './services/margin.ts';
-import { exportCsv } from './services/export.ts';
+import { config, modoMeta, faltaConfigMeta } from '../config.ts';
+import { initSchema } from '../repository/db.ts';
+import { seedIfEmpty } from '../repository/seed.ts';
+import * as repo from '../repository/repo.ts';
+import { processMessage } from '../service/process.ts';
+import { parserActivo } from '../service/parser.ts';
+import { buildState } from '../service/dashboard.ts';
+import { exportCsv } from '../service/export.ts';
 import { verificarFirma, extraerEntrantes, enviarTexto, type MensajeEntrante } from './whatsapp.ts';
 
-const WEB_DIR = fileURLToPath(new URL('../web/', import.meta.url));
+const WEB_DIR = fileURLToPath(new URL('../../frontend/', import.meta.url));
 const MAX_BODY = 1024 * 1024; // 1 MB: los webhooks de Meta son chicos
 
 function sendJson(res: ServerResponse, code: number, data: unknown): void {
@@ -61,24 +61,6 @@ async function serveStatic(res: ServerResponse, file: string): Promise<void> {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('No encontrado');
   }
-}
-
-// Estado completo del dashboard para un tenant.
-function buildState(productorId: number) {
-  const productor = repo.getProductor(productorId);
-  if (!productor) return null;
-  return {
-    productor,
-    usuarios: repo.listUsuarios(productorId),
-    campos: repo.listCampos(productorId),
-    lotes: repo.listLotes(productorId),
-    campanias: repo.listCampanias(productorId),
-    movimientos: repo.listMovimientos(productorId),
-    hacienda: repo.listHacienda(productorId),
-    sanidad: repo.listEventosSanitarios(productorId),
-    margenes: margenPorLote(productorId),
-    mensajes: repo.listRawMessages(productorId, 15),
-  };
 }
 
 // --- Procesamiento asíncrono de mensajes de Meta ---------------------------

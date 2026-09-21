@@ -1,5 +1,5 @@
 // Matriz de permisos por rol (guardrail). Es la respuesta de §5.4 del spec.
-import type { Rol, RecordType, QueryMetric } from './types.ts';
+import type { Rol, RecordType, QueryMetric } from '../types.ts';
 
 const PUEDE_CREAR: Record<Rol, RecordType[]> = {
   owner: ['insumo', 'labor', 'gasto', 'venta', 'evento_hacienda', 'evento_sanitario'],
