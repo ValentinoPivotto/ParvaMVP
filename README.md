@@ -10,7 +10,12 @@ ninguna cuenta externa.
 ## Requisitos
 
 - **Node.js ≥ 24** (usa `node:sqlite` y ejecución nativa de TypeScript).
-- **Nada más.** Cero dependencias: no hay `npm install`, ni Docker, ni base externa.
+- **Nada más para ejecutar.** Cero dependencias de ejecución, sin Docker ni base externa.
+
+Para desarrollar en VS Code, ejecutá `npm install`: instala TypeScript y los tipos
+de Node como dependencias de desarrollo, para que el editor reconozca los módulos
+`node:*` y pueda validar el código. `npm run typecheck` comprueba los tipos sin
+generar archivos; la aplicación sigue ejecutándose directamente con Node.
 
 ## Cómo correr
 

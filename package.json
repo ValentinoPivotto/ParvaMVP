@@ -8,6 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "start": "node --env-file-if-exists=.env backend/handler/server.ts",
     "dev": "node --env-file-if-exists=.env --watch backend/handler/server.ts",
     "seed": "node --env-file-if-exists=.env backend/repository/seed.ts",
@@ -15,5 +16,9 @@
     "link-phone": "node --env-file-if-exists=.env backend/scripts/link-phone.ts",
     "check-meta": "node --env-file-if-exists=.env backend/scripts/check-meta.ts",
     "tunnel": "node --env-file-if-exists=.env backend/scripts/tunnel.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.6",
+    "typescript": "^7.0.2"
   }
 }
