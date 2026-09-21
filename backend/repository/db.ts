@@ -4,7 +4,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { config } from './config.ts';
+import { config } from '../config.ts';
 
 mkdirSync(dirname(config.dbPath), { recursive: true });
 

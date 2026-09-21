@@ -1,6 +1,8 @@
 // Configuración por entorno. Todo tiene default para correr local sin secrets.
 import { fileURLToPath } from 'node:url';
 
+// La base por defecto sigue en la raíz del proyecto, independiente del cwd.
+// Un DB_PATH relativo explícito conserva su resolución desde el cwd.
 const dbDefault = fileURLToPath(new URL('../data/parva.db', import.meta.url));
 
 export const config = {

@@ -1,12 +1,12 @@
 // Orquestador del bot. Implementa el flujo del spec (§5.1):
 //   raw_message → transcribe → parse → normalize → validate → persist
 // con confirmación ante baja confianza/ambigüedad y permisos por rol.
-import * as repo from '../repo.ts';
+import * as repo from '../repository/repo.ts';
 import { transcribe } from './transcriber.ts';
 import { parse } from './parser.ts';
 import { normalize, type Normalized } from './normalizer.ts';
 import { validate } from './validator.ts';
-import { answerQuery } from '../services/query.ts';
+import { answerQuery } from './query.ts';
 import type { Sender, ProcessResult } from '../types.ts';
 
 function fmt(n: number): string {

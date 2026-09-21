@@ -87,7 +87,7 @@ export function seedIfEmpty(): void {
   if (isEmpty()) seed();
 }
 
-// Ejecución directa: `node src/seed.ts` (o `--reset` para borrar y recargar).
+// Ejecución directa: `node backend/repository/seed.ts` (o `--reset` para borrar y recargar).
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   if (process.argv.includes('--reset')) {
     dropAll();

@@ -1,8 +1,7 @@
 // Consultas de lectura del bot ("¿cuántos terneros tengo?", "¿cuál es el margen?").
 // Respeta permisos por rol (el gestor no ve margen ni ventas).
-import { db } from '../db.ts';
-import { listHacienda, findLoteByRef } from '../repo.ts';
-import { puedeConsultar } from '../permissions.ts';
+import { listHacienda, findLoteByRef, gastoTotal, ventaTotal } from '../repository/repo.ts';
+import { puedeConsultar } from './permissions.ts';
 import { margenPorLote } from './margin.ts';
 import type { ParsedQuery, Rol } from '../types.ts';
 
@@ -44,13 +43,11 @@ export function answerQuery(productorId: number, rol: Rol, q: ParsedQuery): Quer
   }
 
   if (q.metric === 'gasto_total') {
-    const row = db.prepare("SELECT COALESCE(SUM(monto),0) AS s FROM movimiento WHERE productor_id=? AND tipo IN ('insumo','labor','gasto')").get(productorId) as { s: number };
-    return { ok: true, text: `Gasto total registrado: ${fmt(row.s)}.` };
+    return { ok: true, text: `Gasto total registrado: ${fmt(gastoTotal(productorId))}.` };
   }
 
   if (q.metric === 'venta_total') {
-    const row = db.prepare("SELECT COALESCE(SUM(monto),0) AS s FROM movimiento WHERE productor_id=? AND tipo='venta'").get(productorId) as { s: number };
-    return { ok: true, text: `Ventas totales registradas: ${fmt(row.s)}.` };
+    return { ok: true, text: `Ventas totales registradas: ${fmt(ventaTotal(productorId))}.` };
   }
 
   return { ok: false, text: 'No pude responder esa consulta.' };

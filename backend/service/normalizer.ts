@@ -1,6 +1,6 @@
 // Normalizer: resuelve referencias informales a datos canónicos del tenant
 // (lote por número/nombre, unidades canónicas, categoría, fecha).
-import { findLoteByRef } from '../repo.ts';
+import { findLoteByRef } from '../repository/repo.ts';
 import type { ParsedIntent, RecordType, EventoHaciendaTipo } from '../types.ts';
 
 const UNIDAD_CANON: Record<string, string> = {

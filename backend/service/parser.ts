@@ -3,7 +3,7 @@
 // reales usa Nova Lite sobre Bedrock o un modelo local vía Ollama, los dos con
 // el mismo shape de salida.
 import { useBedrock, config } from '../config.ts';
-import { firmarAws } from '../services/sigv4.ts';
+import { firmarAws } from './sigv4.ts';
 
 // Un modelo colgado no puede dejar esperando al webhook: Meta reintenta y el
 // productor se queda sin respuesta. Cortamos y caemos al mock, que contesta
@@ -224,7 +224,7 @@ async function parseLocal(texto: string): Promise<ParsedIntent> {
 }
 
 // Camino C: Amazon Nova Lite sobre Bedrock, vía la API Converse. La firma va a
-// mano (services/sigv4.ts) para no traer el SDK de AWS.
+// mano (service/sigv4.ts) para no traer el SDK de AWS.
 //
 // Converse no tiene un equivalente a `response_format`: el JSON se pide por
 // prompt y recortarlo es responsabilidad nuestra.

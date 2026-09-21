@@ -4,8 +4,8 @@
 // Es un adaptador puro de transporte: importa config y phone, NUNCA repo ni
 // pipeline. server.ts sigue siendo el único lugar que conecta los dos lados.
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { config } from './config.ts';
-import { toWaId } from './phone.ts';
+import { config } from '../config.ts';
+import { toWaId } from '../phone.ts';
 
 // --- Entrada: firma ---------------------------------------------------------
 

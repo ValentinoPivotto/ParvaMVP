@@ -4,7 +4,7 @@
 // OMITIR el 9 de móvil (un +54 9 11 1234-5678 llega como "541112345678"), y la
 // dirección del quirk no está documentada de forma confiable. Por eso no se
 // adivina cuál forma llega: se buscan TODAS las variantes en la DB y se responde
-// siempre al `from` exacto que mandó Meta (ver whatsapp.ts).
+// siempre al `from` exacto que mandó Meta (ver handler/whatsapp.ts).
 const AR = '54';
 
 /** Solo dígitos. Tolera '+', espacios, guiones, paréntesis y prefijo '00'. */

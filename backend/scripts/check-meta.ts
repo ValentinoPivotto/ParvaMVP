@@ -7,7 +7,7 @@
 // no responde": ¿a qué número apunta el .env?, ¿en qué WABA está?, ¿la app está
 // suscrita a ESA WABA? Cada falla imprime el arreglo concreto, porque los errores
 // de Meta son códigos numéricos sin contexto.
-import { config } from './config.ts';
+import { config } from '../config.ts';
 
 const G = `https://graph.facebook.com/${config.metaGraphVersion}`;
 

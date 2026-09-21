@@ -1,8 +1,8 @@
 // Repositorio: única puerta de acceso a los datos. TODA lectura/escritura va
 // filtrada por productor_id => aislamiento por tenant (guardrail principal).
 import { db, lastId } from './db.ts';
-import { phoneVariants } from './phone.ts';
-import type { Sender } from './types.ts';
+import { phoneVariants } from '../phone.ts';
+import type { Sender } from '../types.ts';
 
 // --- Identidad / tenant ---------------------------------------------------
 
@@ -112,6 +112,31 @@ export function listMovimientos(productorId: number): any[] {
     FROM movimiento m LEFT JOIN lote l ON l.id = m.lote_id
     WHERE m.productor_id = ? ORDER BY m.fecha DESC, m.id DESC
   `).all(productorId);
+}
+
+// Agregaciones de datos; las reglas de márgenes y permisos viven en service/.
+export function gastoTotal(productorId: number): number {
+  const row = db.prepare("SELECT COALESCE(SUM(monto),0) AS s FROM movimiento WHERE productor_id=? AND tipo IN ('insumo','labor','gasto')").get(productorId) as { s: number };
+  return row.s;
+}
+
+export function ventaTotal(productorId: number): number {
+  const row = db.prepare("SELECT COALESCE(SUM(monto),0) AS s FROM movimiento WHERE productor_id=? AND tipo='venta'").get(productorId) as { s: number };
+  return row.s;
+}
+
+function sumaPorLote(productorId: number, loteId: number, where: string): number {
+  const row = db.prepare(
+    `SELECT COALESCE(SUM(monto),0) AS s FROM movimiento WHERE productor_id=? AND lote_id=? AND ${where}`
+  ).get(productorId, loteId) as { s: number };
+  return row.s;
+}
+
+export function totalesPorLote(productorId: number, loteId: number): { ventas: number; costos: number } {
+  return {
+    ventas: sumaPorLote(productorId, loteId, "tipo='venta'"),
+    costos: sumaPorLote(productorId, loteId, "tipo IN ('insumo','labor','gasto')"),
+  };
 }
 
 // --- Hacienda (ganadero) --------------------------------------------------
