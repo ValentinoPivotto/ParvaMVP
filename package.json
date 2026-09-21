@@ -8,6 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "test": "node --test",
     "typecheck": "tsc --noEmit",
     "start": "node --env-file-if-exists=.env backend/handler/server.ts",
     "dev": "node --env-file-if-exists=.env --watch backend/handler/server.ts",

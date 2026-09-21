@@ -7,6 +7,8 @@ const api = (url, opts) => fetch(url, opts).then((r) => r.json());
 let current = null;         // { productor, ... } estado actual
 let productorActivo = null; // id elegido en el selector
 let ultimoEstado = '';      // serializado del último estado pintado
+let secuenciaRefresco = 0;
+let ultimoRefrescoAplicado = 0;
 
 // Los datos entran por WhatsApp desde el celular del productor, no desde esta
 // página: sin un refresco propio el dashboard queda congelado hasta un F5.
@@ -26,7 +28,10 @@ async function init() {
 
 async function selectProductor(pid) {
   productorActivo = pid;
-  aplicarEstado(await api(`/api/state?productorId=${pid}`));
+  // Invalida las peticiones de la selección anterior, incluso si se vuelve al
+  // mismo productor antes de que terminen.
+  ultimoRefrescoAplicado = ++secuenciaRefresco;
+  await refrescar();
 }
 
 /**
@@ -43,17 +48,26 @@ function aplicarEstado(state) {
   // productor viejo y se queda ahí, porque los próximos ticks lo siguen a él.
   if (state?.productor?.id !== productorActivo) return;
 
-  const snapshot = JSON.stringify(state);
+  // Sólo estas colecciones alimentan la vista. Una consulta del bot cambia
+  // `mensajes` sin cambiar la planilla y debe conservar el DOM y su selección.
+  const { productor, movimientos, hacienda, lotes, sanidad, margenes } = state;
+  const snapshot = JSON.stringify({ productor, movimientos, hacienda, lotes, sanidad, margenes });
+  current = state;
   if (snapshot === ultimoEstado) return;
   ultimoEstado = snapshot;
-  current = state;
   renderDashboard();
 }
 
 async function refrescar() {
   if (productorActivo == null) return;
+  const solicitud = ++secuenciaRefresco;
   try {
-    aplicarEstado(await api(`/api/state?productorId=${productorActivo}`));
+    const state = await api(`/api/state?productorId=${productorActivo}`);
+    // Una petición lenta puede aplicarse mientras no haya una respuesta más
+    // reciente: así el dashboard también avanza cuando la red tarda más de 5 s.
+    if (solicitud < ultimoRefrescoAplicado) return;
+    aplicarEstado(state);
+    ultimoRefrescoAplicado = solicitud;
   } catch {
     // Una falla puntual (server reiniciando, red) no rompe nada: el próximo
     // tick reintenta y mientras tanto queda a la vista lo último bueno.
