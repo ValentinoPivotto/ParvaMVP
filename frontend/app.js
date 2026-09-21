@@ -1,32 +1,19 @@
-// Parva MVP — front vanilla (sin build). Consume la API del backend.
+// Parva — front vanilla (sin build). Consume la API del backend.
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const fmtMoney = (n) => (n == null ? '—' : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n));
 const api = (url, opts) => fetch(url, opts).then((r) => r.json());
 
-let current = null;       // { productor, ... } estado actual
-let currentTel = null;    // teléfono del usuario seleccionado en el simulador
+let current = null;         // { productor, ... } estado actual
+let productorActivo = null; // id elegido en el selector
+let ultimoEstado = '';      // serializado del último estado pintado
+let secuenciaRefresco = 0;
+let ultimoRefrescoAplicado = 0;
 
-const CHIPS = {
-  agricola: [
-    'Compré 200 litros de gasoil para el lote 4',
-    'Pagué $600.000 de fumigación en el lote 4',
-    'Vendí 240 tn de soja por $9.600.000',
-    '¿Cuál es el margen del lote 1?',
-  ],
-  ganadero: [
-    'Nacieron 8 terneros',
-    'Se murieron 2 vacas',
-    '¿Cuántos terneros tengo?',
-    'Vacuné 120 vacas contra la aftosa',
-  ],
-  mixto: [
-    'Compré 200 litros de gasoil para el lote 4',
-    'Nacieron 8 terneros',
-    '¿Cuál es el margen del lote 1?',
-    '¿Cuántos terneros tengo?',
-  ],
-};
+// Los datos entran por WhatsApp desde el celular del productor, no desde esta
+// página: sin un refresco propio el dashboard queda congelado hasta un F5.
+const REFRESH_MS = 5000;
+let timerRefresco = null;
 
 // ---- Carga inicial ----
 async function init() {
@@ -35,22 +22,70 @@ async function init() {
     .map((p) => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
   $('selProductor').onchange = () => selectProductor(Number($('selProductor').value));
   $('btnExport').onclick = () => window.open(`/api/export?productorId=${current.productor.id}&sheet=movimientos`, '_blank');
-  $('selUsuario').onchange = () => { currentTel = $('selUsuario').value; };
-  $('formMsg').onsubmit = onSend;
   await selectProductor(productores[0].id);
+  autoRefresco();
 }
 
 async function selectProductor(pid) {
-  current = await api(`/api/state?productorId=${pid}`);
-  renderUsuarios();
-  renderChips();
-  renderDashboard();
-  resetChat();
+  productorActivo = pid;
+  // Invalida las peticiones de la selección anterior, incluso si se vuelve al
+  // mismo productor antes de que terminen.
+  ultimoRefrescoAplicado = ++secuenciaRefresco;
+  await refrescar();
 }
 
-async function refreshDashboard() {
-  current = await api(`/api/state?productorId=${current.productor.id}`);
+/**
+ * Pinta el estado sólo si cambió.
+ *
+ * Con la pestaña abierta esto corre cada 5 s, y un innerHTML por tick le
+ * voltearía el scroll y la selección de texto a alguien que está leyendo la
+ * planilla. El id del productor viaja adentro del estado, así que cambiar de
+ * productor siempre difiere y repinta.
+ */
+function aplicarEstado(state) {
+  // Un refresco del productor anterior puede seguir en vuelo cuando se cambia
+  // de productor y contestar DESPUÉS: sin este guard la página vuelve sola al
+  // productor viejo y se queda ahí, porque los próximos ticks lo siguen a él.
+  if (state?.productor?.id !== productorActivo) return;
+
+  // Sólo estas colecciones alimentan la vista. Una consulta del bot cambia
+  // `mensajes` sin cambiar la planilla y debe conservar el DOM y su selección.
+  const { productor, movimientos, hacienda, lotes, sanidad, margenes } = state;
+  const snapshot = JSON.stringify({ productor, movimientos, hacienda, lotes, sanidad, margenes });
+  current = state;
+  if (snapshot === ultimoEstado) return;
+  ultimoEstado = snapshot;
   renderDashboard();
+}
+
+async function refrescar() {
+  if (productorActivo == null) return;
+  const solicitud = ++secuenciaRefresco;
+  try {
+    const state = await api(`/api/state?productorId=${productorActivo}`);
+    // Una petición lenta puede aplicarse mientras no haya una respuesta más
+    // reciente: así el dashboard también avanza cuando la red tarda más de 5 s.
+    if (solicitud < ultimoRefrescoAplicado) return;
+    aplicarEstado(state);
+    ultimoRefrescoAplicado = solicitud;
+  } catch {
+    // Una falla puntual (server reiniciando, red) no rompe nada: el próximo
+    // tick reintenta y mientras tanto queda a la vista lo último bueno.
+  }
+}
+
+// Sólo consulta con la pestaña visible: una pestaña de fondo no le sirve a
+// nadie y son 12 requests por minuto. Al volver refresca de una, para no
+// quedarse mirando datos viejos hasta que caiga el tick.
+function autoRefresco() {
+  const arrancar = () => { timerRefresco ??= setInterval(refrescar, REFRESH_MS); };
+  const parar = () => { clearInterval(timerRefresco); timerRefresco = null; };
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return parar();
+    refrescar();
+    arrancar();
+  });
+  if (!document.hidden) arrancar();
 }
 
 // ---- Render dashboard ----
@@ -121,53 +156,6 @@ function panelSanidad() {
   const rows = current.sanidad.map((s) => `<tr><td>${esc(s.fecha)}</td><td>${esc(s.producto ?? '')}</td><td>${esc(s.categoria ?? '')}</td><td class="num">${esc(s.cantidad ?? '')}</td></tr>`).join('');
   return `<div class="panel"><h2>Sanidad</h2><div class="panel-body" style="padding:0">
     <table><thead><tr><th>Fecha</th><th>Producto</th><th>Categoría</th><th class="num">Cantidad</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="empty">Sin registros.</td></tr>'}</tbody></table></div></div>`;
-}
-
-// ---- Simulador ----
-function renderUsuarios() {
-  const us = current.usuarios;
-  $('selUsuario').innerHTML = us.map((u) => `<option value="${esc(u.telefono)}">${esc(u.nombre)} · ${esc(u.rol)}</option>`).join('');
-  currentTel = us[0]?.telefono ?? null;
-}
-
-function renderChips() {
-  const chips = CHIPS[current.productor.tipo_campo] ?? CHIPS.mixto;
-  $('chips').innerHTML = chips.map((c) => `<button class="chip">${esc(c)}</button>`).join('');
-  [...$('chips').querySelectorAll('.chip')].forEach((b) => {
-    b.onclick = () => { $('inputMsg').value = b.textContent; $('inputMsg').focus(); };
-  });
-}
-
-function resetChat() {
-  $('chat').innerHTML = '';
-  addBubble('in', `¡Hola ${current.usuarios[0]?.nombre ?? ''}! Soy Parva 🌾. Contame qué pasó en el campo o preguntame algo.`);
-}
-
-function addBubble(dir, text, meta) {
-  const div = document.createElement('div');
-  div.className = `bubble ${dir === 'out' ? 'out' : 'in'}` + (meta && meta.denied ? ' denied' : '');
-  div.innerHTML = esc(text) + (meta && meta.label ? `<div class="meta">${esc(meta.label)}</div>` : '');
-  $('chat').appendChild(div);
-  $('chat').scrollTop = $('chat').scrollHeight;
-}
-
-async function onSend(e) {
-  e.preventDefault();
-  const texto = $('inputMsg').value.trim();
-  if (!texto || !currentTel) return;
-  $('inputMsg').value = '';
-  addBubble('out', texto);
-  try {
-    const res = await api('/api/whatsapp/sim', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ telefono: currentTel, texto }),
-    });
-    const label = `${res.status} · confianza ${(res.confidence ?? 0).toFixed(2)}`;
-    addBubble('in', res.reply ?? res.error ?? '...', { label, denied: res.status === 'denied' });
-    await refreshDashboard();
-  } catch (err) {
-    addBubble('in', 'Error de conexión con el backend.');
-  }
 }
 
 init();

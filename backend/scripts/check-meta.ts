@@ -68,10 +68,7 @@ if (faltantes.length) {
   console.error('  Copiá .env.example a .env y completalas. Sin token no se puede chequear nada más.\n');
   process.exit(1);
 }
-console.log(`✓ .env completo · WHATSAPP_MODE=${config.whatsappMode}`);
-if (config.whatsappMode !== 'meta') {
-  problemas.push('WHATSAPP_MODE no es "meta": el bot va a contestar en el body del webhook, no por WhatsApp.');
-}
+console.log('✓ .env completo');
 
 // --- 2. El número al que apunta el .env -------------------------------------
 const num = await graph(`${config.metaPhoneNumberId}?fields=display_phone_number,verified_name,quality_rating,code_verification_status`);

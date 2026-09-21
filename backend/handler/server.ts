@@ -1,10 +1,10 @@
 // Servidor HTTP con node:http (sin dependencias). Sirve la web app, la API del
-// dashboard, el endpoint del simulador de WhatsApp y el webhook con la forma
-// real de Meta Cloud API (mockeado: no requiere cuenta de Meta).
+// dashboard y el webhook de Meta Cloud API, que es por donde entran los
+// mensajes reales de WhatsApp.
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { config, modoMeta, faltaConfigMeta } from '../config.ts';
+import { config, faltaConfigMeta } from '../config.ts';
 import { initSchema } from '../repository/db.ts';
 import { seedIfEmpty } from '../repository/seed.ts';
 import * as repo from '../repository/repo.ts';
@@ -45,9 +45,6 @@ function readBodyBuffer(req: IncomingMessage): Promise<Buffer> {
     req.on('error', reject);
   });
 }
-
-const readBody = (req: IncomingMessage): Promise<string> =>
-  readBodyBuffer(req).then((b) => b.toString('utf8'));
 
 const TIPOS: Record<string, string> = { html: 'text/html', css: 'text/css', js: 'text/javascript', json: 'application/json', svg: 'image/svg+xml' };
 
@@ -109,7 +106,10 @@ async function manejarEntrante(m: MensajeEntrante): Promise<void> {
   }
   if (!m.texto.trim()) return;
 
-  const r = await processMessage(sender, m.texto, m.waMessageId);
+  // `|| null` y no el id tal cual: extraerEntrantes usa '' cuando el envelope
+  // no trae `msg.id` (un curl de prueba), y el índice único de wa_message_id
+  // trata a '' como un valor — el segundo mensaje sin id se dedupearía solo.
+  const r = await processMessage(sender, m.texto, m.waMessageId || null);
   if (!r) { console.log(`[wa] duplicado ignorado: ${m.waMessageId}`); return; }
   await enviarTexto(m.from, r.reply, m.waMessageId, m.phoneNumberId);
 }
@@ -147,19 +147,6 @@ const server = createServer(async (req, res) => {
       return res.end(content);
     }
 
-    // --- Simulador de WhatsApp (lo usa la web app) ---
-    if (method === 'POST' && path === '/api/whatsapp/sim') {
-      const body = JSON.parse((await readBody(req)) || '{}') as { telefono?: string; texto?: string };
-      if (!body.telefono || !body.texto) return sendJson(res, 400, { error: 'falta telefono o texto' });
-      const sender = repo.getSenderByTelefono(body.telefono);
-      if (!sender) return sendJson(res, 404, { error: 'teléfono no registrado' });
-      const result = await processMessage(sender, body.texto);
-      // El simulador no manda waMessageId, así que nunca dedupea; el guard está
-      // para que el tipo sea honesto.
-      if (!result) return sendJson(res, 409, { error: 'mensaje duplicado' });
-      return sendJson(res, 200, result);
-    }
-
     // --- Webhook Meta Cloud API: verificación (GET) ---
     if (method === 'GET' && path === '/webhook/whatsapp') {
       const mode = url.searchParams.get('hub.mode');
@@ -174,13 +161,13 @@ const server = createServer(async (req, res) => {
       res.writeHead(403); return res.end('forbidden');
     }
 
-    // --- Webhook Meta Cloud API: ingreso de mensajes (POST, forma real) ---
+    // --- Webhook Meta Cloud API: ingreso de mensajes (POST) ---
     if (method === 'POST' && path === '/webhook/whatsapp') {
       const raw = await readBodyBuffer(req);
 
-      // La firma solo se exige en modo meta; en sim el endpoint queda abierto
-      // igual que antes (NUNCA exponer sim a internet).
-      if (modoMeta() && !verificarFirma(raw, req.headers['x-hub-signature-256'] as string | undefined)) {
+      // Sin firma válida no se procesa nada: el webhook está expuesto a
+      // internet por el túnel y es la única puerta de entrada al pipeline.
+      if (!verificarFirma(raw, req.headers['x-hub-signature-256'] as string | undefined)) {
         console.warn('[wa] firma inválida — descartado');
         res.writeHead(401); return res.end('firma inválida');
       }
@@ -191,29 +178,16 @@ const server = createServer(async (req, res) => {
 
       const entrantes = extraerEntrantes(payload);
 
-      if (modoMeta()) {
-        // ACK primero: Meta reintenta durante días si el webhook tarda, y el
-        // pipeline puede esperar al modelo. Recién después se procesa.
-        sendJson(res, 200, { status: 'received', procesados: entrantes.length });
-        for (const m of entrantes) {
-          // Qué número propio recibió el mensaje: es el dato que falta cuando la
-          // WABA tiene el de test y el propio y uno de los dos "no contesta".
-          console.log(`[wa] ← ${m.from} → nuestro número ${m.phoneNumberId || '(sin metadata)'}${m.wabaId ? ` · WABA ${m.wabaId}` : ''}`);
-          encolar(m.from, () => manejarEntrante(m));
-        }
-        return;
-      }
-
-      // --- sim: las respuestas van en el body (simulador web, curl local) ---
-      const replies: unknown[] = [];
+      // ACK primero: Meta reintenta durante días si el webhook tarda, y el
+      // pipeline puede esperar al modelo. Recién después se procesa.
+      sendJson(res, 200, { status: 'received', procesados: entrantes.length });
       for (const m of entrantes) {
-        const sender = repo.getSenderByTelefono(m.from);
-        if (sender && m.texto) {
-          const r = await processMessage(sender, m.texto, m.waMessageId || null);
-          if (r) replies.push(r);
-        }
+        // Qué número propio recibió el mensaje: es el dato que falta cuando la
+        // WABA tiene el de test y el propio y uno de los dos "no contesta".
+        console.log(`[wa] ← ${m.from} → nuestro número ${m.phoneNumberId || '(sin metadata)'}${m.wabaId ? ` · WABA ${m.wabaId}` : ''}`);
+        encolar(m.from, () => manejarEntrante(m));
       }
-      return sendJson(res, 200, { status: 'received', procesados: replies.length, replies });
+      return;
     }
 
     res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -231,16 +205,13 @@ seedIfEmpty();
 server.listen(config.port, () => {
   console.log(`\n🌾 Parva MVP corriendo en http://localhost:${config.port}`);
   parserActivo().then((m) => console.log(`   Parser activo: ${m}`));
-  console.log(`   WhatsApp: modo ${config.whatsappMode}`);
-  if (modoMeta()) {
-    // La mayoría de las fallas de setup son una env var faltante, y sin este
-    // aviso el server arrancaría en silencio y simplemente nunca contestaría.
-    const faltan = faltaConfigMeta();
-    if (faltan.length) {
-      console.log(`   ⚠️  FALTA CONFIGURAR: ${faltan.join(', ')} — el bot no va a poder responder`);
-    } else {
-      console.log(`   ✓ credenciales de Meta cargadas (Graph ${config.metaGraphVersion})`);
-    }
+  // La mayoría de las fallas de setup son una env var faltante, y sin este
+  // aviso el server arrancaría en silencio y simplemente nunca contestaría.
+  const faltan = faltaConfigMeta();
+  if (faltan.length) {
+    console.log(`   ⚠️  FALTA CONFIGURAR: ${faltan.join(', ')} — el bot no va a poder responder`);
+  } else {
+    console.log(`   ✓ credenciales de Meta cargadas (Graph ${config.metaGraphVersion})`);
   }
-  console.log(`   webhook (forma Meta): /webhook/whatsapp  ·  estado: /api/state?productorId=1\n`);
+  console.log(`   webhook de Meta: /webhook/whatsapp  ·  estado: /api/state?productorId=1\n`);
 });

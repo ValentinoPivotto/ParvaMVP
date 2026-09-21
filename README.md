@@ -1,9 +1,8 @@
 # Parva — MVP
 
-ERP agropecuario simplificado que se carga y consulta por **WhatsApp** (texto o voz)
-y se ve en una **web app**. Este repo es el MVP del **sistema de datos + backend
-del bot**, con WhatsApp e IA **mockeados** para poder correrlo sin
-ninguna cuenta externa.
+ERP agropecuario simplificado que se carga y consulta por **WhatsApp** y se ve en
+una **web app**. El productor le escribe al bot desde su celular, por WhatsApp de
+verdad, y el dato aparece en el dashboard.
 
 > Diseño completo en [`docs/superpowers/specs/2026-06-22-parva-mvp-design.md`](docs/superpowers/specs/2026-06-22-parva-mvp-design.md).
 
@@ -24,6 +23,10 @@ node backend/handler/server.ts
 # luego abrir http://localhost:3000
 ```
 
+Eso levanta la web app con los datos de ejemplo. Para que el **bot** conteste
+hacen falta las credenciales de Meta y un túnel: ver
+[WhatsApp real](#whatsapp-real-meta-cloud-api).
+
 La base SQLite (`data/parva.db`, en la raíz del proyecto) y los datos de ejemplo se
 crean solos en el primer arranque. La ruta por defecto es independiente del
 directorio desde el que se ejecute Node; un `DB_PATH` relativo se resuelve desde
@@ -38,8 +41,9 @@ npm run reset    # borra y recarga la base
 
 ## Qué tiene el MVP
 
-- **Web app** (`frontend/`): dashboard con la "planilla" (movimientos), lotes y márgenes,
-  hacienda y sanidad — y un **simulador de WhatsApp** embebido para chatear con el bot.
+- **Web app** (`frontend/`): dashboard con la "planilla" (movimientos), lotes y
+  márgenes, hacienda y sanidad. Se refresca solo cada 5 s mientras la pestaña
+  está visible, así lo que se manda por WhatsApp aparece sin recargar.
 - **Backend del bot** (`backend/`): el flujo completo
   `mensaje → transcribe → parse → normalize → validate → persist`, con permisos por
   rol, guardrails y aislamiento por tenant.
@@ -47,13 +51,13 @@ npm run reset    # borra y recarga la base
   - *Estancia La Esperanza* — **agrícola** (lotes, movimientos, márgenes).
   - *Don Pedro e Hijos* — **ganadero** (hacienda, eventos, sanidad).
 
-## Qué está mockeado (y cómo se haría real)
+## Qué es real y qué falta
 
-| Pieza | Default (`sim`) | Real (cambio por env) |
+| Pieza | Hoy | Pendiente |
 |---|---|---|
-| WhatsApp | Simulador en la web + `POST /webhook/whatsapp` con la forma real de Meta | **Meta Cloud API** con `WHATSAPP_MODE=meta` (ver abajo) |
-| Parser IA | Mock determinístico en español (reglas) | **Nova Lite sobre Bedrock** con credenciales AWS (ver abajo), o modelo local vía Ollama |
-| Transcripción | Devuelve el texto (no hay audio) | Amazon Transcribe (aún no cableado) |
+| WhatsApp | **Meta Cloud API**: webhook firmado + envío por Graph API | Número propio verificado en vez del de test |
+| Parser IA | **Nova Lite sobre Bedrock** con credenciales AWS, o modelo local vía Ollama; sin ninguno cae a reglas determinísticas en español | Set de mensajes anotados para comparar los tres |
+| Transcripción | Sólo texto: un audio devuelve un placeholder | Amazon Transcribe |
 | Base de datos | SQLite (`node:sqlite`) | Postgres / Supabase |
 
 Variables en `.env.example`. Los scripts de npm cargan `.env` automáticamente
@@ -121,12 +125,10 @@ intuición y no una medición.
 
 ## WhatsApp real (Meta Cloud API)
 
-Con `WHATSAPP_MODE=meta` el bot responde por WhatsApp de verdad: verifica la
-firma `X-Hub-Signature-256`, deduplica los reintentos de Meta por `msg.id`,
-contesta el webhook al instante y recién después procesa (en cola por remitente,
-para no romper el flujo de confirmación).
-
-> ⚠️ El modo `sim` deja el webhook **sin autenticar**. No lo expongas a internet.
+Es el único camino de entrada: el bot verifica la firma `X-Hub-Signature-256`
+(sin `META_APP_SECRET` **rechaza todo**), deduplica los reintentos de Meta por
+`msg.id`, contesta el webhook al instante y recién después procesa (en cola por
+remitente, para no romper el flujo de confirmación).
 
 ### 1. Configurar la app en Meta
 
@@ -148,10 +150,10 @@ para no romper el flujo de confirmación).
 ### 2. Levantar el server y el túnel
 
 ```bash
-cp .env.example .env       # y completar las META_* + WHATSAPP_MODE=meta
+cp .env.example .env       # y completar las META_*
 npm run link-phone -- --list
 npm run link-phone -- 1 +54911XXXXXXXX     # tu celular → Juan Pérez (owner)
-npm start                                   # verificá que diga "modo meta" sin faltantes
+npm start                                   # verificá que no liste faltantes
 
 npm run tunnel                              # cloudflared, sin cuenta
 # o: ngrok http 3000   (requiere cuenta, pero su inspector en :4040 muestra
@@ -257,18 +259,31 @@ es el *display name* del número, que es un trámite aparte.
 - `¿Cuántos terneros tengo?`
 - `Vacuné 120 vacas contra la aftosa`
 
-**Permisos:** en el simulador, elegí el usuario *gestor_campo* y pedí `¿cuál es el
-margen?` → el bot lo **deniega** (el gestor no ve info económica).
+**Permisos:** escribí desde el celular de un usuario con rol *gestor_campo*
+(`npm run link-phone -- --list`) y pedí `¿cuál es el margen?` → el bot lo
+**deniega** (el gestor no ve info económica).
 
 **Confirmación:** mandá algo ambiguo como `compré gasoil` (sin cantidad) → el bot
 **pide confirmar**; respondé `sí` y lo registra.
 
-El webhook real de Meta se puede ejercitar con:
+### Sin celular a mano
+
+Se le puede pegar al webhook directamente, pero hay que firmar el body igual que
+Meta (`printf` sin `\n`: un byte de más cambia el HMAC):
 
 ```bash
-curl -X POST http://localhost:3000/webhook/whatsapp -H 'Content-Type: application/json' \
-  -d '{"entry":[{"changes":[{"value":{"messages":[{"from":"5491100000003","type":"text","text":{"body":"Nacieron 5 terneros"}}]}}]}]}'
+set -a && . ./.env && set +a
+BODY='{"entry":[{"changes":[{"value":{"messages":[{"id":"wamid.prueba1","from":"5491100000003","type":"text","text":{"body":"Nacieron 5 terneros"}}]}}]}]}'
+SIG="sha256=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$META_APP_SECRET" | awk '{print $NF}')"
+curl -X POST http://localhost:3000/webhook/whatsapp \
+  -H 'Content-Type: application/json' -H "X-Hub-Signature-256: $SIG" \
+  --data-binary "$BODY"
 ```
+
+La respuesta del curl es sólo el ACK: el bot contesta **por WhatsApp**, así que
+va a intentar mandarle un mensaje real a ese número por la Cloud API. Cambiá el
+`id` en cada prueba o el dedup se lo come, y mirá el log y el dashboard, no el
+body de la respuesta.
 
 ## Arquitectura y recorrido de un mensaje
 
@@ -277,7 +292,7 @@ El backend se organiza en las tres capas **handler → service → repository**.
 
 | Capa | Responsabilidad | Archivos principales |
 |---|---|---|
-| `backend/handler/` | Rutas HTTP, estáticos, simulador y transporte de Meta | `server.ts`, `whatsapp.ts` |
+| `backend/handler/` | Rutas HTTP, estáticos y transporte de Meta | `server.ts`, `whatsapp.ts` |
 | `backend/service/` | Orquestación de mensajes, modelos, reglas y resultados del negocio | `process.ts`, `parser.ts`, `normalizer.ts`, `validator.ts`, `permissions.ts`, `query.ts`, `margin.ts` |
 | `backend/repository/` | Lecturas, escrituras, agregaciones SQL, auditoría y esquema SQLite | `repo.ts`, `db.ts`, `seed.ts` |
 
@@ -289,7 +304,7 @@ backend/
   service/
     process.ts       Orquesta el recorrido y las confirmaciones
     transcriber.ts   Devuelve el texto; audio todavía sin conectar
-    parser.ts        Reglas mock, prompts y adaptadores Bedrock/Ollama
+    parser.ts        Reglas determinísticas, prompts y adaptadores Bedrock/Ollama
     normalizer.ts    Resuelve lotes y unidades
     validator.ts     Decide aceptar, pedir confirmación o denegar
     permissions.ts   Permisos por rol
@@ -316,16 +331,17 @@ en la raíz; no hay un build ni un despliegue separado para el frontend.
 
 Para seguir **«Compré 200 litros de gasoil para el lote 4»** en el código:
 
-1. [`handler/server.ts`](backend/handler/server.ts) recibe el mensaje del
-   simulador (`POST /api/whatsapp/sim`) o del webhook. Busca el remitente por
-   teléfono en el repositorio para obtener usuario, rol y productor, y llama a
-   `processMessage(sender, texto)`.
+1. [`handler/server.ts`](backend/handler/server.ts) recibe el mensaje en el
+   webhook (`POST /webhook/whatsapp`), verifica la firma y contesta el ACK.
+   Busca el remitente por teléfono en el repositorio para obtener usuario, rol y
+   productor, y llama a `processMessage(sender, texto)`.
 2. [`service/process.ts`](backend/service/process.ts) llama a `transcribe`
    (hoy devuelve el texto), guarda el mensaje original en `raw_message` y llama
    a `parse`. También coordina las consultas y las confirmaciones de pendientes.
 3. [`service/parser.ts`](backend/service/parser.ts) interpreta la intención y
    extrae los campos: un insumo, gasoil, cantidad 200, unidad litros y referencia
-   al lote 4. Aquí están las reglas mock y los prompts/adaptadores de los modelos.
+   al lote 4. Aquí están las reglas de respaldo y los prompts/adaptadores de los
+   modelos.
 4. [`service/normalizer.ts`](backend/service/normalizer.ts) busca ese lote dentro
    del productor mediante el repositorio y convierte la unidad a `L`.
 5. [`service/validator.ts`](backend/service/validator.ts) aplica
@@ -335,7 +351,8 @@ Para seguir **«Compré 200 litros de gasoil para el lote 4»** en el código:
 6. Si se acepta, `processMessage` llama a `insertMovimiento` en
    [`repository/repo.ts`](backend/repository/repo.ts), que guarda el movimiento y
    su auditoría usando [`db.ts`](backend/repository/db.ts). La respuesta vuelve al
-   handler; el simulador la muestra y vuelve a pedir el estado del dashboard.
+   handler, que la manda por la Cloud API; el dashboard la levanta en el próximo
+   refresco.
 
 Las consultas del bot pasan por `service/query.ts`; las reglas del margen están
 en `service/margin.ts` y las sumas SQL en el repositorio. Las lecturas simples de
