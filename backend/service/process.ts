@@ -81,7 +81,7 @@ function persistir(sender: Sender, n: Normalized): string {
 
 /**
  * Procesa un mensaje entrante. Devuelve `null` si `waMessageId` ya fue procesado
- * (reintento de Meta); el simulador no pasa waMessageId, así que nunca es null.
+ * (reintento de Meta), o sea: el mensaje ya se contestó y hay que ignorarlo.
  */
 export async function processMessage(
   sender: Sender, textoEntrada: string, waMessageId?: string | null,

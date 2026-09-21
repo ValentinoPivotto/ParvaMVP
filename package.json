@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Parva — MVP: ERP agropecuario por WhatsApp. Web app + backend del bot (WhatsApp e IA mockeados). Cero dependencias.",
+  "description": "Parva — MVP: ERP agropecuario por WhatsApp. Web app + bot sobre Meta Cloud API. Cero dependencias.",
   "engines": {
     "node": ">=24"
   },

@@ -7,7 +7,6 @@ export function buildState(productorId: number) {
   if (!productor) return null;
   return {
     productor,
-    usuarios: repo.listUsuarios(productorId),
     campos: repo.listCampos(productorId),
     lotes: repo.listLotes(productorId),
     campanias: repo.listCampanias(productorId),

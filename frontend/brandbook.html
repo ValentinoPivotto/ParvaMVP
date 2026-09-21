@@ -43,14 +43,13 @@
   .shadow-box { width: 140px; height: 72px; background: var(--surface); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); color: var(--muted-foreground); }
   .cap { font-size: var(--text-xs); color: var(--muted-foreground); margin-top: var(--space-xs); text-align: center; }
   .gallery { display: grid; gap: var(--space-md); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; }
-  .demo-chat { background: var(--wa-surface); padding: var(--space-md); border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: var(--space-xs); }
   .demo-row { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: center; }
 </style>
 </head>
 <body>
   <header class="bb">
     <h1>🌾 Parva Brandbook</h1>
-    <p>Design tokens for the MVP web app, read live from <code>styles.css</code>. This is move 1 (tokenized, current look). When we re-skin toward the shared brand, this page updates itself. The WhatsApp chrome tokens stay independent so the simulator keeps its WhatsApp look.</p>
+    <p>Design tokens for the MVP web app, read live from <code>styles.css</code>. This is move 1 (tokenized, current look). When we re-skin toward the shared brand, this page updates itself. The WhatsApp literals stay independent of the brand scale: they mark what came in through the bot.</p>
   </header>
   <div id="app"></div>
 
@@ -96,7 +95,7 @@
     + ramp('Ink / Cream', ['--clr-sand-muted','--clr-ink','--clr-cream-muted','--clr-cream','--clr-white']));
 
   section('Color · semantic roles', colorGrid([
-    '--background','--foreground','--muted-foreground','--surface','--surface-2','--surface-3',
+    '--background','--foreground','--muted-foreground','--surface','--surface-2',
     '--border','--border-soft','--primary','--primary-strong','--primary-bg','--on-primary',
     '--action','--action-bg','--action-text','--on-action','--link','--ring'
   ]));
@@ -105,8 +104,8 @@
     '--info','--info-bg','--warning','--warning-bg','--danger','--danger-bg','--labor','--labor-bg'
   ]));
 
-  section('Color · WhatsApp chrome (independent of the brand)', colorGrid([
-    '--wa-header','--wa-header-strong','--wa-surface','--wa-outgoing','--wa-incoming'
+  section('Color · WhatsApp (independent of the brand)', colorGrid([
+    '--wa-header','--wa-outgoing'
   ]));
 
   // ---- Typography ----
@@ -117,7 +116,7 @@
   section('Typography · families',
     '<div class="type-row"><div class="lbl">--font-sans</div><div style="font-family:var(--font-sans);font-size:var(--text-2xl)">Parva agrogestión inteligente</div></div>'
     + '<div class="type-row"><div class="lbl">--font-serif</div><div style="font-family:var(--font-serif);font-size:var(--text-4xl)">Parva agrogestión</div></div>'
-    + '<div style="font-size:var(--text-xs);color:var(--muted-foreground);margin-top:var(--space-xs)">Switzer for everything. Instrument Serif reserved for display accents. The WhatsApp sim uses <code>--wa-font</code> (system) so it stays WhatsApp.</div>');
+    + '<div style="font-size:var(--text-xs);color:var(--muted-foreground);margin-top:var(--space-xs)">Switzer for everything. Instrument Serif reserved for display accents.</div>');
 
   section('Typography · size scale',
     ['--text-2xs','--text-xs','--text-xs2','--text-sm','--text-md','--text-md2','--text-base','--text-lg','--text-xl','--text-2xl','--text-3xl','--text-4xl'].map(typeRow).join(''));
@@ -156,14 +155,8 @@
       + '</div>'
       + '<div class="demo-row" style="margin-top:var(--space-sm)">'
         + '<span class="badge">agrícola</span><button class="btn-ghost">Exportar</button>'
-        + '<button class="chip">¿Cuál es el margen?</button>'
       + '</div>'
       + '<div class="alerta" style="max-width:260px">Faltan ventas: margen no confiable.</div>'
-    + '</div>'
-    + '<div class="demo-chat">'
-      + '<div class="bubble out">Compré 200 litros de gasoil<div class="meta">10:24</div></div>'
-      + '<div class="bubble in">Registrado en el lote 4.<div class="meta">10:24</div></div>'
-      + '<div class="bubble in denied">No tenés permiso para ver márgenes.<div class="meta">10:25</div></div>'
     + '</div>'
     + '</div>');
 </script>

@@ -1,4 +1,4 @@
-// Configuración por entorno. Todo tiene default para correr local sin secrets.
+// Configuración por entorno. El parser corre sin secrets; WhatsApp exige las META_*.
 import { fileURLToPath } from 'node:url';
 
 // La base por defecto sigue en la raíz del proyecto, independiente del cwd.
@@ -31,10 +31,8 @@ export const config = {
   // Umbral de confianza del parser para pedir confirmación antes de persistir.
   confidenceThreshold: Number(process.env.CONFIDENCE_THRESHOLD ?? 0.7),
 
-  // WhatsApp: 'sim' (default) responde en el body del webhook — simulador web y
-  // curl local. 'meta' habla con la Cloud API real: exige firma y envía saliente.
-  whatsappMode: (process.env.WHATSAPP_MODE ?? 'sim') as 'sim' | 'meta',
-
+  // WhatsApp: Meta Cloud API, único camino. El webhook exige firma válida y las
+  // respuestas salen por la Graph API; sin las META_* el bot no contesta.
   metaVerifyToken: process.env.META_VERIFY_TOKEN ?? 'parva-dev',
   metaAppId: process.env.META_APP_ID ?? '',
   metaAppSecret: process.env.META_APP_SECRET ?? '',
@@ -52,11 +50,7 @@ export function useBedrock(): boolean {
   return config.awsAccessKeyId.trim().length > 0 && config.awsSecretAccessKey.trim().length > 0;
 }
 
-export function modoMeta(): boolean {
-  return config.whatsappMode === 'meta';
-}
-
-/** Variables que faltan para el modo meta ([] = listo para arrancar). */
+/** Variables que faltan para hablar con Meta ([] = listo para arrancar). */
 export function faltaConfigMeta(): string[] {
   const faltan: string[] = [];
   if (!config.metaAccessToken.trim()) faltan.push('META_ACCESS_TOKEN');

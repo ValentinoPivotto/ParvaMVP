@@ -38,10 +38,6 @@ export function getProductor(id: number): any {
   return db.prepare('SELECT * FROM productor WHERE id = ?').get(id);
 }
 
-export function listUsuarios(productorId: number): any[] {
-  return db.prepare('SELECT * FROM usuario WHERE productor_id = ? ORDER BY id').all(productorId);
-}
-
 // --- Estructura productiva ------------------------------------------------
 
 export function listCampos(productorId: number): any[] {

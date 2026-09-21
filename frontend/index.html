@@ -26,28 +26,8 @@
   </header>
 
   <main class="layout">
-    <section class="dashboard">
-      <div id="kpis" class="kpis"></div>
-      <div id="panels"></div>
-    </section>
-
-    <aside class="sim">
-      <div class="sim-head">
-        <div>
-          <div class="sim-title">WhatsApp <span class="sim-sub">simulador</span></div>
-          <div class="sim-note">El bot está mockeado, escribí como el productor.</div>
-        </div>
-        <label class="field light">Como
-          <select id="selUsuario"></select>
-        </label>
-      </div>
-      <div id="chat" class="chat"></div>
-      <div id="chips" class="chips"></div>
-      <form id="formMsg" class="composer" autocomplete="off">
-        <input id="inputMsg" placeholder="Escribí un mensaje…" />
-        <button type="submit" aria-label="Enviar">➤</button>
-      </form>
-    </aside>
+    <div id="kpis" class="kpis"></div>
+    <div id="panels"></div>
   </main>
 
   <script src="/app.js" type="module"></script>
@@ -158,7 +138,6 @@
     }
 
     function boot() {
-      enhance(document.getElementById('selUsuario'), { className: 'dropdown-chat' });
       var panels = document.getElementById('panels');
       if (panels) {
         new MutationObserver(function () { decorateMargenes(panels); }).observe(panels, { childList: true });

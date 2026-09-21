@@ -35,7 +35,7 @@ export function normalizeTelefono(raw: string): string {
  * sin duplicados: tal cual → con '+' → canónica AR-con-9 → AR-sin-9.
  *
  * El orden importa: un teléfono ya canónico (como los sembrados) matchea en la
- * primera consulta, así el simulador web se comporta igual que antes.
+ * primera consulta, sin pasar por las variantes.
  */
 export function phoneVariants(raw: string): string[] {
   const d = soloDigitos(raw);
