@@ -14,7 +14,7 @@ import urllib.request
 from typing import Any
 
 from ..config import config, use_bedrock
-from ..formato import NAN, a_json, fecha_iso, numero, percent_encode
+from ..formato import NAN, a_json, fecha_iso, numero, percent_encode, texto_numero
 from ..types import ParsedIntent
 from .sigv4 import AwsCreds, firmar_aws
 
@@ -48,11 +48,18 @@ CATEGORIAS_ANIMAL: dict[str, str] = {
 
 UNIDADES = 'litros?|lts?|l|kg|kilos?|tn|toneladas?|ton|bolsas?|cabezas?|unidades?|has?|hect[aá]reas?'
 
+# Cuántos caracteres puede tener un importe escrito. El tope no es estético:
+# con `[\d.,]+` seguido de "pesos", el motor prueba desde cada posición y
+# consume todos los dígitos en cada intento — sobre un mensaje de 20.000
+# dígitos eso son segundos, y crece al cuadrado. Un monto de 40 caracteres ya
+# es absurdo, así que acotarlo lo vuelve lineal sin perder ningún caso real.
+_LARGO_IMPORTE = 40
+
 _RE_CATEGORIA = {p: re.compile(rf'\b{p}\b', _JS) for p in CATEGORIAS_ANIMAL}
 _RE_MONTO_PESO = re.compile(r'\$' + _ESP + r'*([\d.,]+)', _JS)
-_RE_MONTO_PALABRA = re.compile(r'([\d.,]+)' + _ESP + r'*pesos', _JS)
+_RE_MONTO_PALABRA = re.compile(r'([\d.,]{1,%d})' % _LARGO_IMPORTE + _ESP + r'*pesos', _JS)
 _RE_QUITA_MONTO_PESO = re.compile(r'\$' + _ESP + r'*[\d.,]+', _JS)
-_RE_QUITA_MONTO_PALABRA = re.compile(r'[\d.,]+' + _ESP + r'*pesos', _JS)
+_RE_QUITA_MONTO_PALABRA = re.compile(r'[\d.,]{1,%d}' % _LARGO_IMPORTE + _ESP + r'*pesos', _JS)
 _RE_CANTIDAD = re.compile(rf'(\d+(?:[.,]\d+)?){_ESP}*({UNIDADES})?', _JSI)
 _RE_LOTE = re.compile(r'lote' + _ESP + r'*([a-zA-Z0-9]+)', _JS)
 _RE_AYER = re.compile(r'\bayer\b', _JS)
@@ -301,34 +308,47 @@ def _construir_mensajes(texto: str) -> list[dict[str, str]]:
     return msgs
 
 
-#: Campos que el pipeline trata como números. Un modelo devuelve lo que quiere.
+#: Cómo se usa cada campo más adelante. Los numéricos entran en columnas REAL
+#: o INTEGER; los de texto se concatenan en los mensajes y se bindean como TEXT.
 _CAMPOS_NUMERICOS = ('cantidad', 'monto')
+_CAMPOS_TEXTO = ('producto', 'unidad', 'moneda', 'loteRef', 'categoriaAnimal',
+                 'eventoTipo', 'laborTipo', 'categoria', 'fecha', 'descripcion')
 
 
-def _numeros_de_los_campos(fields: Any) -> dict[str, Any]:
-    """Convierte a número las cantidades y montos que lleguen como texto.
+def _campos_saneados(fields: Any) -> dict[str, Any]:
+    """Deja los campos del modelo con los tipos que el pipeline espera.
 
-    Si `cantidad` viene como "200", el registro se guarda igual (SQLite
-    convierte solo), pero armar la respuesta revienta con un TypeError. Y para
-    entonces el mensaje ya quedó marcado como procesado: el productor no recibe
-    nada y el reintento de Meta se descarta por duplicado.
+    Un modelo devuelve el JSON que quiere, y de acá en adelante nadie vuelve a
+    chequear tipos: `loteRef` se le pasa a `.strip()`, `unidad` se concatena a
+    un string y `descripcion` se bindea a SQLite. Cada uno de esos revienta con
+    un tipo distinto, y siempre tarde — con el movimiento ya guardado y el
+    mensaje marcado como procesado, así que el productor no recibe nada y el
+    reintento de Meta se descarta por duplicado.
 
-    Lo que no se puede leer como número se trata como ausente. Guardar un NaN
-    sería peor: el campo queda vacío en la base igual, pero sin que nadie lo
-    note. Así, en cambio, salta la confirmación.
+    Los números que llegan como texto se convierten; los textos que llegan como
+    número se pasan a texto (un `loteRef: 4` claramente quiso decir "lote 4").
+    Lo que no es un valor simple —una lista, un objeto— se descarta: se trata
+    como si el modelo no hubiera dicho nada de ese campo.
     """
     if not isinstance(fields, dict):
         return {}
-    salida = dict(fields)
-    for clave in _CAMPOS_NUMERICOS:
-        valor = salida.get(clave)
-        if valor is None or (isinstance(valor, (int, float)) and not isinstance(valor, bool)):
+    salida: dict[str, Any] = {}
+    for clave, valor in fields.items():
+        if valor is None:
             continue
-        n = numero(valor)
-        if isinstance(n, float) and math.isnan(n):
-            del salida[clave]
-        else:
-            salida[clave] = n
+        if clave in _CAMPOS_NUMERICOS:
+            n = valor if isinstance(valor, (int, float)) and not isinstance(valor, bool) else numero(valor)
+            if not (isinstance(n, float) and math.isnan(n)):
+                salida[clave] = n
+            continue
+        if clave in _CAMPOS_TEXTO:
+            if isinstance(valor, str):
+                salida[clave] = valor
+            elif isinstance(valor, (int, float)) and not isinstance(valor, bool):
+                salida[clave] = texto_numero(valor)
+            # Cualquier otra cosa se descarta.
+            continue
+        salida[clave] = valor
     return salida
 
 
@@ -341,8 +361,10 @@ def _normalizar_salida(p: Any, texto: str) -> ParsedIntent:
     return ParsedIntent(
         intent=p.get('intent') if p.get('intent') is not None else 'unknown',
         record_type=p.get('recordType'),
-        fields=_numeros_de_los_campos(p.get('fields')),
-        query=p.get('query'),
+        fields=_campos_saneados(p.get('fields')),
+        # Una `query` que no es un objeto se trata como si no viniera: más
+        # adelante se le pide `.get('metric')` sin preguntar.
+        query=p.get('query') if isinstance(p.get('query'), dict) else None,
         confidence=confidence if es_numero else 0.8,
         raw_text=texto,
     )

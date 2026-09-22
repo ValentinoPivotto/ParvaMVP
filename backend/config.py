@@ -1,5 +1,7 @@
 """Configuración por entorno. El parser corre sin secrets; WhatsApp exige las META_*."""
+import math
 import os
+import sys
 from pathlib import Path
 
 from .formato import numero
@@ -81,6 +83,27 @@ def _parsear_env(texto: str) -> dict[str, str]:
 _cargar_env(RAIZ / '.env')
 
 
+def _numero_o_default(clave: str, por_defecto: float) -> float:
+    """Lee una variable numérica; si no se entiende, avisa y usa el default.
+
+    Quedarse con el valor roto es peor que ignorarlo: un PORT ilegible corta el
+    arranque con un error que no dice cuál era la variable, y un umbral de
+    confianza ilegible deja NaN, que desactiva el pedido de confirmación sin
+    que nada lo anuncie.
+    """
+    crudo = os.environ.get(clave)
+    if crudo is None or not crudo.strip():
+        # Una variable vacía se lee como ausente, no como cero. `PORT=` daba un
+        # puerto al azar y `CONFIDENCE_THRESHOLD=` dejaba el umbral en 0, que
+        # es lo mismo que no pedir confirmación nunca.
+        return por_defecto
+    n = numero(crudo, por_defecto)
+    if isinstance(n, float) and math.isnan(n):
+        print(f'⚠️  {clave}={crudo!r} no es un número; se usa {por_defecto}', file=sys.stderr)
+        return por_defecto
+    return n
+
+
 def _env(clave: str, por_defecto: str = '') -> str:
     """`process.env.X ?? por_defecto`: una variable vacía es un valor, no una ausencia."""
     valor = os.environ.get(clave)
@@ -90,7 +113,7 @@ def _env(clave: str, por_defecto: str = '') -> str:
 class _Config:
     # La base por defecto sigue en la raíz del proyecto, independiente del cwd.
     # Un DB_PATH relativo explícito conserva su resolución desde el cwd.
-    port = int(numero(os.environ.get('PORT'), 3000))
+    port = int(_numero_o_default('PORT', 3000))
     db_path = _env('DB_PATH', str(RAIZ / 'data' / 'parva.db'))
 
     # Modo del parser: auto | mock | local | bedrock
@@ -113,7 +136,10 @@ class _Config:
     bedrock_model_id = _env('BEDROCK_MODEL_ID', 'amazon.nova-lite-v1:0')
 
     # Umbral de confianza del parser para pedir confirmación antes de persistir.
-    confidence_threshold = numero(os.environ.get('CONFIDENCE_THRESHOLD'), 0.7)
+    # Si el valor no se entiende se usa el default en vez de quedarse con NaN:
+    # `confianza < NaN` es siempre False, así que un typo apagaba el pedido de
+    # confirmación por completo, sin un solo error a la vista.
+    confidence_threshold = _numero_o_default('CONFIDENCE_THRESHOLD', 0.7)
 
     # WhatsApp: Meta Cloud API, único camino. El webhook exige firma válida y las
     # respuestas salen por la Graph API; sin las META_* el bot no contesta.

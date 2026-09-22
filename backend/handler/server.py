@@ -212,7 +212,11 @@ class _Handler(BaseHTTPRequestHandler):
                 self.rfile.readline()       # el CRLF que cierra el chunk
             return b''.join(chunks)
 
-        largo = int(self.headers.get('Content-Length') or 0)
+        crudo_largo = (self.headers.get('Content-Length') or '0').strip()
+        if not crudo_largo.isdigit():
+            self.close_connection = True
+            raise _PedidoInvalido('Content-Length inválido')
+        largo = int(crudo_largo)
         if largo > MAX_BODY:
             self.close_connection = True
             raise _PedidoInvalido('body demasiado grande')

@@ -121,7 +121,11 @@ def _persistir(sender: Sender, n: Normalized) -> str:
             categoria=n.categoria, cantidad=n.cantidad,
             monto=n.monto, fecha=n.fecha, origen='bot', created_by=sender.usuario_id,
         )
-        return f'✅ Registré {n.evento_tipo} de {texto_numero(n.cantidad)} {n.categoria}. Stock actualizado.'
+        # Un traslado cambia de campo pero no el total, así que decir "stock
+        # actualizado" ahí sería mentir igual que decirlo con un tipo inventado.
+        efecto = (' Stock actualizado.' if n.evento_tipo in ('nacimiento', 'compra', 'muerte', 'venta')
+                  else ' El stock total no cambia.')
+        return f'✅ Registré {n.evento_tipo} de {texto_numero(n.cantidad)} {n.categoria}.{efecto}'
     if rt == 'evento_sanitario':
         repo.insert_evento_sanitario(
             productor_id=sender.productor_id, campo_id=campo_id, producto=n.producto,
@@ -132,7 +136,9 @@ def _persistir(sender: Sender, n: Normalized) -> str:
         if not n.producto:
             return f'✅ Registré un evento sanitario{cant}.{_avisos(n)}'
         return f'✅ Registré sanidad: {n.producto}{cant}.'
-    return 'Registrado.'
+    # Sin un tipo de registro conocido no se guardó nada: contestar
+    # "Registrado." sería anunciar algo que no pasó.
+    raise ValueError(f'tipo de registro desconocido: {n.record_type!r}')
 
 
 def process_message(
@@ -154,13 +160,17 @@ def process_message(
         if not pend or not pend['parsed_json']:
             return ProcessResult(reply='No tengo nada pendiente para confirmar.', intent='confirm',
                                  status='unknown', confidence=parsed.confidence)
-        norm = Normalized.from_json(json.loads(pend['parsed_json']))
         try:
+            guardado = json.loads(pend['parsed_json'])
+            if not isinstance(guardado, dict):
+                raise ValueError(f'parsed_json no es un objeto: {type(guardado).__name__}')
+            norm = Normalized.from_json(guardado)
             reply = _persistir(sender, norm)
         except Exception:
-            # El pendiente se cierra igual. Dejarlo abierto hacía que cada "sí"
-            # siguiente volviera a intentar lo mismo y a fallar: el productor
-            # quedaba en un loop donde confirmar no hace nada, para siempre.
+            # Leer el pendiente entra en el mismo `try` que guardarlo: si el
+            # JSON quedó ilegible, parsearlo tira antes de llegar al persist y
+            # el pendiente quedaba abierto, con cada "sí" siguiente fallando
+            # igual. Para siempre y sin decir nada.
             repo.set_raw_estado(pend['id'], 'discarded')
             raise
         repo.set_raw_estado(pend['id'], 'confirmed')

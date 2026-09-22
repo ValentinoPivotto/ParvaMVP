@@ -3,9 +3,10 @@
 Decide si un registro se persiste, se rechaza por permiso, o pide confirmación.
 """
 from dataclasses import dataclass
+from typing import get_args
 
 from ..config import config
-from ..types import Rol
+from ..types import EventoHaciendaTipo, Rol
 from .normalizer import Normalized
 from .permissions import puede_crear
 
@@ -52,7 +53,10 @@ def _campos_requeridos(n: Normalized) -> tuple[str, bool] | None:
             return 'no entendí la categoría de hacienda', True
         if n.cantidad is None:
             return 'no entendí la cantidad de animales', True
-        if not n.evento_tipo:
+        if n.evento_tipo not in get_args(EventoHaciendaTipo):
+            # Incluye el caso de que el modelo invente un tipo: un evento con
+            # un tipo que el sistema no conoce no mueve stock y queda como una
+            # fila que no significa nada.
             return 'no entendí qué pasó con los animales', True
         return None
     if rt == 'evento_sanitario':

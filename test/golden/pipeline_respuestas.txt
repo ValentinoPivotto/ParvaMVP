@@ -111,11 +111,11 @@
 +5491100000001 · "pagué $ 1.200.000"
     → [created] ✅ Registré un gasto de $1.200.000.
 +5491100000001 · "trasladé 20 novillos"
-    → [created] ✅ Registré traslado de 20 novillo. Stock actualizado.
+    → [created] ✅ Registré traslado de 20 novillo. El stock total no cambia.
 +5491100000001 · "pasé 10 vacas al lote 3"
-    → [created] ✅ Registré traslado de 10 vaca. Stock actualizado.
+    → [created] ✅ Registré traslado de 10 vaca. El stock total no cambia.
 +5491100000001 · "moví 5 toros"
-    → [created] ✅ Registré traslado de 5 toro. Stock actualizado.
+    → [created] ✅ Registré traslado de 5 toro. El stock total no cambia.
 +5491100000001 · "perdí 3 terneros"
     → [created] ✅ Registré muerte de 3 ternero. Stock actualizado.
 +5491100000001 · "murió una vaca"
@@ -341,11 +341,11 @@
 +5491100000004 · "pagué $ 1.200.000"
     → [created] ✅ Registré un gasto de $1.200.000.
 +5491100000004 · "trasladé 20 novillos"
-    → [created] ✅ Registré traslado de 20 novillo. Stock actualizado.
+    → [created] ✅ Registré traslado de 20 novillo. El stock total no cambia.
 +5491100000004 · "pasé 10 vacas al lote 3"
-    → [created] ✅ Registré traslado de 10 vaca. Stock actualizado.
+    → [created] ✅ Registré traslado de 10 vaca. El stock total no cambia.
 +5491100000004 · "moví 5 toros"
-    → [created] ✅ Registré traslado de 5 toro. Stock actualizado.
+    → [created] ✅ Registré traslado de 5 toro. El stock total no cambia.
 +5491100000004 · "perdí 3 terneros"
     → [created] ✅ Registré muerte de 3 ternero. Stock actualizado.
 +5491100000004 · "murió una vaca"
