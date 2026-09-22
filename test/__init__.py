@@ -16,7 +16,8 @@ import tempfile
 
 DIR_TEMPORAL = tempfile.mkdtemp(prefix='parva-test-')
 
-os.environ.update({
+#: Todas las variables que lee el backend, así que ninguna llega desde el .env.
+ENTORNO = {
     'DB_PATH': os.path.join(DIR_TEMPORAL, 'parva.db'),
     # Reglas determinísticas: sin modelo, sin red, misma salida siempre.
     'PARSER_MODE': 'mock',
@@ -31,6 +32,7 @@ os.environ.update({
     'META_PHONE_NUMBER_ID': '',
     'META_GRAPH_VERSION': 'v25.0',
     'META_REPLY_TO_UNKNOWN': '0',
+    'META_WABA_ID': '',
     # Sin credenciales de AWS ni Ollama: el parser no sale a la red.
     'AWS_ACCESS_KEY_ID': '',
     'AWS_SECRET_ACCESS_KEY': '',
@@ -38,4 +40,8 @@ os.environ.update({
     'AWS_REGION': 'us-east-2',
     'BEDROCK_MODEL_ID': 'amazon.nova-lite-v1:0',
     'OLLAMA_URL': 'http://127.0.0.1:1',
-})
+    'LOCAL_MODEL': 'qwen2.5:3b',
+    # Los tests del túnel fijan el suyo.
+    'NGROK_DOMAIN': '',
+}
+os.environ.update(ENTORNO)

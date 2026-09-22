@@ -16,6 +16,7 @@ from pathlib import Path
 
 from backend.repository import db
 
+from . import ENTORNO
 from .utiles import RAIZ, base_limpia
 
 #: Los módulos que son puntos de entrada: se ejecutan con `python3 -m`.
@@ -72,11 +73,11 @@ class Tunel(unittest.TestCase):
     def _correr(self, *codigo_python: str, dominio: str = '', salida: int = 0,
                 con_ngrok: bool = True) -> subprocess.CompletedProcess:
         env = {
+            **ENTORNO,
             'HOME': os.environ.get('HOME', ''),
             'PATH': f'{self.dir}:/usr/bin:/bin' if con_ngrok else '/usr/bin:/bin',
             'PYTHONPATH': str(RAIZ),
             'PORT': '3100',
-            # Explícito aunque esté vacío: si no, config lo tomaría del .env real.
             'NGROK_DOMAIN': dominio,
             'NGROK_MARCA': str(self.marca),
             'NGROK_FALSO_EXIT': str(salida),

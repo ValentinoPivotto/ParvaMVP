@@ -153,6 +153,22 @@ class ChunksDelWebhook(unittest.TestCase):
             s.close()
 
 
+class EntornoDeLosTests(unittest.TestCase):
+    def test_fija_todas_las_variables_del_env(self) -> None:
+        """Una variable que el entorno de los tests no fija la toma del .env de
+        quien los corre: con credenciales de AWS ahí, los tests saldrían a
+        Bedrock. Una variable nueva en .env.example va también en
+        test/__init__.py."""
+        import re
+
+        from . import ENTORNO
+        from .utiles import RAIZ
+        documentadas = re.findall(r'^#?\s*([A-Z][A-Z0-9_]+)=',
+                                  (RAIZ / '.env.example').read_text(encoding='utf-8'), re.M)
+        self.assertTrue(documentadas)
+        self.assertEqual(sorted(set(documentadas) - ENTORNO.keys()), [])
+
+
 class LecturaDelEnv(unittest.TestCase):
     """Un .env cualquiera trae comentarios al final de la línea."""
 
