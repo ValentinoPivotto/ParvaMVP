@@ -1,24 +1,18 @@
 """Regresión: escrituras concurrentes sobre el mismo productor.
 
-Node corría todo en un solo hilo, así que el leer-modificar-escribir de
-`adjust_hacienda` era indivisible sin que nadie tuviera que pedirlo. El
-servidor Python atiende cada request en su hilo y encola por remitente, así
-que dos usuarios del MISMO productor (el owner y el gestor de campo, que es
-justo lo que trae la semilla) pueden estar escribiendo a la vez.
+El servidor atiende cada request en su hilo y encola por remitente, así que
+dos usuarios del MISMO productor (el dueño y el gestor de campo, que es justo
+lo que trae la semilla) pueden estar escribiendo a la vez.
 
-Sin una transacción alrededor, los dos leen el mismo stock y el último UPDATE
-se come el delta del otro: quedan los eventos registrados y el stock corto.
+`adjust_hacienda` lee el stock, le suma el delta y lo guarda: son tres
+sentencias. Sin una transacción alrededor los dos hilos leen el mismo stock y
+el último UPDATE se come el delta del otro — quedan los eventos registrados y
+el stock corto, y nada avisa.
 """
-import os
-import tempfile
 import threading
 import unittest
 
-# DB_PATH tiene que estar antes de importar el backend: la conexión se abre al
-# importar el módulo, igual que hacía la versión anterior.
-os.environ['DB_PATH'] = os.path.join(tempfile.mkdtemp(prefix='parva-test-'), 'parva.db')
-
-from backend.repository import db, repo  # noqa: E402
+from backend.repository import db, repo
 
 HILOS = 8
 EVENTOS_POR_HILO = 40
@@ -102,6 +96,51 @@ class StockConcurrente(unittest.TestCase):
                        self.pid)
         self.assertEqual(movs['n'], esperado)
         self.assertEqual(audit['n'], esperado)
+
+
+class Atomicidad(unittest.TestCase):
+    """El evento de hacienda y el stock que mueve son un solo hecho.
+
+    Si el INSERT entra y el ajuste de stock falla, queda un nacimiento
+    registrado que no se ve en el stock: los números dejan de cerrar y no hay
+    forma de darse cuenta salvo sumando los eventos a mano.
+    """
+
+    def setUp(self) -> None:
+        db.drop_all()
+        self.pid = db.run(
+            "INSERT INTO productor (nombre, pais, tipo_campo) VALUES ('Test','Argentina','ganadero')"
+        ).last_insert_rowid
+
+    def test_si_falla_el_ajuste_de_stock_no_queda_el_evento(self) -> None:
+        def explotar(*_args, **_kwargs):
+            raise RuntimeError('falla simulada al mover el stock')
+
+        original = repo.adjust_hacienda
+        repo.adjust_hacienda = explotar
+        try:
+            with self.assertRaises(RuntimeError):
+                repo.insert_evento_hacienda(
+                    productor_id=self.pid, tipo='nacimiento', categoria='ternero',
+                    cantidad=5, fecha='2026-09-22', origen='bot')
+        finally:
+            repo.adjust_hacienda = original
+
+        self.assertEqual(db.all('SELECT id FROM evento_hacienda'), [],
+                         'el evento tendría que haberse deshecho junto con el stock')
+        self.assertEqual(db.all("SELECT id FROM audit_log WHERE entidad = 'evento_hacienda'"), [])
+
+    def test_si_falla_la_auditoria_no_queda_el_movimiento(self) -> None:
+        original = repo.audit
+        repo.audit = lambda *a, **k: (_ for _ in ()).throw(RuntimeError('falla simulada'))
+        try:
+            with self.assertRaises(RuntimeError):
+                repo.insert_movimiento(productor_id=self.pid, tipo='gasto',
+                                       fecha='2026-09-22', monto=1000, origen='bot')
+        finally:
+            repo.audit = original
+        self.assertEqual(db.all('SELECT id FROM movimiento'), [],
+                         'un movimiento sin su auditoría no tendría que quedar')
 
 
 if __name__ == '__main__':

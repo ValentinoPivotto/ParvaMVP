@@ -1,0 +1,7 @@
+--- productor 1 → margenes.csv ---
+lote,uso,ventas,costos,margen,confiable,razon
+Lote 1,Soja,9600000,5100000,4500000,sí,
+Lote 4,Maíz,0,4200000,-4200000,no,sin ventas registradas
+Lote 7,Trigo,0,0,0,no,sin ventas registradas
+--- productor 2 → margenes.csv ---
+lote,uso,ventas,costos,margen,confiable,razon

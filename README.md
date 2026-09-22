@@ -365,6 +365,37 @@ Las consultas del bot pasan por `service/query.py`; las reglas del margen están
 en `service/margin.py` y las sumas SQL en el repositorio. Las lecturas simples de
 identidad y del listado de productores se hacen desde el handler al repositorio.
 
+### Tests
+
+```bash
+make test            # backend (Python, unittest) + frontend (Node)
+make test-golden     # regenera test/golden/ — mirá el git diff antes de commitear
+```
+
+La mayoría son **tests de caracterización**: corren una pieza y comparan la
+salida contra un archivo en `test/golden/`. Esos archivos son el contrato — el
+texto exacto que el bot contesta, los bytes exactos del CSV que se baja el
+productor, las respuestas HTTP con sus headers. Son cosas que no se pueden
+cambiar sin que alguien lo note, así que tampoco se cambian sin querer.
+
+| Archivo | Qué congela |
+|---|---|
+| `test_parser.py` | las reglas determinísticas sobre 115 mensajes reales |
+| `test_pipeline.py` | 230 interacciones punta a punta: respuesta del bot + base resultante |
+| `test_http.py` | las 24 respuestas HTTP con status, headers y cuerpo |
+| `test_seed.py` | los datos de ejemplo y el esquema |
+| `test_export.py` | los CSV de las tres planillas |
+| `test_prompt.py` | el prompt que se le manda al modelo |
+| `test_sigv4.py` | la firma de Bedrock, con vectores fijos |
+| `test_phone.py`, `test_formato.py` | teléfonos, montos, fechas y JSON |
+| `test_concurrencia.py` | el stock bajo escrituras en paralelo (ver abajo) |
+
+Los tests no tocan `data/parva.db` ni leen tu `.env`: `test/__init__.py` fija un
+entorno propio con una base temporal antes de importar el backend.
+
+Un golden que cambia **no es** un permiso para regenerarlo. Primero hay que
+mirar el diff y decidir si el cambio era la intención.
+
 ### Concurrencia
 
 El servidor atiende cada request en su propio hilo y el pipeline del bot corre

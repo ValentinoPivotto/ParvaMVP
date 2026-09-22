@@ -1,0 +1,154 @@
+=== movimiento ===
+id=1 | productor_id=1 | tipo='insumo' | lote_id=1 | campania_id=None | fecha='{HOY-110}' | producto='Semilla soja' | cantidad=80.0 | unidad='bolsa' | monto=1200000.0 | moneda='ARS' | categoria='semilla' | descripcion=None | origen='seed' | created_by=1
+id=2 | productor_id=1 | tipo='insumo' | lote_id=1 | campania_id=None | fecha='{HOY-108}' | producto='Fertilizante' | cantidad=4000.0 | unidad='kg' | monto=2500000.0 | moneda='ARS' | categoria='fertilizante' | descripcion=None | origen='seed' | created_by=2
+id=3 | productor_id=1 | tipo='labor' | lote_id=1 | campania_id=None | fecha='{HOY-107}' | producto='Siembra' | cantidad=None | unidad=None | monto=800000.0 | moneda='ARS' | categoria='labor' | descripcion=None | origen='seed' | created_by=2
+id=4 | productor_id=1 | tipo='gasto' | lote_id=1 | campania_id=None | fecha='{HOY-60}' | producto='Fumigación' | cantidad=None | unidad=None | monto=600000.0 | moneda='ARS' | categoria='servicios' | descripcion=None | origen='seed' | created_by=2
+id=5 | productor_id=1 | tipo='venta' | lote_id=1 | campania_id=None | fecha='{HOY-10}' | producto='Soja' | cantidad=240.0 | unidad='tn' | monto=9600000.0 | moneda='ARS' | categoria='grano' | descripcion=None | origen='seed' | created_by=1
+id=6 | productor_id=1 | tipo='insumo' | lote_id=2 | campania_id=None | fecha='{HOY-100}' | producto='Semilla maíz' | cantidad=1.0 | unidad='bolsa' | monto=1500000.0 | moneda='ARS' | categoria='semilla' | descripcion=None | origen='seed' | created_by=1
+id=7 | productor_id=1 | tipo='insumo' | lote_id=2 | campania_id=None | fecha='{HOY-98}' | producto='Urea' | cantidad=5000.0 | unidad='kg' | monto=1800000.0 | moneda='ARS' | categoria='fertilizante' | descripcion=None | origen='seed' | created_by=2
+id=8 | productor_id=1 | tipo='labor' | lote_id=2 | campania_id=None | fecha='{HOY-97}' | producto='Siembra' | cantidad=None | unidad=None | monto=900000.0 | moneda='ARS' | categoria='labor' | descripcion=None | origen='seed' | created_by=2
+id=9 | productor_id=2 | tipo='gasto' | lote_id=None | campania_id=None | fecha='{HOY-40}' | producto='Ración' | cantidad=8000.0 | unidad='kg' | monto=1200000.0 | moneda='ARS' | categoria='alimentacion' | descripcion=None | origen='seed' | created_by=3
+id=10 | productor_id=2 | tipo='venta' | lote_id=None | campania_id=None | fecha='{HOY-15}' | producto='Venta novillos' | cantidad=15.0 | unidad='cabeza' | monto=7500000.0 | moneda='ARS' | categoria='hacienda' | descripcion=None | origen='seed' | created_by=3
+id=11 | productor_id=1 | tipo='insumo' | lote_id=2 | campania_id=None | fecha='{HOY}' | producto='gasoil' | cantidad=200.0 | unidad='L' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=1
+id=12 | productor_id=1 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='gasoil' | cantidad=200.0 | unidad='L' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=1
+id=13 | productor_id=1 | tipo='labor' | lote_id=2 | campania_id=None | fecha='{HOY}' | producto='fumigación en' | cantidad=None | unidad=None | monto=600000.0 | moneda='ARS' | categoria=None | descripcion='Pagué $600.000 de fumigación en el lote 4' | origen='bot' | created_by=1
+id=14 | productor_id=1 | tipo='venta' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='soja' | cantidad=240.0 | unidad='tn' | monto=9600000.0 | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=1
+id=15 | productor_id=1 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY-2}' | producto='urea' | cantidad=100.0 | unidad='kg' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=1
+id=16 | productor_id=1 | tipo='labor' | lote_id=3 | campania_id=None | fecha='{HOY}' | producto='labor' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='hoy sembré el lote 7' | origen='bot' | created_by=1
+id=17 | productor_id=1 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='semilla' | cantidad=1500.0 | unidad='kg' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=1
+id=18 | productor_id=1 | tipo='gasto' | lote_id=None | campania_id=None | fecha='{HOY}' | producto=None | cantidad=None | unidad=None | monto=1200000.0 | moneda='ARS' | categoria=None | descripcion='pagué 1.200.000 pesos' | origen='bot' | created_by=1
+id=19 | productor_id=1 | tipo='gasto' | lote_id=None | campania_id=None | fecha='{HOY}' | producto=None | cantidad=None | unidad=None | monto=1200000.0 | moneda='ARS' | categoria=None | descripcion='pagué $ 1.200.000' | origen='bot' | created_by=1
+id=20 | productor_id=1 | tipo='labor' | lote_id=2 | campania_id=None | fecha='{HOY}' | producto='labor' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='are el lote 4' | origen='bot' | created_by=1
+id=21 | productor_id=1 | tipo='labor' | lote_id=1 | campania_id=None | fecha='{HOY}' | producto='labor' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='rastreé el lote 1' | origen='bot' | created_by=1
+id=22 | productor_id=1 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='urea' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='fertilicé con urea' | origen='bot' | created_by=1
+id=23 | productor_id=1 | tipo='labor' | lote_id=3 | campania_id=None | fecha='{HOY}' | producto='glifosato' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='apliqué glifosato en el lote 7' | origen='bot' | created_by=1
+id=24 | productor_id=1 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='soja' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='coseché soja' | origen='bot' | created_by=1
+id=25 | productor_id=1 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='gasoil' | cantidad=200.0 | unidad='L' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=1
+id=26 | productor_id=1 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='gasoil' | cantidad=200.0 | unidad='L' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=1
+id=27 | productor_id=1 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='labor' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='sembré 10 has' | origen='bot' | created_by=1
+id=28 | productor_id=1 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='labor' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='sembré 10 hectáreas' | origen='bot' | created_by=1
+id=29 | productor_id=1 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='labor' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='sembré 10 hectareas' | origen='bot' | created_by=1
+id=30 | productor_id=1 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='gasoil' | cantidad=200.0 | unidad='L' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=1
+id=31 | productor_id=1 | tipo='gasto' | lote_id=None | campania_id=None | fecha='{HOY}' | producto=None | cantidad=None | unidad=None | monto=10000.5 | moneda='ARS' | categoria=None | descripcion='gasté $10.000,50' | origen='bot' | created_by=1
+id=32 | productor_id=1 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='semilla' | cantidad=3.0 | unidad='bolsa' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=1
+id=33 | productor_id=2 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='gasoil' | cantidad=200.0 | unidad='L' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=4
+id=34 | productor_id=2 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='fumigación en' | cantidad=None | unidad=None | monto=600000.0 | moneda='ARS' | categoria=None | descripcion='Pagué $600.000 de fumigación en el lote 4' | origen='bot' | created_by=4
+id=35 | productor_id=2 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='gasoil' | cantidad=200.0 | unidad='L' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=4
+id=36 | productor_id=2 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY-2}' | producto='urea' | cantidad=100.0 | unidad='kg' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=4
+id=37 | productor_id=2 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='semilla' | cantidad=1500.0 | unidad='kg' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=4
+id=38 | productor_id=2 | tipo='gasto' | lote_id=None | campania_id=None | fecha='{HOY}' | producto=None | cantidad=None | unidad=None | monto=1200000.0 | moneda='ARS' | categoria=None | descripcion='pagué 1.200.000 pesos' | origen='bot' | created_by=4
+id=39 | productor_id=2 | tipo='gasto' | lote_id=None | campania_id=None | fecha='{HOY}' | producto=None | cantidad=None | unidad=None | monto=1200000.0 | moneda='ARS' | categoria=None | descripcion='pagué $ 1.200.000' | origen='bot' | created_by=4
+id=40 | productor_id=2 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='urea' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='fertilicé con urea' | origen='bot' | created_by=4
+id=41 | productor_id=2 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='soja' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='coseché soja' | origen='bot' | created_by=4
+id=42 | productor_id=2 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='gasoil' | cantidad=200.0 | unidad='L' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=4
+id=43 | productor_id=2 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='gasoil' | cantidad=200.0 | unidad='L' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=4
+id=44 | productor_id=2 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='labor' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='sembré 10 has' | origen='bot' | created_by=4
+id=45 | productor_id=2 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='labor' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='sembré 10 hectáreas' | origen='bot' | created_by=4
+id=46 | productor_id=2 | tipo='labor' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='labor' | cantidad=None | unidad=None | monto=None | moneda='ARS' | categoria=None | descripcion='sembré 10 hectareas' | origen='bot' | created_by=4
+id=47 | productor_id=2 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='gasoil' | cantidad=200.0 | unidad='L' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=4
+id=48 | productor_id=2 | tipo='gasto' | lote_id=None | campania_id=None | fecha='{HOY}' | producto=None | cantidad=None | unidad=None | monto=10000.5 | moneda='ARS' | categoria=None | descripcion='gasté $10.000,50' | origen='bot' | created_by=4
+id=49 | productor_id=2 | tipo='insumo' | lote_id=None | campania_id=None | fecha='{HOY}' | producto='semilla' | cantidad=3.0 | unidad='bolsa' | monto=None | moneda='ARS' | categoria=None | descripcion=None | origen='bot' | created_by=4
+=== hacienda ===
+id=1 | productor_id=2 | campo_id=2 | categoria='vaca' | cantidad=118
+id=2 | productor_id=2 | campo_id=2 | categoria='ternero' | cantidad=50
+id=3 | productor_id=2 | campo_id=2 | categoria='novillo' | cantidad=0
+id=4 | productor_id=2 | campo_id=2 | categoria='vaquillona' | cantidad=30
+id=5 | productor_id=2 | campo_id=2 | categoria='toro' | cantidad=4
+id=6 | productor_id=1 | campo_id=1 | categoria='ternero' | cantidad=5
+=== evento_hacienda ===
+id=1 | productor_id=2 | campo_id=2 | tipo='nacimiento' | categoria='ternero' | cantidad=12 | monto=None | fecha='{HOY-25}' | origen='seed' | created_by=4
+id=2 | productor_id=2 | campo_id=2 | tipo='venta' | categoria='novillo' | cantidad=15 | monto=7500000.0 | fecha='{HOY-15}' | origen='seed' | created_by=3
+id=3 | productor_id=1 | campo_id=1 | tipo='nacimiento' | categoria='ternero' | cantidad=8 | monto=None | fecha='{HOY}' | origen='bot' | created_by=1
+id=4 | productor_id=1 | campo_id=1 | tipo='muerte' | categoria='vaca' | cantidad=2 | monto=None | fecha='{HOY}' | origen='bot' | created_by=1
+id=5 | productor_id=1 | campo_id=1 | tipo='venta' | categoria='novillo' | cantidad=30 | monto=None | fecha='{HOY-1}' | origen='bot' | created_by=1
+id=6 | productor_id=1 | campo_id=1 | tipo='traslado' | categoria='novillo' | cantidad=20 | monto=None | fecha='{HOY}' | origen='bot' | created_by=1
+id=7 | productor_id=1 | campo_id=1 | tipo='traslado' | categoria='vaca' | cantidad=10 | monto=None | fecha='{HOY}' | origen='bot' | created_by=1
+id=8 | productor_id=1 | campo_id=1 | tipo='traslado' | categoria='toro' | cantidad=5 | monto=None | fecha='{HOY}' | origen='bot' | created_by=1
+id=9 | productor_id=1 | campo_id=1 | tipo='muerte' | categoria='ternero' | cantidad=3 | monto=None | fecha='{HOY}' | origen='bot' | created_by=1
+id=10 | productor_id=1 | campo_id=1 | tipo='venta' | categoria='novillo' | cantidad=30 | monto=None | fecha='{HOY}' | origen='bot' | created_by=1
+id=11 | productor_id=2 | campo_id=2 | tipo='nacimiento' | categoria='ternero' | cantidad=8 | monto=None | fecha='{HOY}' | origen='bot' | created_by=4
+id=12 | productor_id=2 | campo_id=2 | tipo='muerte' | categoria='vaca' | cantidad=2 | monto=None | fecha='{HOY}' | origen='bot' | created_by=4
+id=13 | productor_id=2 | campo_id=2 | tipo='venta' | categoria='novillo' | cantidad=30 | monto=None | fecha='{HOY-1}' | origen='bot' | created_by=4
+id=14 | productor_id=2 | campo_id=2 | tipo='traslado' | categoria='novillo' | cantidad=20 | monto=None | fecha='{HOY}' | origen='bot' | created_by=4
+id=15 | productor_id=2 | campo_id=2 | tipo='traslado' | categoria='vaca' | cantidad=10 | monto=None | fecha='{HOY}' | origen='bot' | created_by=4
+id=16 | productor_id=2 | campo_id=2 | tipo='traslado' | categoria='toro' | cantidad=5 | monto=None | fecha='{HOY}' | origen='bot' | created_by=4
+id=17 | productor_id=2 | campo_id=2 | tipo='muerte' | categoria='ternero' | cantidad=3 | monto=None | fecha='{HOY}' | origen='bot' | created_by=4
+id=18 | productor_id=2 | campo_id=2 | tipo='venta' | categoria='novillo' | cantidad=30 | monto=None | fecha='{HOY}' | origen='bot' | created_by=4
+=== evento_sanitario ===
+id=1 | productor_id=2 | campo_id=2 | producto='Vacuna aftosa' | categoria='todos' | cantidad=259 | fecha='{HOY-30}' | origen='seed' | created_by=4
+id=2 | productor_id=1 | campo_id=1 | producto='sanidad' | categoria='vaca' | cantidad=120 | fecha='{HOY}' | origen='bot' | created_by=1
+id=3 | productor_id=1 | campo_id=1 | producto='ivermectina a' | categoria='vaca' | cantidad=3 | fecha='{HOY}' | origen='bot' | created_by=1
+id=4 | productor_id=1 | campo_id=1 | producto='sanidad' | categoria='vaca' | cantidad=None | fecha='{HOY}' | origen='bot' | created_by=1
+id=5 | productor_id=1 | campo_id=1 | producto='sanidad' | categoria='todos' | cantidad=None | fecha='{HOY}' | origen='bot' | created_by=1
+id=6 | productor_id=1 | campo_id=1 | producto='sanidad' | categoria='todos' | cantidad=3 | fecha='{HOY}' | origen='bot' | created_by=1
+id=7 | productor_id=2 | campo_id=2 | producto='sanidad' | categoria='vaca' | cantidad=120 | fecha='{HOY}' | origen='bot' | created_by=4
+id=8 | productor_id=2 | campo_id=2 | producto='ivermectina a' | categoria='vaca' | cantidad=3 | fecha='{HOY}' | origen='bot' | created_by=4
+id=9 | productor_id=2 | campo_id=2 | producto='sanidad' | categoria='vaca' | cantidad=None | fecha='{HOY}' | origen='bot' | created_by=4
+id=10 | productor_id=2 | campo_id=2 | producto='sanidad' | categoria='todos' | cantidad=None | fecha='{HOY}' | origen='bot' | created_by=4
+id=11 | productor_id=2 | campo_id=2 | producto='sanidad' | categoria='todos' | cantidad=3 | fecha='{HOY}' | origen='bot' | created_by=4
+=== audit_log ===
+id=1 | productor_id=1 | entidad='movimiento' | entidad_id=11 | accion='create' | usuario_id=1 | origen='bot' | detalle='insumo gasoil'
+id=2 | productor_id=1 | entidad='movimiento' | entidad_id=12 | accion='create' | usuario_id=1 | origen='bot' | detalle='insumo gasoil'
+id=3 | productor_id=1 | entidad='movimiento' | entidad_id=13 | accion='create' | usuario_id=1 | origen='bot' | detalle='labor fumigación en 600000'
+id=4 | productor_id=1 | entidad='movimiento' | entidad_id=14 | accion='create' | usuario_id=1 | origen='bot' | detalle='venta soja 9600000'
+id=5 | productor_id=1 | entidad='evento_hacienda' | entidad_id=3 | accion='create' | usuario_id=1 | origen='bot' | detalle='nacimiento 8 ternero'
+id=6 | productor_id=1 | entidad='evento_hacienda' | entidad_id=4 | accion='create' | usuario_id=1 | origen='bot' | detalle='muerte 2 vaca'
+id=7 | productor_id=1 | entidad='evento_sanitario' | entidad_id=2 | accion='create' | usuario_id=1 | origen='bot' | detalle='sanidad 120'
+id=8 | productor_id=1 | entidad='evento_hacienda' | entidad_id=5 | accion='create' | usuario_id=1 | origen='bot' | detalle='venta 30 novillo'
+id=9 | productor_id=1 | entidad='movimiento' | entidad_id=15 | accion='create' | usuario_id=1 | origen='bot' | detalle='insumo urea'
+id=10 | productor_id=1 | entidad='movimiento' | entidad_id=16 | accion='create' | usuario_id=1 | origen='bot' | detalle='labor labor'
+id=11 | productor_id=1 | entidad='evento_sanitario' | entidad_id=3 | accion='create' | usuario_id=1 | origen='bot' | detalle='ivermectina a 3'
+id=12 | productor_id=1 | entidad='movimiento' | entidad_id=17 | accion='create' | usuario_id=1 | origen='bot' | detalle='insumo semilla'
+id=13 | productor_id=1 | entidad='movimiento' | entidad_id=18 | accion='create' | usuario_id=1 | origen='bot' | detalle='gasto  1200000'
+id=14 | productor_id=1 | entidad='movimiento' | entidad_id=19 | accion='create' | usuario_id=1 | origen='bot' | detalle='gasto  1200000'
+id=15 | productor_id=1 | entidad='evento_hacienda' | entidad_id=6 | accion='create' | usuario_id=1 | origen='bot' | detalle='traslado 20 novillo'
+id=16 | productor_id=1 | entidad='evento_hacienda' | entidad_id=7 | accion='create' | usuario_id=1 | origen='bot' | detalle='traslado 10 vaca'
+id=17 | productor_id=1 | entidad='evento_hacienda' | entidad_id=8 | accion='create' | usuario_id=1 | origen='bot' | detalle='traslado 5 toro'
+id=18 | productor_id=1 | entidad='evento_hacienda' | entidad_id=9 | accion='create' | usuario_id=1 | origen='bot' | detalle='muerte 3 ternero'
+id=19 | productor_id=1 | entidad='movimiento' | entidad_id=20 | accion='create' | usuario_id=1 | origen='bot' | detalle='labor labor'
+id=20 | productor_id=1 | entidad='movimiento' | entidad_id=21 | accion='create' | usuario_id=1 | origen='bot' | detalle='labor labor'
+id=21 | productor_id=1 | entidad='movimiento' | entidad_id=22 | accion='create' | usuario_id=1 | origen='bot' | detalle='labor urea'
+id=22 | productor_id=1 | entidad='movimiento' | entidad_id=23 | accion='create' | usuario_id=1 | origen='bot' | detalle='labor glifosato'
+id=23 | productor_id=1 | entidad='movimiento' | entidad_id=24 | accion='create' | usuario_id=1 | origen='bot' | detalle='labor soja'
+id=24 | productor_id=1 | entidad='evento_sanitario' | entidad_id=4 | accion='create' | usuario_id=1 | origen='bot' | detalle='sanidad'
+id=25 | productor_id=1 | entidad='evento_sanitario' | entidad_id=5 | accion='create' | usuario_id=1 | origen='bot' | detalle='sanidad'
+id=26 | productor_id=1 | entidad='evento_sanitario' | entidad_id=6 | accion='create' | usuario_id=1 | origen='bot' | detalle='sanidad 3'
+id=27 | productor_id=1 | entidad='movimiento' | entidad_id=25 | accion='create' | usuario_id=1 | origen='bot' | detalle='insumo gasoil'
+id=28 | productor_id=1 | entidad='movimiento' | entidad_id=26 | accion='create' | usuario_id=1 | origen='bot' | detalle='insumo gasoil'
+id=29 | productor_id=1 | entidad='movimiento' | entidad_id=27 | accion='create' | usuario_id=1 | origen='bot' | detalle='labor labor'
+id=30 | productor_id=1 | entidad='movimiento' | entidad_id=28 | accion='create' | usuario_id=1 | origen='bot' | detalle='labor labor'
+id=31 | productor_id=1 | entidad='movimiento' | entidad_id=29 | accion='create' | usuario_id=1 | origen='bot' | detalle='labor labor'
+id=32 | productor_id=1 | entidad='movimiento' | entidad_id=30 | accion='create' | usuario_id=1 | origen='bot' | detalle='insumo gasoil'
+id=33 | productor_id=1 | entidad='evento_hacienda' | entidad_id=10 | accion='create' | usuario_id=1 | origen='bot' | detalle='venta 30 novillo'
+id=34 | productor_id=1 | entidad='movimiento' | entidad_id=31 | accion='create' | usuario_id=1 | origen='bot' | detalle='gasto  10000.5'
+id=35 | productor_id=1 | entidad='movimiento' | entidad_id=32 | accion='create' | usuario_id=1 | origen='bot' | detalle='insumo semilla'
+id=36 | productor_id=2 | entidad='movimiento' | entidad_id=33 | accion='create' | usuario_id=4 | origen='bot' | detalle='insumo gasoil'
+id=37 | productor_id=2 | entidad='evento_hacienda' | entidad_id=11 | accion='create' | usuario_id=4 | origen='bot' | detalle='nacimiento 8 ternero'
+id=38 | productor_id=2 | entidad='evento_hacienda' | entidad_id=12 | accion='create' | usuario_id=4 | origen='bot' | detalle='muerte 2 vaca'
+id=39 | productor_id=2 | entidad='evento_sanitario' | entidad_id=7 | accion='create' | usuario_id=4 | origen='bot' | detalle='sanidad 120'
+id=40 | productor_id=2 | entidad='movimiento' | entidad_id=34 | accion='create' | usuario_id=4 | origen='bot' | detalle='labor fumigación en 600000'
+id=41 | productor_id=2 | entidad='movimiento' | entidad_id=35 | accion='create' | usuario_id=4 | origen='bot' | detalle='insumo gasoil'
+id=42 | productor_id=2 | entidad='evento_hacienda' | entidad_id=13 | accion='create' | usuario_id=4 | origen='bot' | detalle='venta 30 novillo'
+id=43 | productor_id=2 | entidad='movimiento' | entidad_id=36 | accion='create' | usuario_id=4 | origen='bot' | detalle='insumo urea'
+id=44 | productor_id=2 | entidad='evento_sanitario' | entidad_id=8 | accion='create' | usuario_id=4 | origen='bot' | detalle='ivermectina a 3'
+id=45 | productor_id=2 | entidad='movimiento' | entidad_id=37 | accion='create' | usuario_id=4 | origen='bot' | detalle='insumo semilla'
+id=46 | productor_id=2 | entidad='movimiento' | entidad_id=38 | accion='create' | usuario_id=4 | origen='bot' | detalle='gasto  1200000'
+id=47 | productor_id=2 | entidad='movimiento' | entidad_id=39 | accion='create' | usuario_id=4 | origen='bot' | detalle='gasto  1200000'
+id=48 | productor_id=2 | entidad='evento_hacienda' | entidad_id=14 | accion='create' | usuario_id=4 | origen='bot' | detalle='traslado 20 novillo'
+id=49 | productor_id=2 | entidad='evento_hacienda' | entidad_id=15 | accion='create' | usuario_id=4 | origen='bot' | detalle='traslado 10 vaca'
+id=50 | productor_id=2 | entidad='evento_hacienda' | entidad_id=16 | accion='create' | usuario_id=4 | origen='bot' | detalle='traslado 5 toro'
+id=51 | productor_id=2 | entidad='evento_hacienda' | entidad_id=17 | accion='create' | usuario_id=4 | origen='bot' | detalle='muerte 3 ternero'
+id=52 | productor_id=2 | entidad='movimiento' | entidad_id=40 | accion='create' | usuario_id=4 | origen='bot' | detalle='labor urea'
+id=53 | productor_id=2 | entidad='movimiento' | entidad_id=41 | accion='create' | usuario_id=4 | origen='bot' | detalle='labor soja'
+id=54 | productor_id=2 | entidad='evento_sanitario' | entidad_id=9 | accion='create' | usuario_id=4 | origen='bot' | detalle='sanidad'
+id=55 | productor_id=2 | entidad='evento_sanitario' | entidad_id=10 | accion='create' | usuario_id=4 | origen='bot' | detalle='sanidad'
+id=56 | productor_id=2 | entidad='evento_sanitario' | entidad_id=11 | accion='create' | usuario_id=4 | origen='bot' | detalle='sanidad 3'
+id=57 | productor_id=2 | entidad='movimiento' | entidad_id=42 | accion='create' | usuario_id=4 | origen='bot' | detalle='insumo gasoil'
+id=58 | productor_id=2 | entidad='movimiento' | entidad_id=43 | accion='create' | usuario_id=4 | origen='bot' | detalle='insumo gasoil'
+id=59 | productor_id=2 | entidad='movimiento' | entidad_id=44 | accion='create' | usuario_id=4 | origen='bot' | detalle='labor labor'
+id=60 | productor_id=2 | entidad='movimiento' | entidad_id=45 | accion='create' | usuario_id=4 | origen='bot' | detalle='labor labor'
+id=61 | productor_id=2 | entidad='movimiento' | entidad_id=46 | accion='create' | usuario_id=4 | origen='bot' | detalle='labor labor'
+id=62 | productor_id=2 | entidad='movimiento' | entidad_id=47 | accion='create' | usuario_id=4 | origen='bot' | detalle='insumo gasoil'
+id=63 | productor_id=2 | entidad='evento_hacienda' | entidad_id=18 | accion='create' | usuario_id=4 | origen='bot' | detalle='venta 30 novillo'
+id=64 | productor_id=2 | entidad='movimiento' | entidad_id=48 | accion='create' | usuario_id=4 | origen='bot' | detalle='gasto  10000.5'
+id=65 | productor_id=2 | entidad='movimiento' | entidad_id=49 | accion='create' | usuario_id=4 | origen='bot' | detalle='insumo semilla'

@@ -1,0 +1,460 @@
++5491100000001 · "Compré 200 litros de gasoil para el lote 4"
+    → [created] ✅ Registré 200 L de gasoil en el lote 4.
++5491100000001 · "compre 200 litros de gasoil"
+    → [created] ✅ Registré 200 L de gasoil.
++5491100000001 · "Pagué $600.000 de fumigación en el lote 4"
+    → [created] ✅ Registré la labor "fumigación en" en el lote 4 ($600.000).
++5491100000001 · "Vendí 240 tn de soja por $9.600.000"
+    → [created] ✅ Registré una venta de soja por $9.600.000.
++5491100000001 · "¿Cuál es el margen del lote 1?"
+    → [query_answer] Margen del Lote 1: $4.500.000 (ventas $9.600.000 − costos $5.100.000).
++5491100000001 · "Cual es el margen del lote 1"
+    → [query_answer] Margen del Lote 1: $4.500.000 (ventas $9.600.000 − costos $5.100.000).
++5491100000001 · "Nacieron 8 terneros"
+    → [created] ✅ Registré nacimiento de 8 ternero. Stock actualizado.
++5491100000001 · "Se murieron 2 vacas"
+    → [created] ✅ Registré muerte de 2 vaca. Stock actualizado.
++5491100000001 · "¿Cuántos terneros tengo?"
+    → [query_answer] Tenés 8 ternero.
++5491100000001 · "Vacuné 120 vacas contra la aftosa"
+    → [created] ✅ Registré sanidad: sanidad (120).
++5491100000001 · "sí"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "si"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "sip"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "dale"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "ok"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "okey"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "oka"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "listo"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "correcto"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "confirmo"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "confirma"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "confirmá"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "exacto"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "así es"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "asi es"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "de una"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "tal cual"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "sí dale"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "si, dale"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "sí."
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "sí!"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "sino"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "sillón"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "dalelo"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "oka que si"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000001 · "ayer vendí 30 novillos a 1.200.000 en total"
+    → [created] ✅ Registré venta de 30 novillo. Stock actualizado.
++5491100000001 · "anteayer compré 100 kg de urea"
+    → [created] ✅ Registré 100 kg de urea.
++5491100000001 · "hoy sembré el lote 7"
+    → [created] ✅ Registré la labor "labor" en el lote 7.
++5491100000001 · "le di 3 dosis de ivermectina a las vacas del lote 2"
+    → [created] ✅ Registré sanidad: ivermectina a (3).
++5491100000001 · "compré gasoil"
+    → [needs_confirmation] 🤔 Casi: no entendí cantidad ni monto. Entendí → insumo · gasoil. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "gasté 50000 en nada"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto del gasto. Entendí → gasto. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "¿cuánto gasté?"
+    → [query_answer] Gasto total registrado: $9.900.000.
++5491100000001 · "cuanto vendí?"
+    → [query_answer] Ventas totales registradas: $19.200.000.
++5491100000001 · "¿qué stock tengo?"
+    → [query_answer] Stock actual: 8 ternero. Total 8 cabezas.
++5491100000001 · "que hay de hacienda"
+    → [query_answer] Stock actual: 8 ternero. Total 8 cabezas.
++5491100000001 · "mostrame el stock"
+    → [query_answer] Stock actual: 8 ternero. Total 8 cabezas.
++5491100000001 · "decime el margen"
+    → [query_answer] Márgenes por lote: Lote 1: $4.500.000.
++5491100000001 · "tengo cabezas?"
+    → [query_answer] Stock actual: 8 ternero. Total 8 cabezas.
++5491100000001 · "stock"
+    → [query_answer] Stock actual: 8 ternero. Total 8 cabezas.
++5491100000001 · "hacienda"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "animales"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "cabezas"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "vendí 2,5 tn de trigo"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto de la venta. Entendí → venta · trigo · 2.5 tn. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "compré 1.500 kg de semilla"
+    → [created] ✅ Registré 1500 kg de semilla.
++5491100000001 · "pagué 1.200.000 pesos"
+    → [created] ✅ Registré un gasto de $1.200.000.
++5491100000001 · "pagué $ 1.200.000"
+    → [created] ✅ Registré un gasto de $1.200.000.
++5491100000001 · "trasladé 20 novillos"
+    → [created] ✅ Registré traslado de 20 novillo. Stock actualizado.
++5491100000001 · "pasé 10 vacas al lote 3"
+    → [created] ✅ Registré traslado de 10 vaca. Stock actualizado.
++5491100000001 · "moví 5 toros"
+    → [created] ✅ Registré traslado de 5 toro. Stock actualizado.
++5491100000001 · "perdí 3 terneros"
+    → [created] ✅ Registré muerte de 3 ternero. Stock actualizado.
++5491100000001 · "murió una vaca"
+    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaca. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "compré vaquillonas"
+    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaquillona. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "vendí vaquillonas a $500.000"
+    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaquillona · $500.000. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "aré el lote 4"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "are el lote 4"
+    → [created] ✅ Registré la labor "labor" en el lote 4.
++5491100000001 · "rastreé el lote 1"
+    → [created] ✅ Registré la labor "labor" en el lote 1.
++5491100000001 · "fertilicé con urea"
+    → [created] ✅ Registré la labor "urea".
++5491100000001 · "apliqué glifosato en el lote 7"
+    → [created] ✅ Registré la labor "glifosato" en el lote 7.
++5491100000001 · "pulvericé el lote 2"
+    → [needs_confirmation] 🤔 Casi: no encontré el lote "2". Entendí → labor · labor · lote 2. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "coseché soja"
+    → [created] ✅ Registré la labor "soja".
++5491100000001 · "desparasité las vacas"
+    → [created] ✅ Registré sanidad: sanidad.
++5491100000001 · "tratamiento sanitario"
+    → [created] ✅ Registré sanidad: sanidad.
++5491100000001 · "3 dosis"
+    → [created] ✅ Registré sanidad: sanidad (3).
++5491100000001 · "abonél 200"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto del gasto. Entendí → gasto. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "abone 200"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto del gasto. Entendí → gasto. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "cargué 300 litros"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo · 300 L. ¿Lo registro igual? (respondé "sí")
++5491100000001 · ""
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "   "
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "hola"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "cualquier cosa rara"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "¿?"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "lote 4"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "200 litros"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "$5000"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "5000 pesos"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "compré 200 l de gasoil"
+    → [created] ✅ Registré 200 L de gasoil.
++5491100000001 · "compré 200 lts de gasoil"
+    → [created] ✅ Registré 200 L de gasoil.
++5491100000001 · "compré 2 bolsas"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo · 2 bolsa. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "vendí 3 cabezas"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto de la venta. Entendí → venta · 3 cabeza. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "compré 5 unidades"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo · 5 u. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "sembré 10 has"
+    → [created] ✅ Registré la labor "labor".
++5491100000001 · "sembré 10 hectáreas"
+    → [created] ✅ Registré la labor "labor".
++5491100000001 · "sembré 10 hectareas"
+    → [created] ✅ Registré la labor "labor".
++5491100000001 · "vendí 1 tonelada"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto de la venta. Entendí → venta · 1 tn. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "compré 4 toneladas"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo · 4 tn. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "qué tengo"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "que tengo"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "¿qué hay?"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "nacio un ternero"
+    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · ternero. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "nacieron terneros"
+    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · ternero. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "vendí soja"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto de la venta. Entendí → venta · soja. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "Compré 200 LITROS de GASOIL"
+    → [created] ✅ Registré 200 L de gasoil.
++5491100000001 · "VENDÍ 30 NOVILLOS"
+    → [created] ✅ Registré venta de 30 novillo. Stock actualizado.
++5491100000001 · "No entiendo nada de esto"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000001 · "compré 200 litros de gasoil para el lote norte"
+    → [needs_confirmation] 🤔 Casi: no encontré el lote "norte". Entendí → insumo · gasoil · 200 L · lote norte. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "gasté $10.000,50"
+    → [created] ✅ Registré un gasto de $10.001.
++5491100000001 · "vendí 0 tn"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto de la venta. Entendí → venta · 0 tn. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "que vendí"
+    → [query_answer] Ventas totales registradas: $19.200.000.
++5491100000001 · "qué vendí"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto de la venta. Entendí → venta. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "que gasté"
+    → [query_answer] Gasto total registrado: $12.310.001.
++5491100000001 · "qué gasté"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto del gasto. Entendí → gasto. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "que compré"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "qué compré"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "compré gasoil por $5.000"
+    → [needs_confirmation] 🤔 Casi: no estoy seguro de haber entendido bien. Entendí → insumo · gasoil · $5.000. ¿Lo registro igual? (respondé "sí")
++5491100000001 · "compré 3 bolsas de semilla"
+    → [created] ✅ Registré 3 bolsa de semilla.
++5491100000004 · "Compré 200 litros de gasoil para el lote 4"
+    → [needs_confirmation] 🤔 Casi: no encontré el lote "4". Entendí → insumo · gasoil · 200 L · lote 4. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "compre 200 litros de gasoil"
+    → [created] ✅ Registré 200 L de gasoil.
++5491100000004 · "Pagué $600.000 de fumigación en el lote 4"
+    → [needs_confirmation] 🤔 Casi: no encontré el lote "4". Entendí → labor · fumigación en · $600.000 · lote 4. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "Vendí 240 tn de soja por $9.600.000"
+    → [denied] 🚫 Tu rol (gestor_campo) no puede registrar venta.
++5491100000004 · "¿Cuál es el margen del lote 1?"
+    → [query_answer] 🚫 Tu rol (gestor_campo) no puede consultar margen.
++5491100000004 · "Cual es el margen del lote 1"
+    → [query_answer] 🚫 Tu rol (gestor_campo) no puede consultar margen.
++5491100000004 · "Nacieron 8 terneros"
+    → [created] ✅ Registré nacimiento de 8 ternero. Stock actualizado.
++5491100000004 · "Se murieron 2 vacas"
+    → [created] ✅ Registré muerte de 2 vaca. Stock actualizado.
++5491100000004 · "¿Cuántos terneros tengo?"
+    → [query_answer] Tenés 53 ternero.
++5491100000004 · "Vacuné 120 vacas contra la aftosa"
+    → [created] ✅ Registré sanidad: sanidad (120).
++5491100000004 · "sí"
+    → [confirmed] ✅ Registré la labor "fumigación en" en el lote 4 ($600.000).
++5491100000004 · "si"
+    → [confirmed] ✅ Registré 200 L de gasoil en el lote 4.
++5491100000004 · "sip"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "dale"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "ok"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "okey"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "oka"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "listo"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "correcto"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "confirmo"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "confirma"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "confirmá"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "exacto"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "así es"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "asi es"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "de una"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "tal cual"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "sí dale"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "si, dale"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "sí."
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "sí!"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "sino"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "sillón"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "dalelo"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "oka que si"
+    → [unknown] No tengo nada pendiente para confirmar.
++5491100000004 · "ayer vendí 30 novillos a 1.200.000 en total"
+    → [created] ✅ Registré venta de 30 novillo. Stock actualizado.
++5491100000004 · "anteayer compré 100 kg de urea"
+    → [created] ✅ Registré 100 kg de urea.
++5491100000004 · "hoy sembré el lote 7"
+    → [needs_confirmation] 🤔 Casi: no encontré el lote "7". Entendí → labor · labor · lote 7. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "le di 3 dosis de ivermectina a las vacas del lote 2"
+    → [created] ✅ Registré sanidad: ivermectina a (3).
++5491100000004 · "compré gasoil"
+    → [needs_confirmation] 🤔 Casi: no entendí cantidad ni monto. Entendí → insumo · gasoil. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "gasté 50000 en nada"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto del gasto. Entendí → gasto. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "¿cuánto gasté?"
+    → [query_answer] Gasto total registrado: $1.800.000.
++5491100000004 · "cuanto vendí?"
+    → [query_answer] 🚫 Tu rol (gestor_campo) no puede consultar venta_total.
++5491100000004 · "¿qué stock tengo?"
+    → [query_answer] Stock actual: 30 novillo, 53 ternero, 4 toro, 118 vaca, 30 vaquillona. Total 235 cabezas.
++5491100000004 · "que hay de hacienda"
+    → [query_answer] Stock actual: 30 novillo, 53 ternero, 4 toro, 118 vaca, 30 vaquillona. Total 235 cabezas.
++5491100000004 · "mostrame el stock"
+    → [query_answer] Stock actual: 30 novillo, 53 ternero, 4 toro, 118 vaca, 30 vaquillona. Total 235 cabezas.
++5491100000004 · "decime el margen"
+    → [query_answer] 🚫 Tu rol (gestor_campo) no puede consultar margen.
++5491100000004 · "tengo cabezas?"
+    → [query_answer] Stock actual: 30 novillo, 53 ternero, 4 toro, 118 vaca, 30 vaquillona. Total 235 cabezas.
++5491100000004 · "stock"
+    → [query_answer] Stock actual: 30 novillo, 53 ternero, 4 toro, 118 vaca, 30 vaquillona. Total 235 cabezas.
++5491100000004 · "hacienda"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "animales"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "cabezas"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "vendí 2,5 tn de trigo"
+    → [denied] 🚫 Tu rol (gestor_campo) no puede registrar venta.
++5491100000004 · "compré 1.500 kg de semilla"
+    → [created] ✅ Registré 1500 kg de semilla.
++5491100000004 · "pagué 1.200.000 pesos"
+    → [created] ✅ Registré un gasto de $1.200.000.
++5491100000004 · "pagué $ 1.200.000"
+    → [created] ✅ Registré un gasto de $1.200.000.
++5491100000004 · "trasladé 20 novillos"
+    → [created] ✅ Registré traslado de 20 novillo. Stock actualizado.
++5491100000004 · "pasé 10 vacas al lote 3"
+    → [created] ✅ Registré traslado de 10 vaca. Stock actualizado.
++5491100000004 · "moví 5 toros"
+    → [created] ✅ Registré traslado de 5 toro. Stock actualizado.
++5491100000004 · "perdí 3 terneros"
+    → [created] ✅ Registré muerte de 3 ternero. Stock actualizado.
++5491100000004 · "murió una vaca"
+    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaca. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "compré vaquillonas"
+    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaquillona. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "vendí vaquillonas a $500.000"
+    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaquillona · $500.000. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "aré el lote 4"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "are el lote 4"
+    → [needs_confirmation] 🤔 Casi: no encontré el lote "4". Entendí → labor · labor · lote 4. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "rastreé el lote 1"
+    → [needs_confirmation] 🤔 Casi: no encontré el lote "1". Entendí → labor · labor · lote 1. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "fertilicé con urea"
+    → [created] ✅ Registré la labor "urea".
++5491100000004 · "apliqué glifosato en el lote 7"
+    → [needs_confirmation] 🤔 Casi: no encontré el lote "7". Entendí → labor · glifosato · lote 7. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "pulvericé el lote 2"
+    → [needs_confirmation] 🤔 Casi: no encontré el lote "2". Entendí → labor · labor · lote 2. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "coseché soja"
+    → [created] ✅ Registré la labor "soja".
++5491100000004 · "desparasité las vacas"
+    → [created] ✅ Registré sanidad: sanidad.
++5491100000004 · "tratamiento sanitario"
+    → [created] ✅ Registré sanidad: sanidad.
++5491100000004 · "3 dosis"
+    → [created] ✅ Registré sanidad: sanidad (3).
++5491100000004 · "abonél 200"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto del gasto. Entendí → gasto. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "abone 200"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto del gasto. Entendí → gasto. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "cargué 300 litros"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo · 300 L. ¿Lo registro igual? (respondé "sí")
++5491100000004 · ""
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "   "
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "hola"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "cualquier cosa rara"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "¿?"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "lote 4"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "200 litros"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "$5000"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "5000 pesos"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "compré 200 l de gasoil"
+    → [created] ✅ Registré 200 L de gasoil.
++5491100000004 · "compré 200 lts de gasoil"
+    → [created] ✅ Registré 200 L de gasoil.
++5491100000004 · "compré 2 bolsas"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo · 2 bolsa. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "vendí 3 cabezas"
+    → [denied] 🚫 Tu rol (gestor_campo) no puede registrar venta.
++5491100000004 · "compré 5 unidades"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo · 5 u. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "sembré 10 has"
+    → [created] ✅ Registré la labor "labor".
++5491100000004 · "sembré 10 hectáreas"
+    → [created] ✅ Registré la labor "labor".
++5491100000004 · "sembré 10 hectareas"
+    → [created] ✅ Registré la labor "labor".
++5491100000004 · "vendí 1 tonelada"
+    → [denied] 🚫 Tu rol (gestor_campo) no puede registrar venta.
++5491100000004 · "compré 4 toneladas"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo · 4 tn. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "qué tengo"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "que tengo"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "¿qué hay?"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "nacio un ternero"
+    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · ternero. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "nacieron terneros"
+    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · ternero. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "vendí soja"
+    → [denied] 🚫 Tu rol (gestor_campo) no puede registrar venta.
++5491100000004 · "Compré 200 LITROS de GASOIL"
+    → [created] ✅ Registré 200 L de gasoil.
++5491100000004 · "VENDÍ 30 NOVILLOS"
+    → [created] ✅ Registré venta de 30 novillo. Stock actualizado.
++5491100000004 · "No entiendo nada de esto"
+    → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
++5491100000004 · "compré 200 litros de gasoil para el lote norte"
+    → [needs_confirmation] 🤔 Casi: no encontré el lote "norte". Entendí → insumo · gasoil · 200 L · lote norte. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "gasté $10.000,50"
+    → [created] ✅ Registré un gasto de $10.001.
++5491100000004 · "vendí 0 tn"
+    → [denied] 🚫 Tu rol (gestor_campo) no puede registrar venta.
++5491100000004 · "que vendí"
+    → [query_answer] 🚫 Tu rol (gestor_campo) no puede consultar venta_total.
++5491100000004 · "qué vendí"
+    → [denied] 🚫 Tu rol (gestor_campo) no puede registrar venta.
++5491100000004 · "que gasté"
+    → [query_answer] Gasto total registrado: $4.210.001.
++5491100000004 · "qué gasté"
+    → [needs_confirmation] 🤔 Casi: no entendí el monto del gasto. Entendí → gasto. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "que compré"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "qué compré"
+    → [needs_confirmation] 🤔 Casi: no entendí qué insumo. Entendí → insumo. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "compré gasoil por $5.000"
+    → [needs_confirmation] 🤔 Casi: no estoy seguro de haber entendido bien. Entendí → insumo · gasoil · $5.000. ¿Lo registro igual? (respondé "sí")
++5491100000004 · "compré 3 bolsas de semilla"
+    → [created] ✅ Registré 3 bolsa de semilla.
