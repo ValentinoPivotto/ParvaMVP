@@ -12,7 +12,23 @@ el stock corto, y nada avisa.
 import threading
 import unittest
 
+# Este módulo tira TODAS las tablas en cada `setUp`. Si se ejecuta como archivo
+# suelto, `test/__init__.py` no corre, `DB_PATH` no se fija y el borrado caería
+# sobre data/parva.db. La verificación va antes de importar nada del backend,
+# y con un mensaje que diga qué hacer en vez de un ImportError de relativos.
+if __package__ in (None, ''):
+    raise SystemExit(
+        'Este test borra todas las tablas y necesita la base temporal que arma\n'
+        'test/__init__.py. Correlo como paquete:\n'
+        '  python3 -m unittest discover -s test -t .\n'
+        '  python3 -m unittest test.test_concurrencia')
+
 from backend.repository import db, repo
+
+# Importar desde `.utiles` no es decorativo: trae la guarda que comprueba que
+# la base sea la temporal. Este módulo tira todas las tablas en cada `setUp`,
+# así que corriéndolo fuera del paquete se llevaría puesta data/parva.db.
+from .utiles import base_vacia
 
 HILOS = 8
 EVENTOS_POR_HILO = 40
@@ -20,7 +36,7 @@ EVENTOS_POR_HILO = 40
 
 class StockConcurrente(unittest.TestCase):
     def setUp(self) -> None:
-        db.drop_all()
+        base_vacia()
         self.pid = db.run(
             "INSERT INTO productor (nombre, pais, tipo_campo) VALUES ('Test','Argentina','ganadero')"
         ).last_insert_rowid
@@ -107,7 +123,7 @@ class Atomicidad(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        db.drop_all()
+        base_vacia()
         self.pid = db.run(
             "INSERT INTO productor (nombre, pais, tipo_campo) VALUES ('Test','Argentina','ganadero')"
         ).last_insert_rowid

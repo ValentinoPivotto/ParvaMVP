@@ -5,6 +5,7 @@ que ve el productor en WhatsApp, los que salen en el CSV o el día con el que
 queda fechado un registro. El contrato queda fijado acá.
 """
 import math
+import time
 import unittest
 from datetime import datetime, timedelta, timezone
 
@@ -80,6 +81,23 @@ class Serializacion(unittest.TestCase):
 
 
 class Fechas(unittest.TestCase):
+    def test_el_dia_se_mueve_local_y_se_informa_en_utc(self) -> None:
+        # El offset se aplica en hora local y recién después se pasa a UTC. En
+        # Argentina eso significa que después de las 21:00 la fecha guardada ya
+        # es la de mañana: es la convención con la que están fechados los
+        # registros existentes.
+        for offset in (0, -1, -2, -120):
+            with self.subTest(offset=offset):
+                esperado = (datetime.now() + timedelta(days=offset)).astimezone(timezone.utc).date()
+                self.assertEqual(fecha_iso(offset), esperado.isoformat())
+
+
+
+# `time.tzset()` es sólo de Unix: en Windows ni existe. Los tests de abajo
+# necesitan fijar la zona horaria para poder comprobar el cruce de día, así
+# que ahí se saltean en vez de romper la suite entera.
+@unittest.skipUnless(hasattr(time, 'tzset'), 'time.tzset() no existe en esta plataforma')
+class FechasConRelojFijo(unittest.TestCase):
     def _con_reloj(self, local: datetime, offset: int) -> str:
         """Corre `fecha_iso` con la hora y la zona horaria fijadas.
 
@@ -89,7 +107,6 @@ class Fechas(unittest.TestCase):
         """
         import importlib
         import os
-        import time
 
         import backend.formato as formato
 
@@ -130,16 +147,6 @@ class Fechas(unittest.TestCase):
     def test_al_mediodia_local_y_utc_coinciden(self) -> None:
         self.assertEqual(self._con_reloj(datetime(2026, 9, 21, 12, 0), 0), '2026-09-21')
         self.assertEqual(self._con_reloj(datetime(2026, 9, 21, 12, 0), -120), '2026-05-24')
-
-    def test_el_dia_se_mueve_local_y_se_informa_en_utc(self) -> None:
-        # El offset se aplica en hora local y recién después se pasa a UTC. En
-        # Argentina eso significa que después de las 21:00 la fecha guardada ya
-        # es la de mañana: es la convención con la que están fechados los
-        # registros existentes.
-        for offset in (0, -1, -2, -120):
-            with self.subTest(offset=offset):
-                esperado = (datetime.now() + timedelta(days=offset)).astimezone(timezone.utc).date()
-                self.assertEqual(fecha_iso(offset), esperado.isoformat())
 
 
 if __name__ == '__main__':

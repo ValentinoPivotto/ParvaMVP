@@ -26,12 +26,22 @@ RAIZ = Path(__file__).resolve().parent.parent
 GOLDEN = Path(__file__).resolve().parent / 'golden'
 CORPUS = Path(__file__).resolve().parent / 'corpus.json'
 
-# Red de seguridad: si alguien corre un test sin pasar por el paquete (que es
-# donde se fija el entorno), la base apuntaría a la de verdad.
-if not os.environ.get('DB_PATH', '').startswith(DIR_TEMPORAL):
-    raise RuntimeError(
-        'El entorno de test no está configurado. Corré los tests como paquete:\n'
-        '  python3 -m unittest discover -s test -t .')
+def exigir_base_temporal() -> None:
+    """Aborta si la base no es la temporal de los tests.
+
+    Se chequea al importar y otra vez **en el momento de borrar**. Lo segundo
+    no es paranoia: `base_vacia()` tira todas las tablas, y si alguien llega
+    hasta ahí con la base de verdad configurada, se lleva puestos los datos
+    del productor.
+    """
+    if not os.environ.get('DB_PATH', '').startswith(DIR_TEMPORAL):
+        raise RuntimeError(
+            'El entorno de test no está configurado y la base apunta a '
+            f'{os.environ.get("DB_PATH", "(sin DB_PATH)")!r}.\n'
+            'Corré los tests como paquete:  python3 -m unittest discover -s test -t .')
+
+
+exigir_base_temporal()
 
 _FECHA = re.compile(r'\d{4}-\d{2}-\d{2}')
 # La hora de `created_at`, que sale de datetime('now') y cambia en cada corrida.
@@ -66,6 +76,13 @@ def normalizar_fechas(texto: str) -> str:
     return _HORA.sub(r'\1 {HORA}', texto)
 
 
+def base_vacia() -> None:
+    """Tira todas las tablas y vuelve a crear el esquema, sin datos."""
+    exigir_base_temporal()
+    from backend.repository.db import drop_all
+    drop_all()
+
+
 def base_limpia() -> None:
     """Borra y vuelve a sembrar. Deja la base como en el primer arranque.
 
@@ -75,9 +92,8 @@ def base_limpia() -> None:
     import contextlib
     import io
 
-    from backend.repository.db import drop_all
     from backend.repository.seed import seed
-    drop_all()
+    base_vacia()
     with contextlib.redirect_stdout(io.StringIO()):
         seed()
 
