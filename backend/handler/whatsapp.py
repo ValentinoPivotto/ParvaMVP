@@ -8,14 +8,13 @@ import hashlib
 import hmac
 import json
 import sys
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
 from ..config import config
 from ..formato import a_json, texto_numero
 from ..phone import to_wa_id
+from ..red import ErrorDeRed, pedir
 
 # --- Entrada: firma ---------------------------------------------------------
 
@@ -145,44 +144,40 @@ def enviar_texto(
     if responder_a:
         body['context'] = {'message_id': responder_a}
 
-    req = urllib.request.Request(
-        url, data=a_json(body).encode('utf-8'), method='POST',
-        headers={'Authorization': f'Bearer {config.meta_access_token}',
-                 'Content-Type': 'application/json'})
     try:
-        try:
-            with urllib.request.urlopen(req, timeout=TIMEOUT_S) as res:
-                status, crudo = res.status, res.read().decode('utf-8', 'replace')
-        except urllib.error.HTTPError as e:
-            status, crudo = e.code, e.read().decode('utf-8', 'replace')
-        try:
-            data = json.loads(crudo)
-            if not isinstance(data, dict):
-                data = {}
-        except ValueError:
-            data = {}
-
-        if not 200 <= status < 300:
-            # Loguear el código de Meta es lo que convierte 20 minutos de debug en 20
-            # segundos. Los habituales: 131030 (destinatario fuera de la allow-list),
-            # 190 (token vencido), 100 (phone_number_id mal), 131047 (fuera de 24 h).
-            e = _obj(data.get('error'))
-            details = _obj(e.get('error_data')).get('details')
-            detalle = f' — {details}' if details else ''
-            codigo = e.get('code')
-            mensaje = e.get('message')
-            print(f'[wa] error de Meta {status}: código {texto_numero(codigo) if codigo is not None else "?"} · '
-                  f'{mensaje if mensaje is not None else "sin mensaje"}{detalle}', file=sys.stderr)
-            return ResultadoEnvio(ok=False, error=(
-                f'{texto_numero(codigo) if codigo is not None else status}: '
-                f'{mensaje if mensaje is not None else "error"}'))
-
-        mensajes = _lista(data.get('messages'))
-        id_enviado = _obj(mensajes[0]).get('id') if mensajes else None
-        print(f'[wa] → respuesta a {to_wa_id(to)} desde {numero_propio} '
-              f'(id {id_enviado[:24] if isinstance(id_enviado, str) else "?"})')
-        return ResultadoEnvio(ok=True, id=id_enviado)
-    except Exception as err:
+        r = pedir('POST', url, plazo=TIMEOUT_S, cuerpo=a_json(body),
+                  headers={'Authorization': f'Bearer {config.meta_access_token}',
+                           'Content-Type': 'application/json'})
+    except ErrorDeRed as err:
         # Nunca loguear headers ni el access token.
         print(f'[wa] fallo de red enviando a Meta: {err}', file=sys.stderr)
         return ResultadoEnvio(ok=False, error=str(err))
+
+    status = r.status
+    try:
+        data = json.loads(r.texto)
+        if not isinstance(data, dict):
+            data = {}
+    except ValueError:
+        data = {}
+
+    if not 200 <= status < 300:
+        # Loguear el código de Meta es lo que convierte 20 minutos de debug en 20
+        # segundos. Los habituales: 131030 (destinatario fuera de la allow-list),
+        # 190 (token vencido), 100 (phone_number_id mal), 131047 (fuera de 24 h).
+        e = _obj(data.get('error'))
+        details = _obj(e.get('error_data')).get('details')
+        detalle = f' — {details}' if details else ''
+        codigo = e.get('code')
+        mensaje = e.get('message')
+        print(f'[wa] error de Meta {status}: código {texto_numero(codigo) if codigo is not None else "?"} · '
+              f'{mensaje if mensaje is not None else "sin mensaje"}{detalle}', file=sys.stderr)
+        return ResultadoEnvio(ok=False, error=(
+            f'{texto_numero(codigo) if codigo is not None else status}: '
+            f'{mensaje if mensaje is not None else "error"}'))
+
+    mensajes = _lista(data.get('messages'))
+    id_enviado = _obj(mensajes[0]).get('id') if mensajes else None
+    print(f'[wa] → respuesta a {to_wa_id(to)} desde {numero_propio} '
+          f'(id {id_enviado[:24] if isinstance(id_enviado, str) else "?"})')
+    return ResultadoEnvio(ok=True, id=id_enviado)

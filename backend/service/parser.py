@@ -9,12 +9,11 @@ import math
 import re
 import sys
 import threading
-import urllib.error
-import urllib.request
 from typing import Any
 
 from ..config import config, use_bedrock
 from ..formato import NAN, a_json, fecha_iso, numero, percent_encode, texto_numero
+from ..red import pedir
 from ..types import ParsedIntent
 from .sigv4 import AwsCreds, firmar_aws
 
@@ -371,13 +370,9 @@ def _normalizar_salida(p: Any, texto: str) -> ParsedIntent:
 
 
 def _post(url: str, headers: dict[str, str], body: str, timeout: float) -> tuple[int, str]:
-    """POST con timeout. Devuelve (status, texto); un 4xx/5xx no tira, se reporta."""
-    req = urllib.request.Request(url, data=body.encode('utf-8'), headers=headers, method='POST')
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as res:
-            return res.status, res.read().decode('utf-8')
-    except urllib.error.HTTPError as e:
-        return e.code, e.read().decode('utf-8', 'replace')
+    """POST con plazo total. Devuelve (status, texto); un 4xx/5xx no tira, se reporta."""
+    r = pedir('POST', url, plazo=timeout, headers=headers, cuerpo=body)
+    return r.status, r.texto
 
 
 def _parse_local(texto: str) -> ParsedIntent:
@@ -459,8 +454,7 @@ def ollama_disponible() -> bool:
     with _probe_lock:
         if _ollama_probe is None:
             try:
-                with urllib.request.urlopen(f'{config.ollama_url}/api/tags', timeout=0.8) as r:
-                    _ollama_probe = 200 <= r.status < 300
+                _ollama_probe = pedir('GET', f'{config.ollama_url}/api/tags', plazo=0.8).ok
             except Exception:
                 _ollama_probe = False
         return _ollama_probe
