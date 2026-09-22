@@ -27,8 +27,8 @@ TIMEOUT_MODELO_S = 10.0
 # nunca llega a matchear, porque después de 'é' no hay borde de palabra; en
 # modo Unicode sí matchearía y "qué vendí" pasaría de registrar una venta a
 # contestar cuánto se vendió.
-_JS = re.ASCII
-_JSI = re.ASCII | re.IGNORECASE
+_ASCII = re.ASCII
+_ASCII_I = re.ASCII | re.IGNORECASE
 
 # `re.ASCII` también achica `\s` a los cinco espacios de siempre, y los mensajes
 # llegan de teclados de celular: el espacio no separable U+00A0 aparece solo al
@@ -54,38 +54,39 @@ UNIDADES = 'litros?|lts?|l|kg|kilos?|tn|toneladas?|ton|bolsas?|cabezas?|unidades
 # es absurdo, así que acotarlo lo vuelve lineal sin perder ningún caso real.
 _LARGO_IMPORTE = 40
 
-_RE_CATEGORIA = {p: re.compile(rf'\b{p}\b', _JS) for p in CATEGORIAS_ANIMAL}
-_RE_MONTO_PESO = re.compile(r'\$' + _ESP + r'*([\d.,]+)', _JS)
-_RE_MONTO_PALABRA = re.compile(r'([\d.,]{1,%d})' % _LARGO_IMPORTE + _ESP + r'*pesos', _JS)
-_RE_QUITA_MONTO_PESO = re.compile(r'\$' + _ESP + r'*[\d.,]+', _JS)
-_RE_QUITA_MONTO_PALABRA = re.compile(r'[\d.,]{1,%d}' % _LARGO_IMPORTE + _ESP + r'*pesos', _JS)
-_RE_CANTIDAD = re.compile(rf'(\d+(?:[.,]\d+)?){_ESP}*({UNIDADES})?', _JSI)
-_RE_LOTE = re.compile(r'lote' + _ESP + r'*([a-zA-Z0-9]+)', _JS)
-_RE_AYER = re.compile(r'\bayer\b', _JS)
-_RE_ANTEAYER = re.compile(r'anteayer', _JS)
-_RE_PRODUCTO_DE = re.compile(rf'de{_ESP}+([a-záéíóúñ]+(?:{_ESP}+[a-záéíóúñ]+)?)', _JSI)
-_RE_PUNTOS = re.compile(r'\.', _JS)
-_RE_MILES_FINAL = re.compile(r'\.\d{3}$', _JS)
-# `parseFloat`: toma el prefijo numérico y devuelve NaN si no hay ninguno.
-_RE_PARSE_FLOAT = re.compile(r'^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?', _JS)
+_RE_CATEGORIA = {p: re.compile(rf'\b{p}\b', _ASCII) for p in CATEGORIAS_ANIMAL}
+_RE_MONTO_PESO = re.compile(r'\$' + _ESP + r'*([\d.,]+)', _ASCII)
+_RE_MONTO_PALABRA = re.compile(r'([\d.,]{1,%d})' % _LARGO_IMPORTE + _ESP + r'*pesos', _ASCII)
+_RE_QUITA_MONTO_PESO = re.compile(r'\$' + _ESP + r'*[\d.,]+', _ASCII)
+_RE_QUITA_MONTO_PALABRA = re.compile(r'[\d.,]{1,%d}' % _LARGO_IMPORTE + _ESP + r'*pesos', _ASCII)
+_RE_CANTIDAD = re.compile(rf'(\d+(?:[.,]\d+)?){_ESP}*({UNIDADES})?', _ASCII_I)
+_RE_LOTE = re.compile(r'lote' + _ESP + r'*([a-zA-Z0-9]+)', _ASCII)
+_RE_AYER = re.compile(r'\bayer\b', _ASCII)
+_RE_ANTEAYER = re.compile(r'anteayer', _ASCII)
+_RE_PRODUCTO_DE = re.compile(rf'de{_ESP}+([a-záéíóúñ]+(?:{_ESP}+[a-záéíóúñ]+)?)', _ASCII_I)
+_RE_PUNTOS = re.compile(r'\.', _ASCII)
+_RE_MILES_FINAL = re.compile(r'\.\d{3}$', _ASCII)
+# El número con que empieza el texto: '12abc' da 12, y 'abc' da NaN.
+_RE_PREFIJO_NUMERICO = re.compile(r'^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?', _ASCII)
 
-# Sin \b: no asierta bien tras vocal acentuada en una regex sin flag `u`.
+# Sin \b: en modo ASCII una vocal acentuada no es parte de la palabra, así
+# que después de "sí" no hay borde.
 _RE_CONFIRMA = re.compile(
     r'^(s[ií]|sip|dale|ok(ey)?|oka|listo|correcto|confirmo|confirm[aá]|exacto|as[ií] es|de una|tal cual|s[ií] dale)(' + _ESP + r'|$|[,.!])',
-    _JS)
-_RE_PREGUNTA = re.compile(r'\?|cu[aá]nt|cu[aá]l|qu[eé]\b|tengo|hay\b|stock|mostr|dec[ií]me', _JS)
-_RE_MARGEN = re.compile(r'margen', _JS)
-_RE_STOCK = re.compile(r'stock|hacienda|animales|cabezas', _JS)
-_RE_GAST = re.compile(r'gast', _JS)
-_RE_VEND = re.compile(r'vend|venta', _JS)
-_RE_NACI = re.compile(r'naci', _JS)
-_RE_MUERTE = re.compile(r'muri|murieron|se murió|se murio|perd[ií]', _JS)
-_RE_COMPR = re.compile(r'compr', _JS)
-_RE_TRASLADO = re.compile(r'traslad|pas[eé]|mov[ií]', _JS)
-_RE_SANIDAD = re.compile(r'vacun|desparasit|tratamiento|sanidad|dosis', _JS)
-_RE_LABOR = re.compile(r'sembr|pulveric|fumig|cosech|apliqu|fertilic|ar[ée]\b|rastr|disc', _JS)
-_RE_GASTO = re.compile(r'pagu[ée]|gast[ée]|abon[ée]|gasto', _JS)
-_RE_COMPRA = re.compile(r'compr[ée]|compre|carg[ué]', _JS)
+    _ASCII)
+_RE_PREGUNTA = re.compile(r'\?|cu[aá]nt|cu[aá]l|qu[eé]\b|tengo|hay\b|stock|mostr|dec[ií]me', _ASCII)
+_RE_MARGEN = re.compile(r'margen', _ASCII)
+_RE_STOCK = re.compile(r'stock|hacienda|animales|cabezas', _ASCII)
+_RE_GAST = re.compile(r'gast', _ASCII)
+_RE_VEND = re.compile(r'vend|venta', _ASCII)
+_RE_NACI = re.compile(r'naci', _ASCII)
+_RE_MUERTE = re.compile(r'muri|murieron|se murió|se murio|perd[ií]', _ASCII)
+_RE_COMPR = re.compile(r'compr', _ASCII)
+_RE_TRASLADO = re.compile(r'traslad|pas[eé]|mov[ií]', _ASCII)
+_RE_SANIDAD = re.compile(r'vacun|desparasit|tratamiento|sanidad|dosis', _ASCII)
+_RE_LABOR = re.compile(r'sembr|pulveric|fumig|cosech|apliqu|fertilic|ar[ée]\b|rastr|disc', _ASCII)
+_RE_GASTO = re.compile(r'pagu[ée]|gast[ée]|abon[ée]|gasto', _ASCII)
+_RE_COMPRA = re.compile(r'compr[ée]|compre|carg[ué]', _ASCII)
 
 
 def _detectar_categoria_animal(t: str) -> str | None:
@@ -95,8 +96,8 @@ def _detectar_categoria_animal(t: str) -> str | None:
     return None
 
 
-def _parse_float(s: str) -> float:
-    m = _RE_PARSE_FLOAT.match(s.lstrip())
+def _prefijo_numerico(s: str) -> float:
+    m = _RE_PREFIJO_NUMERICO.match(s.lstrip())
     return float(m.group(0)) if m else NAN
 
 
@@ -119,7 +120,7 @@ def _num(s: str) -> float:
         x = _RE_PUNTOS.sub('', x)
     elif _RE_MILES_FINAL.search(x):
         x = _RE_PUNTOS.sub('', x)
-    return _parse_float(x)
+    return _prefijo_numerico(x)
 
 
 def _extraer_monto(t: str) -> float | None:
@@ -464,8 +465,8 @@ def _parse_bedrock(texto: str) -> ParsedIntent:
     return _normalizar_salida(json.loads(_recortar_json(crudo)), texto)
 
 
-_RE_CERCA_INICIO = re.compile(rf'^{_ESP}*```(?:json)?{_ESP}*', _JSI)
-_RE_CERCA_FIN = re.compile(rf'{_ESP}*```{_ESP}*$', _JS)
+_RE_CERCA_INICIO = re.compile(rf'^{_ESP}*```(?:json)?{_ESP}*', _ASCII_I)
+_RE_CERCA_FIN = re.compile(rf'{_ESP}*```{_ESP}*$', _ASCII)
 
 
 def _recortar_json(s: str) -> str:

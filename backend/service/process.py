@@ -48,9 +48,8 @@ def _confirm_txt(n: Normalized) -> str:
     """El recibo de lo que se guardó.
 
     Describe únicamente lo que quedó en la base. Un campo que falta no se
-    rellena con nada: antes un gasto sin monto se anunciaba como "$0" y un
-    insumo sin producto salía con la palabra "undefined", los dos afirmando
-    algo que en la base es NULL.
+    rellena con nada: un "$0" para un gasto sin monto, o un nombre para un
+    insumo sin producto, afirmarían algo que en la base es NULL.
     """
     rt = n.record_type
     # El lote sólo se nombra si de verdad se pudo asociar; si no, lo aclara

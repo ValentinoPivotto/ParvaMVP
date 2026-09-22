@@ -12,8 +12,8 @@ _ESCAPAR = re.compile(r'[",\n]')
 def _fila(vals: list[Any]) -> str:
     salida = []
     for v in vals:
-        # `String(v ?? '')`: los montos salen de columnas REAL, y sin esto un
-        # 1200000 se escribiría "1200000.0" en el CSV.
+        # Un NULL sale vacío y un número con `texto_numero`: los montos salen
+        # de columnas REAL, y con `str()` un 1200000 se escribiría "1200000.0".
         s = texto_numero(v) if isinstance(v, (int, float)) or v is None else str(v)
         salida.append('"' + s.replace('"', '""') + '"' if _ESCAPAR.search(s) else s)
     return ','.join(salida)

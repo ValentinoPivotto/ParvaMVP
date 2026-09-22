@@ -109,7 +109,10 @@ def _numero_o_default(clave: str, por_defecto: float) -> float:
 
 
 def _env(clave: str, por_defecto: str = '') -> str:
-    """`process.env.X ?? por_defecto`: una variable vacía es un valor, no una ausencia."""
+    """La variable de entorno, o `por_defecto` si no está definida.
+
+    Una variable vacía es un valor, no una ausencia.
+    """
     valor = os.environ.get(clave)
     return por_defecto if valor is None else valor
 

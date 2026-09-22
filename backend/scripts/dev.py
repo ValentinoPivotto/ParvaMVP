@@ -2,10 +2,10 @@
 
   python3 -m backend.scripts.dev
 
-Es el reemplazo de `node --watch`: Python no trae un watcher en la stdlib, así
-que se mira el mtime de los .py del backend y se reinicia el proceso cuando
-alguno cambia. Sondear cada 300 ms alcanza de sobra para editar y recargar, y
-evita traer una dependencia sólo para desarrollo.
+Python no trae un watcher en la stdlib, así que se mira el mtime de los .py
+del backend y se reinicia el proceso cuando alguno cambia. Sondear cada
+300 ms alcanza de sobra para editar y recargar, y evita traer una
+dependencia sólo para desarrollo.
 """
 import os
 import signal

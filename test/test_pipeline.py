@@ -133,8 +133,7 @@ class RegistrosIncompletos(unittest.TestCase):
 
     El bot pregunta "¿lo registro igual?" y el productor dice que sí. El
     registro entra —lo pidió— pero el recibo no puede afirmar lo que no
-    guardó: antes un gasto sin monto se anunciaba como "$0" y un insumo sin
-    producto salía con la palabra "undefined".
+    guardó: ni un "$0" que nadie cargó ni un producto que nadie nombró.
     """
 
     def setUp(self) -> None:
@@ -146,9 +145,8 @@ class RegistrosIncompletos(unittest.TestCase):
         self.assertEqual(pide.status, 'needs_confirmation', f'«{mensaje}» no pidió confirmación')
         return process_message(self.sender, 'sí', f'wamid.{marca}.b').reply
 
-    def test_un_insumo_sin_producto_no_dice_undefined(self) -> None:
+    def test_un_insumo_sin_producto_no_inventa_un_nombre(self) -> None:
         reply = self._confirmar('compré', 'inc1')
-        self.assertNotIn('undefined', reply)
         self.assertEqual(reply, '✅ Registré un insumo. No me dijiste qué producto.')
 
     def test_un_gasto_sin_monto_no_inventa_un_cero(self) -> None:
