@@ -1,17 +1,68 @@
-// Capa de base de datos: SQLite nativo de Node (node:sqlite), sin dependencias.
-// En producción se cambiaría por Postgres/Supabase; el repositorio (repo.ts)
-// aísla el resto del código de este detalle.
-import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
-import { config } from '../config.ts';
+"""Capa de base de datos: sqlite3 de la stdlib, sin dependencias.
 
-mkdirSync(dirname(config.dbPath), { recursive: true });
+En producción se cambiaría por Postgres/Supabase; el repositorio (repo.py)
+aísla el resto del código de este detalle.
+"""
+import os
+import sqlite3
+import threading
+from dataclasses import dataclass
+from typing import Any
 
-export const db = new DatabaseSync(config.dbPath);
-db.exec('PRAGMA foreign_keys = ON;');
+from ..config import config
 
-const SCHEMA = `
+os.makedirs(os.path.dirname(os.path.abspath(config.db_path)), exist_ok=True)
+
+# `isolation_level=None` = autocommit, que es como se comportaba node:sqlite:
+# sin esto Python abre una transacción implícita en cada INSERT y no la cierra,
+# y los datos quedan invisibles para cualquier otra conexión hasta el commit.
+#
+# `check_same_thread=False` + el lock: el servidor atiende cada request en su
+# propio hilo y el pipeline de WhatsApp corre en hilos de cola, mientras que la
+# versión anterior tenía un solo hilo para todo. El lock devuelve esa garantía:
+# una operación por vez, en orden, como antes.
+_conn = sqlite3.connect(config.db_path, check_same_thread=False, isolation_level=None)
+_conn.row_factory = sqlite3.Row
+_lock = threading.RLock()
+
+
+@dataclass
+class InfoEscritura:
+    """Lo que devolvía `stmt.run()` de node:sqlite."""
+
+    last_insert_rowid: int
+    changes: int
+
+
+def all(sql: str, *params: Any) -> list[dict[str, Any]]:
+    """`stmt.all(...)`: todas las filas como dicts."""
+    with _lock:
+        return [dict(f) for f in _conn.execute(sql, params).fetchall()]
+
+
+def get(sql: str, *params: Any) -> dict[str, Any] | None:
+    """`stmt.get(...)`: la primera fila, o None."""
+    with _lock:
+        fila = _conn.execute(sql, params).fetchone()
+        return dict(fila) if fila is not None else None
+
+
+def run(sql: str, *params: Any) -> InfoEscritura:
+    """`stmt.run(...)`: ejecuta y devuelve rowid y filas afectadas."""
+    with _lock:
+        cur = _conn.execute(sql, params)
+        return InfoEscritura(last_insert_rowid=cur.lastrowid or 0, changes=cur.rowcount)
+
+
+def exec_(sql: str) -> None:
+    """`db.exec(...)`: una o varias sentencias sin parámetros."""
+    with _lock:
+        _conn.executescript(sql)
+
+
+exec_('PRAGMA foreign_keys = ON;')
+
+SCHEMA = """
 CREATE TABLE IF NOT EXISTS productor (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nombre TEXT NOT NULL,
@@ -123,47 +174,42 @@ CREATE TABLE IF NOT EXISTS audit_log (
   detalle TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-`;
+"""
 
-function tieneColumna(tabla: string, col: string): boolean {
-  // PRAGMA no admite parámetros: `tabla` es siempre una constante del código.
-  const cols = db.prepare(`PRAGMA table_info(${tabla})`).all() as { name: string }[];
-  return cols.some((c) => c.name === col);
-}
 
-// Migraciones sobre bases ya creadas (el SCHEMA usa IF NOT EXISTS, así que una
-// tabla existente no se actualiza sola). Idempotente: corre en cada arranque.
-function migrate(): void {
-  // SQLite NO permite `ADD COLUMN ... UNIQUE`: primero la columna, después el
-  // índice. El índice único es lo que hace el dedup a prueba de carreras, y
-  // admite infinitos NULL (los mensajes sin id de Meta conviven sin problema).
-  if (!tieneColumna('raw_message', 'wa_message_id')) {
-    db.exec('ALTER TABLE raw_message ADD COLUMN wa_message_id TEXT;');
-  }
-  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS ux_raw_message_wa_id ON raw_message(wa_message_id);');
-}
+def _tiene_columna(tabla: str, col: str) -> bool:
+    # PRAGMA no admite parámetros: `tabla` es siempre una constante del código.
+    return any(c['name'] == col for c in all(f'PRAGMA table_info({tabla})'))
 
-export function initSchema(): void {
-  db.exec(SCHEMA);
-  migrate();
-}
 
-export function isEmpty(): boolean {
-  initSchema();
-  const row = db.prepare('SELECT COUNT(*) AS n FROM productor').get() as { n: number };
-  return row.n === 0;
-}
+def _migrate() -> None:
+    """Migraciones sobre bases ya creadas (el SCHEMA usa IF NOT EXISTS, así que una
+    tabla existente no se actualiza sola). Idempotente: corre en cada arranque.
+    """
+    # SQLite NO permite `ADD COLUMN ... UNIQUE`: primero la columna, después el
+    # índice. El índice único es lo que hace el dedup a prueba de carreras, y
+    # admite infinitos NULL (los mensajes sin id de Meta conviven sin problema).
+    if not _tiene_columna('raw_message', 'wa_message_id'):
+        exec_('ALTER TABLE raw_message ADD COLUMN wa_message_id TEXT;')
+    exec_('CREATE UNIQUE INDEX IF NOT EXISTS ux_raw_message_wa_id ON raw_message(wa_message_id);')
 
-export function dropAll(): void {
-  const tablas = [
-    'audit_log', 'raw_message', 'evento_sanitario', 'evento_hacienda',
-    'hacienda', 'movimiento', 'campania', 'lote', 'campo', 'usuario', 'productor',
-  ];
-  for (const t of tablas) db.exec(`DROP TABLE IF EXISTS ${t};`);
-  initSchema();
-}
 
-// Helper: convierte lastInsertRowid (number | bigint) a number.
-export function lastId(info: { lastInsertRowid: number | bigint }): number {
-  return Number(info.lastInsertRowid);
-}
+def init_schema() -> None:
+    exec_(SCHEMA)
+    _migrate()
+
+
+def is_empty() -> bool:
+    init_schema()
+    fila = get('SELECT COUNT(*) AS n FROM productor')
+    return fila['n'] == 0
+
+
+def drop_all() -> None:
+    tablas = [
+        'audit_log', 'raw_message', 'evento_sanitario', 'evento_hacienda',
+        'hacienda', 'movimiento', 'campania', 'lote', 'campo', 'usuario', 'productor',
+    ]
+    for t in tablas:
+        exec_(f'DROP TABLE IF EXISTS {t};')
+    init_schema()

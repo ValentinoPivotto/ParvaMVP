@@ -1,10 +1,19 @@
 # Secrets: contiene el App Secret y el access token de Meta
 .env
 
-# Base de datos local (se regenera con `npm run seed`)
+# Base de datos local (se regenera con `make seed`)
 data/*.db
 data/*.db-journal
 data/*.db-wal
 
 .DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Quedó del stack anterior (Node/TypeScript); ya no se usa ni se regenera.
 node_modules/
+

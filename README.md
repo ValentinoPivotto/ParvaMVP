@@ -8,18 +8,22 @@ verdad, y el dato aparece en el dashboard.
 
 ## Requisitos
 
-- **Node.js ≥ 24** (usa `node:sqlite` y ejecución nativa de TypeScript).
-- **Nada más para ejecutar.** Cero dependencias de ejecución, sin Docker ni base externa.
+- **Python ≥ 3.11** (usa `sqlite3` y `http.server` de la biblioteca estándar).
+- **Nada más para ejecutar.** Cero dependencias de ejecución, sin `pip install`,
+  sin entorno virtual, sin Docker ni base externa.
 
-Para desarrollar en VS Code, ejecutá `npm install`: instala TypeScript y los tipos
-de Node como dependencias de desarrollo, para que el editor reconozca los módulos
-`node:*` y pueda validar el código. `npm run typecheck` comprueba los tipos sin
-generar archivos; la aplicación sigue ejecutándose directamente con Node.
+El código lleva anotaciones de tipo en todo el backend. No hace falta ningún
+chequeador para ejecutarlo; si querés validarlas en el editor, cualquier
+`mypy`/`pyright` instalado aparte las lee sin configuración extra.
+
+Para los tests del frontend hace falta **Node.js** (el frontend es JavaScript de
+navegador y sus tests corren con el runner de Node). No se necesita para usar la
+aplicación.
 
 ## Cómo correr
 
 ```bash
-node backend/handler/server.ts
+python3 -m backend.handler.server
 # luego abrir http://localhost:3000
 ```
 
@@ -29,14 +33,15 @@ hacen falta las credenciales de Meta y un túnel: ver
 
 La base SQLite (`data/parva.db`, en la raíz del proyecto) y los datos de ejemplo se
 crean solos en el primer arranque. La ruta por defecto es independiente del
-directorio desde el que se ejecute Node; un `DB_PATH` relativo se resuelve desde
-ese directorio de ejecución. Scripts equivalentes:
+directorio desde el que se ejecute Python; un `DB_PATH` relativo se resuelve desde
+ese directorio de ejecución. El `Makefile` tiene los atajos:
 
 ```bash
-npm start        # node backend/handler/server.ts
-npm run dev      # con --watch (recarga al editar)
-npm run seed     # recarga datos de ejemplo
-npm run reset    # borra y recarga la base
+make start       # python3 -m backend.handler.server
+make dev         # recarga al guardar un .py
+make seed        # recarga datos de ejemplo
+make reset       # borra y recarga la base
+make test        # tests del frontend (necesita Node)
 ```
 
 ## Qué tiene el MVP
@@ -58,10 +63,12 @@ npm run reset    # borra y recarga la base
 | WhatsApp | **Meta Cloud API**: webhook firmado + envío por Graph API | Número propio verificado en vez del de test |
 | Parser IA | **Nova Lite sobre Bedrock** con credenciales AWS, o modelo local vía Ollama; sin ninguno cae a reglas determinísticas en español | Set de mensajes anotados para comparar los tres |
 | Transcripción | Sólo texto: un audio devuelve un placeholder | Amazon Transcribe |
-| Base de datos | SQLite (`node:sqlite`) | Postgres / Supabase |
+| Base de datos | SQLite (`sqlite3` de la stdlib) | Postgres / Supabase |
 
-Variables en `.env.example`. Los scripts de npm cargan `.env` automáticamente
-(`--env-file-if-exists`); si corrés `node backend/handler/server.ts` a mano, no se carga.
+Variables en `.env.example`. El `.env` se carga solo al arrancar, corras como
+corras. **El entorno tiene prioridad sobre el archivo**: una variable ya exportada
+en la shell gana, que es lo que hace funcionar el flujo de credenciales de AWS de
+más abajo.
 
 ## Parser real (Amazon Nova Lite sobre Bedrock)
 
@@ -70,7 +77,7 @@ con modelos de Amazon o con un modelo local, y con nada más: el crédito de
 Bedrock está cubierto por la universidad mientras el proyecto sea con fines
 educativos, y un proveedor facturado aparte saldría del bolsillo.
 
-Bedrock no acepta una API key en un header: cada request va firmado con SigV4. La firma está implementada en `backend/service/sigv4.ts` con `node:crypto`
+Bedrock no acepta una API key en un header: cada request va firmado con SigV4. La firma está implementada en `backend/service/sigv4.py` con `hmac`/`hashlib`
 para no traer el SDK de AWS y mantener la promesa de cero dependencias. Está
 verificada contra el canonical request que imprime el propio AWS CLI.
 
@@ -86,7 +93,7 @@ aws sso login --profile TU_PERFIL
 Exportarlas al entorno y levantar el server:
 
 ```bash
-eval "$(aws configure export-credentials --profile TU_PERFIL --format env)" && npm start
+eval "$(aws configure export-credentials --profile TU_PERFIL --format env)" && make start
 ```
 
 En el arranque el log dice qué motor quedó activo:
@@ -151,13 +158,12 @@ remitente, para no romper el flujo de confirmación).
 
 ```bash
 cp .env.example .env       # y completar las META_*
-npm run link-phone -- --list
-npm run link-phone -- 1 +54911XXXXXXXX     # tu celular → Juan Pérez (owner)
-npm start                                   # verificá que no liste faltantes
+make link-phone ARGS="--list"
+make link-phone ARGS="1 +54911XXXXXXXX"    # tu celular → Juan Pérez (owner)
+make start                                  # verificá que no liste faltantes
 
-npm run tunnel                              # cloudflared, sin cuenta
-# o: ngrok http 3000   (requiere cuenta, pero su inspector en :4040 muestra
-#                       los bytes crudos y la firma que mandó Meta)
+make tunnel                                 # ngrok hacia el puerto del .env
+# su inspector en :4040 muestra los bytes crudos y la firma que mandó Meta
 ```
 
 Antes de pegar la URL en Meta, comprobá que el handshake ya funciona — si esto no
@@ -191,8 +197,8 @@ panel o creá uno permanente en Business Settings → System Users.
 ### 4. Chequear el setup antes de la demo
 
 ```bash
-npm run check-meta                 # deduce la WABA del token (necesita META_APP_ID)
-npm run check-meta -- <WABA_ID>    # o pasásela a mano
+make check-meta                          # deduce la WABA del token (necesita META_APP_ID)
+make check-meta ARGS="<WABA_ID>"         # o pasásela a mano
 ```
 
 El argumento es el **WABA ID**, no el `phone_number_id`: son dos IDs numéricos
@@ -234,7 +240,7 @@ allow-listeados y no se puede renombrar. Para que el bot aparezca como **Parva**
    está scopeado a la WABA de test: contra la propia da error 190 o 200. Creá uno
    permanente en *Business Settings → System Users* con la WABA asignada.
 
-`npm run check-meta` verifica los cuatro pasos de una.
+`make check-meta` verifica los cuatro pasos de una.
 
 > El bot responde **desde el número que recibió el mensaje**, no desde
 > `META_PHONE_NUMBER_ID`. Con el número de test y el propio en la misma WABA, los
@@ -260,7 +266,7 @@ es el *display name* del número, que es un trámite aparte.
 - `Vacuné 120 vacas contra la aftosa`
 
 **Permisos:** escribí desde el celular de un usuario con rol *gestor_campo*
-(`npm run link-phone -- --list`) y pedí `¿cuál es el margen?` → el bot lo
+(`make link-phone ARGS="--list"`) y pedí `¿cuál es el margen?` → el bot lo
 **deniega** (el gestor no ve info económica).
 
 **Confirmación:** mandá algo ambiguo como `compré gasoil` (sin cantidad) → el bot
@@ -292,70 +298,71 @@ El backend se organiza en las tres capas **handler → service → repository**.
 
 | Capa | Responsabilidad | Archivos principales |
 |---|---|---|
-| `backend/handler/` | Rutas HTTP, estáticos y transporte de Meta | `server.ts`, `whatsapp.ts` |
-| `backend/service/` | Orquestación de mensajes, modelos, reglas y resultados del negocio | `process.ts`, `parser.ts`, `normalizer.ts`, `validator.ts`, `permissions.ts`, `query.ts`, `margin.ts` |
-| `backend/repository/` | Lecturas, escrituras, agregaciones SQL, auditoría y esquema SQLite | `repo.ts`, `db.ts`, `seed.ts` |
+| `backend/handler/` | Rutas HTTP, estáticos y transporte de Meta | `server.py`, `whatsapp.py` |
+| `backend/service/` | Orquestación de mensajes, modelos, reglas y resultados del negocio | `process.py`, `parser.py`, `normalizer.py`, `validator.py`, `permissions.py`, `query.py`, `margin.py` |
+| `backend/repository/` | Lecturas, escrituras, agregaciones SQL, auditoría y esquema SQLite | `repo.py`, `db.py`, `seed.py` |
 
 ```text
 backend/
   handler/
-    server.ts        Entrada HTTP y arranque del servidor
-    whatsapp.ts      Firma del webhook, lectura del envelope y envío a Meta
+    server.py        Entrada HTTP y arranque del servidor
+    whatsapp.py      Firma del webhook, lectura del envelope y envío a Meta
   service/
-    process.ts       Orquesta el recorrido y las confirmaciones
-    transcriber.ts   Devuelve el texto; audio todavía sin conectar
-    parser.ts        Reglas determinísticas, prompts y adaptadores Bedrock/Ollama
-    normalizer.ts    Resuelve lotes y unidades
-    validator.ts     Decide aceptar, pedir confirmación o denegar
-    permissions.ts   Permisos por rol
-    query.ts         Respuestas a consultas del bot
-    margin.ts        Cálculo y confiabilidad del margen
-    export.ts        Generación de CSV
-    dashboard.ts     Arma el estado de la web
-    sigv4.ts         Firma de las llamadas del parser a Bedrock
+    process.py       Orquesta el recorrido y las confirmaciones
+    transcriber.py   Devuelve el texto; audio todavía sin conectar
+    parser.py        Reglas determinísticas, prompts y adaptadores Bedrock/Ollama
+    normalizer.py    Resuelve lotes y unidades
+    validator.py     Decide aceptar, pedir confirmación o denegar
+    permissions.py   Permisos por rol
+    query.py         Respuestas a consultas del bot
+    margin.py        Cálculo y confiabilidad del margen
+    export.py        Generación de CSV
+    dashboard.py     Arma el estado de la web
+    sigv4.py         Firma de las llamadas del parser a Bedrock
   repository/
-    repo.ts          Acceso a los datos y auditoría
-    db.ts            Conexión, esquema y migraciones
-    seed.ts          Datos de ejemplo; también ejecutable con npm run seed/reset
-  scripts/           link-phone.ts, check-meta.ts, tunnel.ts
-  config.ts          Configuración por entorno y ruta de la base
-  types.ts           Tipos compartidos del dominio y mensajes
-  phone.ts           Normalización de teléfonos compartida
+    repo.py          Acceso a los datos y auditoría
+    db.py            Conexión, esquema y migraciones
+    seed.py          Datos de ejemplo; también ejecutable con make seed/reset
+  scripts/           link_phone.py, check_meta.py, tunnel.py, dev.py
+  config.py          Configuración por entorno, .env y ruta de la base
+  types.py           Tipos compartidos del dominio y mensajes
+  phone.py           Normalización de teléfonos compartida
+  jscompat.py        Formato de números, fechas y JSON heredado del stack anterior
 frontend/            index.html, app.js, styles.css y brandbook.html
 data/                SQLite local (ignorado por Git)
 ```
 
-El mismo proceso Node sirve `frontend/` y la API. Los scripts npm y `.env` siguen
-en la raíz; no hay un build ni un despliegue separado para el frontend.
+El mismo proceso Python sirve `frontend/` y la API. El `Makefile` y el `.env`
+siguen en la raíz; no hay un build ni un despliegue separado para el frontend.
 `brandbook.html` sigue siendo una referencia local que se abre directamente.
 
 Para seguir **«Compré 200 litros de gasoil para el lote 4»** en el código:
 
-1. [`handler/server.ts`](backend/handler/server.ts) recibe el mensaje en el
+1. [`handler/server.py`](backend/handler/server.py) recibe el mensaje en el
    webhook (`POST /webhook/whatsapp`), verifica la firma y contesta el ACK.
    Busca el remitente por teléfono en el repositorio para obtener usuario, rol y
-   productor, y llama a `processMessage(sender, texto)`.
-2. [`service/process.ts`](backend/service/process.ts) llama a `transcribe`
+   productor, y llama a `process_message(sender, texto)`.
+2. [`service/process.py`](backend/service/process.py) llama a `transcribe`
    (hoy devuelve el texto), guarda el mensaje original en `raw_message` y llama
    a `parse`. También coordina las consultas y las confirmaciones de pendientes.
-3. [`service/parser.ts`](backend/service/parser.ts) interpreta la intención y
+3. [`service/parser.py`](backend/service/parser.py) interpreta la intención y
    extrae los campos: un insumo, gasoil, cantidad 200, unidad litros y referencia
    al lote 4. Aquí están las reglas de respaldo y los prompts/adaptadores de los
    modelos.
-4. [`service/normalizer.ts`](backend/service/normalizer.ts) busca ese lote dentro
+4. [`service/normalizer.py`](backend/service/normalizer.py) busca ese lote dentro
    del productor mediante el repositorio y convierte la unidad a `L`.
-5. [`service/validator.ts`](backend/service/validator.ts) aplica
-   [`permissions.ts`](backend/service/permissions.ts), los campos requeridos, la
-   resolución del lote y el umbral de confianza. `processMessage` usa esa decisión
+5. [`service/validator.py`](backend/service/validator.py) aplica
+   [`permissions.py`](backend/service/permissions.py), los campos requeridos, la
+   resolución del lote y el umbral de confianza. `process_message` usa esa decisión
    para continuar, dejar un pendiente de confirmación o denegar el registro.
-6. Si se acepta, `processMessage` llama a `insertMovimiento` en
-   [`repository/repo.ts`](backend/repository/repo.ts), que guarda el movimiento y
-   su auditoría usando [`db.ts`](backend/repository/db.ts). La respuesta vuelve al
+6. Si se acepta, `process_message` llama a `insert_movimiento` en
+   [`repository/repo.py`](backend/repository/repo.py), que guarda el movimiento y
+   su auditoría usando [`db.py`](backend/repository/db.py). La respuesta vuelve al
    handler, que la manda por la Cloud API; el dashboard la levanta en el próximo
    refresco.
 
-Las consultas del bot pasan por `service/query.ts`; las reglas del margen están
-en `service/margin.ts` y las sumas SQL en el repositorio. Las lecturas simples de
+Las consultas del bot pasan por `service/query.py`; las reglas del margen están
+en `service/margin.py` y las sumas SQL en el repositorio. Las lecturas simples de
 identidad y del listado de productores se hacen desde el handler al repositorio.
 
 **Fuente de verdad:** la base estructurada. La "planilla" es una vista + export CSV
