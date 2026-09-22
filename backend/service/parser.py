@@ -5,6 +5,7 @@ reales usa Nova Lite sobre Bedrock o un modelo local vía Ollama, los dos con
 el mismo shape de salida.
 """
 import json
+import math
 import re
 import sys
 import threading
@@ -13,7 +14,7 @@ import urllib.request
 from typing import Any
 
 from ..config import config, use_bedrock
-from ..formato import NAN, a_json, percent_encode, fecha_iso
+from ..formato import NAN, a_json, fecha_iso, numero, percent_encode
 from ..types import ParsedIntent
 from .sigv4 import AwsCreds, firmar_aws
 
@@ -30,6 +31,13 @@ TIMEOUT_MODELO_S = 10.0
 _JS = re.ASCII
 _JSI = re.ASCII | re.IGNORECASE
 
+# `re.ASCII` también achica `\s` a los cinco espacios de siempre, y los mensajes
+# llegan de teclados de celular: el espacio no separable U+00A0 aparece solo al
+# escribir "lote 4" en iOS. Con `\s` en modo ASCII ese mensaje se guardaba sin
+# lote y sin pedir confirmación, así que la clase va escrita a mano con todos
+# los separadores Unicode.
+_ESP = r'[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]' 
+
 CATEGORIAS_ANIMAL: dict[str, str] = {
     'ternero': 'ternero', 'terneros': 'ternero', 'ternera': 'ternero', 'terneras': 'ternero',
     'vaca': 'vaca', 'vacas': 'vaca',
@@ -41,15 +49,15 @@ CATEGORIAS_ANIMAL: dict[str, str] = {
 UNIDADES = 'litros?|lts?|l|kg|kilos?|tn|toneladas?|ton|bolsas?|cabezas?|unidades?|has?|hect[aá]reas?'
 
 _RE_CATEGORIA = {p: re.compile(rf'\b{p}\b', _JS) for p in CATEGORIAS_ANIMAL}
-_RE_MONTO_PESO = re.compile(r'\$\s*([\d.,]+)', _JS)
-_RE_MONTO_PALABRA = re.compile(r'([\d.,]+)\s*pesos', _JS)
-_RE_QUITA_MONTO_PESO = re.compile(r'\$\s*[\d.,]+', _JS)
-_RE_QUITA_MONTO_PALABRA = re.compile(r'[\d.,]+\s*pesos', _JS)
-_RE_CANTIDAD = re.compile(rf'(\d+(?:[.,]\d+)?)\s*({UNIDADES})?', _JSI)
-_RE_LOTE = re.compile(r'lote\s*([a-zA-Z0-9]+)', _JS)
+_RE_MONTO_PESO = re.compile(r'\$' + _ESP + r'*([\d.,]+)', _JS)
+_RE_MONTO_PALABRA = re.compile(r'([\d.,]+)' + _ESP + r'*pesos', _JS)
+_RE_QUITA_MONTO_PESO = re.compile(r'\$' + _ESP + r'*[\d.,]+', _JS)
+_RE_QUITA_MONTO_PALABRA = re.compile(r'[\d.,]+' + _ESP + r'*pesos', _JS)
+_RE_CANTIDAD = re.compile(rf'(\d+(?:[.,]\d+)?){_ESP}*({UNIDADES})?', _JSI)
+_RE_LOTE = re.compile(r'lote' + _ESP + r'*([a-zA-Z0-9]+)', _JS)
 _RE_AYER = re.compile(r'\bayer\b', _JS)
 _RE_ANTEAYER = re.compile(r'anteayer', _JS)
-_RE_PRODUCTO_DE = re.compile(r'de\s+([a-záéíóúñ]+(?:\s+[a-záéíóúñ]+)?)', _JSI)
+_RE_PRODUCTO_DE = re.compile(rf'de{_ESP}+([a-záéíóúñ]+(?:{_ESP}+[a-záéíóúñ]+)?)', _JSI)
 _RE_PUNTOS = re.compile(r'\.', _JS)
 _RE_MILES_FINAL = re.compile(r'\.\d{3}$', _JS)
 # `parseFloat`: toma el prefijo numérico y devuelve NaN si no hay ninguno.
@@ -57,7 +65,7 @@ _RE_PARSE_FLOAT = re.compile(r'^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?', _JS)
 
 # Sin \b: no asierta bien tras vocal acentuada en una regex sin flag `u`.
 _RE_CONFIRMA = re.compile(
-    r'^(s[ií]|sip|dale|ok(ey)?|oka|listo|correcto|confirmo|confirm[aá]|exacto|as[ií] es|de una|tal cual|s[ií] dale)(\s|$|[,.!])',
+    r'^(s[ií]|sip|dale|ok(ey)?|oka|listo|correcto|confirmo|confirm[aá]|exacto|as[ií] es|de una|tal cual|s[ií] dale)(' + _ESP + r'|$|[,.!])',
     _JS)
 _RE_PREGUNTA = re.compile(r'\?|cu[aá]nt|cu[aá]l|qu[eé]\b|tengo|hay\b|stock|mostr|dec[ií]me', _JS)
 _RE_MARGEN = re.compile(r'margen', _JS)
@@ -293,6 +301,37 @@ def _construir_mensajes(texto: str) -> list[dict[str, str]]:
     return msgs
 
 
+#: Campos que el pipeline trata como números. Un modelo devuelve lo que quiere.
+_CAMPOS_NUMERICOS = ('cantidad', 'monto')
+
+
+def _numeros_de_los_campos(fields: Any) -> dict[str, Any]:
+    """Convierte a número las cantidades y montos que lleguen como texto.
+
+    Si `cantidad` viene como "200", el registro se guarda igual (SQLite
+    convierte solo), pero armar la respuesta revienta con un TypeError. Y para
+    entonces el mensaje ya quedó marcado como procesado: el productor no recibe
+    nada y el reintento de Meta se descarta por duplicado.
+
+    Lo que no se puede leer como número se trata como ausente. Guardar un NaN
+    sería peor: el campo queda vacío en la base igual, pero sin que nadie lo
+    note. Así, en cambio, salta la confirmación.
+    """
+    if not isinstance(fields, dict):
+        return {}
+    salida = dict(fields)
+    for clave in _CAMPOS_NUMERICOS:
+        valor = salida.get(clave)
+        if valor is None or (isinstance(valor, (int, float)) and not isinstance(valor, bool)):
+            continue
+        n = numero(valor)
+        if isinstance(n, float) and math.isnan(n):
+            del salida[clave]
+        else:
+            salida[clave] = n
+    return salida
+
+
 def _normalizar_salida(p: Any, texto: str) -> ParsedIntent:
     if not isinstance(p, dict):
         p = {}
@@ -302,7 +341,7 @@ def _normalizar_salida(p: Any, texto: str) -> ParsedIntent:
     return ParsedIntent(
         intent=p.get('intent') if p.get('intent') is not None else 'unknown',
         record_type=p.get('recordType'),
-        fields=p.get('fields') if p.get('fields') is not None else {},
+        fields=_numeros_de_los_campos(p.get('fields')),
         query=p.get('query'),
         confidence=confidence if es_numero else 0.8,
         raw_text=texto,
@@ -372,8 +411,8 @@ def _parse_bedrock(texto: str) -> ParsedIntent:
     return _normalizar_salida(json.loads(_recortar_json(crudo)), texto)
 
 
-_RE_CERCA_INICIO = re.compile(r'^\s*```(?:json)?\s*', _JSI)
-_RE_CERCA_FIN = re.compile(r'\s*```\s*$', _JS)
+_RE_CERCA_INICIO = re.compile(rf'^{_ESP}*```(?:json)?{_ESP}*', _JSI)
+_RE_CERCA_FIN = re.compile(rf'{_ESP}*```{_ESP}*$', _JS)
 
 
 def _recortar_json(s: str) -> str:

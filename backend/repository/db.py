@@ -5,6 +5,7 @@ aísla el resto del código de este detalle.
 """
 import os
 import sqlite3
+import sys
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -69,6 +70,14 @@ def exec_(sql: str) -> None:
 _nivel_transaccion = 0
 
 
+def _revertir() -> None:
+    """Cierra la transacción abierta, sin tirar si tampoco se puede."""
+    try:
+        _conn.execute('ROLLBACK')
+    except Exception as e:
+        print(f'⚠️  no se pudo revertir la transacción: {e}', file=sys.stderr)
+
+
 @contextmanager
 def transaccion() -> Iterator[None]:
     """Agrupa varias sentencias en una operación indivisible.
@@ -89,19 +98,36 @@ def transaccion() -> Iterator[None]:
     with _lock:
         externa = _nivel_transaccion == 0
         if externa:
+            # Si quedó una transacción abierta de un intento anterior, se cierra
+            # antes de empezar. Sin esto, el BEGIN de abajo tira "cannot start a
+            # transaction within a transaction" y a partir de ahí fallan TODAS
+            # las escrituras y el dashboard, hasta reiniciar el proceso.
+            if _conn.in_transaction:
+                _revertir()
             _conn.execute('BEGIN IMMEDIATE')
         _nivel_transaccion += 1
         try:
             yield
         except BaseException:
-            _nivel_transaccion -= 1
             if externa:
-                _conn.execute('ROLLBACK')
+                _revertir()
             raise
         else:
-            _nivel_transaccion -= 1
             if externa:
-                _conn.execute('COMMIT')
+                try:
+                    _conn.execute('COMMIT')
+                except BaseException:
+                    # Un COMMIT puede fallar: si otra conexión está leyendo,
+                    # SQLite devuelve "database is locked" y la transacción
+                    # sigue abierta. Deshacerla acá es lo que evita que la
+                    # conexión quede envenenada para siempre.
+                    _revertir()
+                    raise
+        finally:
+            # En el `finally` y no en cada rama: si el COMMIT falla, el
+            # contador tiene que bajar igual o el próximo bloque se creería
+            # anidado y nunca cerraría nada.
+            _nivel_transaccion -= 1
 
 
 exec_('PRAGMA foreign_keys = ON;')

@@ -6,6 +6,7 @@ por donde entran los mensajes reales de WhatsApp.
 import json
 import os
 import queue
+import re
 import socket
 import sys
 import threading
@@ -30,6 +31,22 @@ MAX_BODY = 1024 * 1024  # 1 MB: los webhooks de Meta son chicos
 
 TIPOS: dict[str, str] = {'html': 'text/html', 'css': 'text/css', 'js': 'text/javascript',
                          'json': 'application/json', 'svg': 'image/svg+xml'}
+
+# El tamaño de un chunk son dígitos hexadecimales y nada más. `int(x, 16)` es
+# más permisivo: acepta '-1', que pasa el control de tamaño y termina en un
+# read(-1) — o sea, leer sin límite hasta EOF, y encima antes de verificar la
+# firma. La validación va sobre el texto crudo, antes de convertir.
+_TAMANO_CHUNK = re.compile(rb'^[0-9a-fA-F]+$')
+
+
+class _PedidoInvalido(ValueError):
+    """El cliente mandó algo mal formado.
+
+    No es un error del server, así que va al log en una línea y sin traceback:
+    el webhook está expuesto a internet y cualquiera podría llenar el archivo
+    de tracebacks mandando pedidos rotos a repetición. La respuesta es la misma
+    que para cualquier otro error.
+    """
 
 
 # --- Procesamiento asíncrono de mensajes de Meta ---------------------------
@@ -168,14 +185,18 @@ class _Handler(BaseHTTPRequestHandler):
             chunks: list[bytes] = []
             size = 0
             while True:
-                largo = int(self.rfile.readline().split(b';')[0].strip() or b'0', 16)
+                crudo = self.rfile.readline().split(b';')[0].strip()
+                if not _TAMANO_CHUNK.match(crudo):
+                    self.close_connection = True
+                    raise _PedidoInvalido('tamaño de chunk inválido')
+                largo = int(crudo, 16)
                 if largo == 0:
                     self.rfile.readline()   # el CRLF que cierra el body
                     break
                 size += largo
                 if size > MAX_BODY:
                     self.close_connection = True
-                    raise ValueError('body demasiado grande')
+                    raise _PedidoInvalido('body demasiado grande')
                 chunks.append(self.rfile.read(largo))
                 self.rfile.readline()       # el CRLF que cierra el chunk
             return b''.join(chunks)
@@ -183,7 +204,7 @@ class _Handler(BaseHTTPRequestHandler):
         largo = int(self.headers.get('Content-Length') or 0)
         if largo > MAX_BODY:
             self.close_connection = True
-            raise ValueError('body demasiado grande')
+            raise _PedidoInvalido('body demasiado grande')
         return self.rfile.read(largo) if largo > 0 else b''
 
     # --- ruteo ---
@@ -290,6 +311,10 @@ class _Handler(BaseHTTPRequestHandler):
 
             enviado = True
             return self._responder(404, b'No encontrado', {'Content-Type': 'text/plain'})
+        except _PedidoInvalido as err:
+            print(f'[http] pedido inválido: {err}', file=sys.stderr)
+            if not enviado:
+                self._send_json(500, {'error': str(err)})
         except Exception as err:
             print('Error:', err, file=sys.stderr)
             traceback.print_exc()

@@ -24,9 +24,31 @@ def _cargar_env(ruta: Path) -> None:
     except OSError:
         return
 
+    for clave, valor in _parsear_env(texto).items():
+        os.environ.setdefault(clave, valor)
+
+
+def _parsear_env(texto: str) -> dict[str, str]:
+    """Interpreta el contenido de un .env.
+
+    Tres reglas que no son obvias y que un .env cualquiera ya usa:
+
+    - **Comentario al final de la línea.** Todo lo que sigue a un `#` fuera de
+      comillas se descarta. `PORT=3000 # local` vale 3000; sin esto el valor
+      quedaba en "3000 # local" y el server ni arrancaba.
+    - **Un `#` entre comillas es parte del valor**, que es lo que salva a un
+      token o un secreto que lo contenga.
+    - **Un valor entre comillas puede ocupar varias líneas**, para una clave
+      privada pegada tal cual.
+
+    Una clave repetida: gana la última.
+    """
     valores: dict[str, str] = {}
-    for linea in texto.splitlines():
-        s = linea.strip()
+    lineas = texto.splitlines()
+    i = 0
+    while i < len(lineas):
+        s = lineas[i].strip()
+        i += 1
         if not s or s.startswith('#'):
             continue
         if s.startswith('export '):
@@ -34,13 +56,26 @@ def _cargar_env(ruta: Path) -> None:
         if '=' not in s:
             continue
         clave, _, valor = s.partition('=')
-        valor = valor.strip()
-        if len(valor) >= 2 and valor[0] == valor[-1] and valor[0] in '\'"`':
-            valor = valor[1:-1]
-        valores[clave.strip()] = valor   # una clave repetida: gana la última
+        valor = valor.lstrip()
 
-    for clave, valor in valores.items():
-        os.environ.setdefault(clave, valor)
+        if valor[:1] in ('"', "'", '`'):
+            comilla = valor[0]
+            resto = valor[1:]
+            cierre = resto.find(comilla)
+            while cierre < 0 and i < len(lineas):
+                resto += '\n' + lineas[i]
+                i += 1
+                cierre = resto.find(comilla)
+            # Lo que venga después de la comilla de cierre es comentario.
+            valor = resto[:cierre] if cierre >= 0 else resto
+        else:
+            corte = valor.find('#')
+            if corte >= 0:
+                valor = valor[:corte]
+            valor = valor.strip()
+
+        valores[clave.strip()] = valor
+    return valores
 
 
 _cargar_env(RAIZ / '.env')
