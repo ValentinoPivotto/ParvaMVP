@@ -10,7 +10,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 
 from backend.formato import (a_json, bindeable, percent_encode, fecha_iso,
-                              miles, numero, pesos, texto_o_undefined, texto_numero)
+                              miles, numero, pesos, texto_numero)
 
 
 class Numeros(unittest.TestCase):
@@ -51,15 +51,6 @@ class Numeros(unittest.TestCase):
         self.assertEqual(pesos(-1234567.4), '$-1.234.567')
         self.assertEqual(miles(1000), '1.000')
         self.assertEqual(miles(100), '100')
-
-    def test_un_valor_ausente_sale_como_undefined(self) -> None:
-        # Defecto conocido, fijado acá para que no cambie sin querer: por el
-        # camino de confirmación se puede persistir un registro sin producto y
-        # el bot contesta "Registré undefined". Arreglarlo es una decisión
-        # aparte, porque cambia lo que lee el productor.
-        self.assertEqual(texto_o_undefined(None), 'undefined')
-        self.assertEqual(texto_o_undefined(8.0), '8')
-        self.assertEqual(texto_o_undefined('gasoil'), 'gasoil')
 
 
 class Serializacion(unittest.TestCase):

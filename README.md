@@ -270,7 +270,13 @@ es el *display name* del número, que es un trámite aparte.
 **deniega** (el gestor no ve info económica).
 
 **Confirmación:** mandá algo ambiguo como `compré gasoil` (sin cantidad) → el bot
-**pide confirmar**; respondé `sí` y lo registra.
+**pide confirmar**; respondé `sí` y lo registra. El recibo dice qué quedó sin
+cargar (`✅ Registré gasoil. No me dijiste el monto.`): un registro incompleto
+entra si lo pedís, pero el mensaje no afirma lo que no guardó.
+
+**Dato imposible:** `nacieron terneros` (sin cantidad) no ofrece registrarlo,
+porque sin la cantidad el evento no entra en la base. Pide el dato y da un
+ejemplo de la forma que sí entiende.
 
 ### Sin celular a mano
 

@@ -119,11 +119,11 @@
 +5491100000001 · "perdí 3 terneros"
     → [created] ✅ Registré muerte de 3 ternero. Stock actualizado.
 +5491100000001 · "murió una vaca"
-    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaca. ¿Lo registro igual? (respondé "sí")
+    → [needs_data] 🤔 no entendí la cantidad de animales. Repetímelo con ese dato y lo registro. Por ejemplo: "nacieron 8 terneros".
 +5491100000001 · "compré vaquillonas"
-    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaquillona. ¿Lo registro igual? (respondé "sí")
+    → [needs_data] 🤔 no entendí la cantidad de animales. Repetímelo con ese dato y lo registro. Por ejemplo: "nacieron 8 terneros".
 +5491100000001 · "vendí vaquillonas a $500.000"
-    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaquillona · $500.000. ¿Lo registro igual? (respondé "sí")
+    → [needs_data] 🤔 no entendí la cantidad de animales. Repetímelo con ese dato y lo registro. Por ejemplo: "nacieron 8 terneros".
 +5491100000001 · "aré el lote 4"
     → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
 +5491100000001 · "are el lote 4"
@@ -195,9 +195,9 @@
 +5491100000001 · "¿qué hay?"
     → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
 +5491100000001 · "nacio un ternero"
-    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · ternero. ¿Lo registro igual? (respondé "sí")
+    → [needs_data] 🤔 no entendí la cantidad de animales. Repetímelo con ese dato y lo registro. Por ejemplo: "nacieron 8 terneros".
 +5491100000001 · "nacieron terneros"
-    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · ternero. ¿Lo registro igual? (respondé "sí")
+    → [needs_data] 🤔 no entendí la cantidad de animales. Repetímelo con ese dato y lo registro. Por ejemplo: "nacieron 8 terneros".
 +5491100000001 · "vendí soja"
     → [needs_confirmation] 🤔 Casi: no entendí el monto de la venta. Entendí → venta · soja. ¿Lo registro igual? (respondé "sí")
 +5491100000001 · "Compré 200 LITROS de GASOIL"
@@ -249,9 +249,9 @@
 +5491100000004 · "Vacuné 120 vacas contra la aftosa"
     → [created] ✅ Registré sanidad: sanidad (120).
 +5491100000004 · "sí"
-    → [confirmed] ✅ Registré la labor "fumigación en" en el lote 4 ($600.000).
+    → [confirmed] ✅ Registré la labor "fumigación en" ($600.000). No lo pude asociar al lote 4: no lo encontré.
 +5491100000004 · "si"
-    → [confirmed] ✅ Registré 200 L de gasoil en el lote 4.
+    → [confirmed] ✅ Registré 200 L de gasoil. No lo pude asociar al lote 4: no lo encontré.
 +5491100000004 · "sip"
     → [unknown] No tengo nada pendiente para confirmar.
 +5491100000004 · "dale"
@@ -349,11 +349,11 @@
 +5491100000004 · "perdí 3 terneros"
     → [created] ✅ Registré muerte de 3 ternero. Stock actualizado.
 +5491100000004 · "murió una vaca"
-    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaca. ¿Lo registro igual? (respondé "sí")
+    → [needs_data] 🤔 no entendí la cantidad de animales. Repetímelo con ese dato y lo registro. Por ejemplo: "nacieron 8 terneros".
 +5491100000004 · "compré vaquillonas"
-    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaquillona. ¿Lo registro igual? (respondé "sí")
+    → [needs_data] 🤔 no entendí la cantidad de animales. Repetímelo con ese dato y lo registro. Por ejemplo: "nacieron 8 terneros".
 +5491100000004 · "vendí vaquillonas a $500.000"
-    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · vaquillona · $500.000. ¿Lo registro igual? (respondé "sí")
+    → [needs_data] 🤔 no entendí la cantidad de animales. Repetímelo con ese dato y lo registro. Por ejemplo: "nacieron 8 terneros".
 +5491100000004 · "aré el lote 4"
     → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
 +5491100000004 · "are el lote 4"
@@ -425,9 +425,9 @@
 +5491100000004 · "¿qué hay?"
     → [unknown] No te entendí 🤷. Probá algo como: "compré 200 litros de gasoil para el lote 4" o "¿cuántos terneros tengo?".
 +5491100000004 · "nacio un ternero"
-    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · ternero. ¿Lo registro igual? (respondé "sí")
+    → [needs_data] 🤔 no entendí la cantidad de animales. Repetímelo con ese dato y lo registro. Por ejemplo: "nacieron 8 terneros".
 +5491100000004 · "nacieron terneros"
-    → [needs_confirmation] 🤔 Casi: no entendí la cantidad de animales. Entendí → evento_hacienda · ternero. ¿Lo registro igual? (respondé "sí")
+    → [needs_data] 🤔 no entendí la cantidad de animales. Repetímelo con ese dato y lo registro. Por ejemplo: "nacieron 8 terneros".
 +5491100000004 · "vendí soja"
     → [denied] 🚫 Tu rol (gestor_campo) no puede registrar venta.
 +5491100000004 · "Compré 200 LITROS de GASOIL"

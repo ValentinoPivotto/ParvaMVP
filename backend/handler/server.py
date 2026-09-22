@@ -118,7 +118,18 @@ def manejar_entrante(m: MensajeEntrante) -> None:
     # `or None` y no el id tal cual: extraer_entrantes usa '' cuando el envelope
     # no trae `msg.id` (un curl de prueba), y el índice único de wa_message_id
     # trata a '' como un valor — el segundo mensaje sin id se dedupearía solo.
-    r = process_message(sender, m.texto, m.wa_message_id or None)
+    try:
+        r = process_message(sender, m.texto, m.wa_message_id or None)
+    except Exception:
+        # Sin esto el error se lo comía la cola y el productor no recibía nada:
+        # mandó un mensaje, no pasó nada, y no hay forma de que se entere. El
+        # detalle va al log; al productor se le dice que reintente.
+        print(f'[wa] error procesando el mensaje de {m.from_}', file=sys.stderr)
+        traceback.print_exc()
+        enviar_texto(m.from_, '😖 Se me rompió algo procesando ese mensaje. '
+                              'Probá de nuevo, o escribímelo de otra forma.',
+                     m.wa_message_id, m.phone_number_id)
+        return
     if not r:
         print(f'[wa] duplicado ignorado: {m.wa_message_id}')
         return

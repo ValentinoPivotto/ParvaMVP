@@ -147,5 +147,37 @@ class RespuestasHttp(unittest.TestCase):
         self.assertIn('{"status":"received","procesados":1}', respuesta)
 
 
+class RedDeSeguridad(unittest.TestCase):
+    """Un mensaje nunca se queda sin respuesta.
+
+    El pipeline corre desprendido del request (el webhook ya contestó 200), así
+    que una excepción ahí adentro no la ve nadie: el productor escribe, no pasa
+    nada y no tiene forma de enterarse.
+    """
+
+    def test_si_el_pipeline_explota_el_productor_igual_recibe_algo(self) -> None:
+        from backend.handler import server
+        from backend.handler.whatsapp import MensajeEntrante
+
+        base_limpia()
+        enviados: list[str] = []
+
+        def explotar(*_a, **_k):
+            raise RuntimeError('falla simulada en el pipeline')
+
+        proceso, envio = server.process_message, server.enviar_texto
+        server.process_message = explotar
+        server.enviar_texto = lambda to, cuerpo, *a, **k: enviados.append(cuerpo)
+        try:
+            server.manejar_entrante(MensajeEntrante(
+                wa_message_id='wamid.red.1', from_='5491100000001', phone_number_id='N',
+                waba_id='W', tipo='text', texto='compré 200 litros de gasoil', timestamp=''))
+        finally:
+            server.process_message, server.enviar_texto = proceso, envio
+
+        self.assertEqual(len(enviados), 1, 'tendría que haber contestado exactamente una vez')
+        self.assertIn('Se me rompió algo', enviados[0])
+
+
 if __name__ == '__main__':
     unittest.main()

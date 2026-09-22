@@ -105,26 +105,6 @@ def fecha_iso(offset_dias: int = 0) -> str:
     return local.astimezone(timezone.utc).date().isoformat()
 
 
-def texto_o_undefined(v: object) -> str:
-    """Un valor para meter en un mensaje; si falta, la palabra "undefined".
-
-    ⚠ El nombre es feo porque el comportamiento lo es. Se llega acá por el
-    camino de confirmación: el productor responde "sí" a un pendiente al que le
-    falta un campo requerido, el registro se guarda igual y el bot contesta
-    "✅ Registré undefined.".
-
-    Es un defecto conocido y está acá aislado, en vez de escondido detrás de
-    cuatro f-strings. Arreglarlo cambia lo que el bot contesta, así que es una
-    decisión aparte: o no se persiste un pendiente incompleto, o el mensaje se
-    redacta sin ese campo.
-    """
-    if v is None:
-        return 'undefined'
-    if isinstance(v, (int, float)):
-        return texto_numero(v)
-    return str(v)
-
-
 def _numeros_json(v: object) -> object:
     """Deja los números de una estructura listos para serializar."""
     if isinstance(v, bool):

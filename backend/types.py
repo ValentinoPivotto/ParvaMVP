@@ -67,6 +67,7 @@ class ProcessResult:
 
     reply: str
     intent: Intent
-    status: Literal['created', 'needs_confirmation', 'confirmed', 'denied', 'query_answer', 'unknown']
+    status: Literal['created', 'needs_confirmation', 'needs_data', 'confirmed',
+                    'denied', 'query_answer', 'unknown']
     confidence: float
     detail: Any = None

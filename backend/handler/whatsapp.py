@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..config import config
-from ..formato import a_json, texto_o_undefined
+from ..formato import a_json, texto_numero
 from ..phone import to_wa_id
 
 # --- Entrada: firma ---------------------------------------------------------
@@ -171,10 +171,10 @@ def enviar_texto(
             detalle = f' — {details}' if details else ''
             codigo = e.get('code')
             mensaje = e.get('message')
-            print(f'[wa] error de Meta {status}: código {texto_o_undefined(codigo) if codigo is not None else "?"} · '
+            print(f'[wa] error de Meta {status}: código {texto_numero(codigo) if codigo is not None else "?"} · '
                   f'{mensaje if mensaje is not None else "sin mensaje"}{detalle}', file=sys.stderr)
             return ResultadoEnvio(ok=False, error=(
-                f'{texto_o_undefined(codigo) if codigo is not None else status}: '
+                f'{texto_numero(codigo) if codigo is not None else status}: '
                 f'{mensaje if mensaje is not None else "error"}'))
 
         mensajes = _lista(data.get('messages'))
