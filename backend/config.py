@@ -22,7 +22,11 @@ def _cargar_env(ruta: Path) -> None:
     Si el archivo no existe, no pasa nada: el .env es opcional.
     """
     try:
-        texto = ruta.read_text(encoding='utf-8')
+        # `utf-8-sig` y no `utf-8`: el Bloc de notas de Windows guarda con BOM, y
+        # con `utf-8` la primera variable quedaba con el BOM pegado al nombre
+        # ("\ufeffMETA_APP_SECRET"). Se perdía en silencio, y si era el App
+        # Secret, el server rechazaba todos los webhooks con 401.
+        texto = ruta.read_text(encoding='utf-8-sig')
     except OSError:
         return
 

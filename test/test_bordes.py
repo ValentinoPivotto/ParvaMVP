@@ -387,5 +387,151 @@ class TextoLargo(unittest.TestCase):
         self.assertEqual(parse_mock('pagué 500 pesos').fields['monto'], 500)
 
 
+class ImportesQueNoSonNumeros(unittest.TestCase):
+    """Un número demasiado grande para ser un número.
+
+    400 dígitos entran en un mensaje de WhatsApp y `float` los convierte en
+    infinito. Guardado, envenenaba la base: cada consulta que lo sumara
+    explotaba al formatearlo, para siempre, y ese productor se quedaba sin
+    poder preguntar cuánto gastó.
+    """
+
+    def setUp(self) -> None:
+        base_limpia()
+        from backend.repository.repo import get_sender_by_telefono
+        from backend.service.process import process_message
+        self.sender = get_sender_by_telefono('+5491100000001')
+        self.procesar = process_message
+
+    def test_el_parser_lo_trata_como_si_no_hubiera_monto(self) -> None:
+        self.assertIsNone(parse_mock('pagué $' + '9' * 400).fields.get('monto'))
+        self.assertIsNone(parse_mock('compré ' + '9' * 400 + ' litros de gasoil').fields.get('cantidad'))
+
+    def test_no_llega_a_guardarse(self) -> None:
+        r = self.procesar(self.sender, 'pagué $' + '9' * 400, 'wamid.inf.1')
+        self.assertEqual(r.status, 'needs_confirmation')     # "no entendí el monto del gasto"
+        self.assertEqual(db.all("SELECT id FROM movimiento WHERE origen='bot'"), [])
+
+    def test_una_base_ya_envenenada_sigue_contestando(self) -> None:
+        # Por si quedó guardado antes del arreglo: la consulta no puede morir.
+        db.run("INSERT INTO movimiento (productor_id, tipo, fecha, monto, origen) VALUES (1,'gasto','2026-01-01',?,'bot')",
+               float('inf'))
+        r = self.procesar(self.sender, '¿cuánto gasté?', 'wamid.inf.2')
+        self.assertEqual(r.reply, 'Gasto total registrado: $∞.')
+
+    def test_el_formato_de_pesos_nunca_tira(self) -> None:
+        from backend.formato import pesos
+        self.assertEqual(pesos(float('inf')), '$∞')
+        self.assertEqual(pesos(float('-inf')), '$-∞')
+        self.assertEqual(pesos(float('nan')), '$—')
+
+    def test_la_salida_del_modelo_tampoco_trae_infinitos(self) -> None:
+        p = _normalizar_salida({'fields': {'monto': '1e999', 'cantidad': 10 ** 30},
+                                'confidence': float('nan')}, 'texto')
+        self.assertNotIn('monto', p.fields)
+        # Un entero gigante pasa a float: SQLite no acepta enteros de más de 64 bits.
+        self.assertEqual(p.fields['cantidad'], 1e30)
+        # Una confianza NaN hacía que `confianza < umbral` diera siempre False.
+        self.assertEqual(p.confidence, 0.8)
+
+
+class EspaciosQueTraeElCopyPaste(unittest.TestCase):
+    """El BOM (U+FEFF) al principio de un mensaje: lo arrastra algún copy-paste.
+
+    `str.strip()` no lo saca, así que un "sí" pegado con un BOM adelante no
+    confirmaba el pendiente.
+    """
+
+    def test_un_si_con_bom_confirma(self) -> None:
+        self.assertEqual(parse_mock('\ufeffsí').intent, 'confirm')
+        self.assertEqual(parse_mock('\ufeffcompré 200 litros de gasoil').record_type, 'insumo')
+
+    def test_el_recorte_es_el_de_los_espacios_que_se_escriben(self) -> None:
+        from backend.formato import recortar
+        self.assertEqual(recortar(f'\ufeff {NBSP}sí\u3000 '), 'sí')
+        # Los separadores de control no son espacios que escriba nadie.
+        self.assertEqual(recortar('\x1csí'), '\x1csí')
+
+    def test_un_mensaje_que_es_solo_un_bom_se_ignora(self) -> None:
+        from backend.handler import server
+        from backend.handler.whatsapp import MensajeEntrante
+        base_limpia()
+        llamados: list[str] = []
+        proceso, envio = server.process_message, server.enviar_texto
+        server.process_message = lambda *a, **k: llamados.append('procesado')
+        server.enviar_texto = lambda *a, **k: llamados.append('enviado')
+        try:
+            server.manejar_entrante(MensajeEntrante(
+                wa_message_id='wamid.bom', from_='5491100000001', phone_number_id='N',
+                waba_id='W', tipo='text', texto='\ufeff', timestamp=''))
+        finally:
+            server.process_message, server.enviar_texto = proceso, envio
+        self.assertEqual(llamados, [])
+
+
+class LoteEnBlanco(unittest.TestCase):
+    """Un `loteRef` de puros espacios no es "el primer lote"."""
+
+    def setUp(self) -> None:
+        base_limpia()
+
+    def test_el_saneado_descarta_los_textos_en_blanco(self) -> None:
+        # Hay dos defensas: ésta y la guarda de `find_lote_by_ref`. Cada una
+        # tiene su test, así que sacar cualquiera de las dos se nota.
+        p = _normalizar_salida({'fields': {'loteRef': '   ', 'producto': f' gasoil{NBSP}', 'unidad': ''}}, 'x')
+        self.assertEqual(p.fields, {'producto': 'gasoil'})
+
+    def test_no_se_resuelve_a_ningun_lote(self) -> None:
+        from backend.repository.repo import find_lote_by_ref
+        self.assertIsNone(find_lote_by_ref(1, '   '))
+        self.assertIsNone(find_lote_by_ref(1, ''))
+        self.assertEqual(find_lote_by_ref(1, '4')['nombre'], 'Lote 4')
+
+    def test_el_modelo_no_puede_cargarlo_al_primer_lote(self) -> None:
+        import backend.service.process as proc
+        from backend.repository.repo import get_sender_by_telefono
+        parsed = _normalizar_salida({'intent': 'create_record', 'recordType': 'insumo', 'confidence': 0.9,
+                                     'fields': {'producto': 'gasoil', 'cantidad': 5, 'loteRef': '  '}},
+                                    'mensaje')
+        original = proc.parse
+        proc.parse = lambda _t: parsed
+        try:
+            r = proc.process_message(get_sender_by_telefono('+5491100000001'), 'mensaje', 'wamid.blanco')
+        finally:
+            proc.parse = original
+        self.assertEqual(r.reply, '✅ Registré 5 de gasoil.')
+        self.assertIsNone(db.get("SELECT lote_id FROM movimiento WHERE origen='bot'")['lote_id'])
+
+    def test_una_consulta_con_lote_numerico_se_contesta(self) -> None:
+        # La `query` no se saneaba: `loteRef: 1` terminaba en un `.strip()`.
+        from backend.repository.repo import get_sender_by_telefono
+        from backend.service.query import answer_query
+        q = _normalizar_salida({'intent': 'query', 'query': {'metric': 'margen', 'loteRef': 1}}, 'x').query
+        s = get_sender_by_telefono('+5491100000001')
+        self.assertIn('Margen del Lote 1', answer_query(s.productor_id, s.rol, q).text)
+
+
+class EnvConBom(unittest.TestCase):
+    """Un .env guardado con BOM (el Bloc de notas de Windows lo hace)."""
+
+    def test_la_primera_variable_no_se_pierde(self) -> None:
+        import os
+        import pathlib
+        import tempfile
+
+        from backend.config import _cargar_env
+        ruta = pathlib.Path(tempfile.mkdtemp()) / '.env'
+        ruta.write_bytes('\ufeffUNA_VARIABLE_DE_PRUEBA=secreto\nOTRA_DE_PRUEBA=x\n'.encode('utf-8'))
+        for k in ('UNA_VARIABLE_DE_PRUEBA', 'OTRA_DE_PRUEBA'):
+            os.environ.pop(k, None)
+        try:
+            _cargar_env(ruta)
+            self.assertEqual(os.environ.get('UNA_VARIABLE_DE_PRUEBA'), 'secreto')
+            self.assertNotIn('\ufeffUNA_VARIABLE_DE_PRUEBA', os.environ)
+        finally:
+            for k in ('UNA_VARIABLE_DE_PRUEBA', 'OTRA_DE_PRUEBA', '\ufeffUNA_VARIABLE_DE_PRUEBA'):
+                os.environ.pop(k, None)
+
+
 if __name__ == '__main__':
     unittest.main()

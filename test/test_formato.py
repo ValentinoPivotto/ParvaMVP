@@ -21,8 +21,8 @@ class Numeros(unittest.TestCase):
         self.assertEqual(numero('0.7'), 0.7)
         self.assertEqual(numero('  12  '), 12)
         self.assertTrue(math.isnan(numero('abc')))
-        # Python las aceptaría como números; acá no lo son.
-        for basura in ('1_000', 'inf', 'nan', '0b1'):
+        # `float()` de Python las aceptaría como números; acá no lo son.
+        for basura in ('1_000', 'inf', 'nan', 'infinity'):
             with self.subTest(basura=basura):
                 self.assertTrue(math.isnan(numero(basura)))
 

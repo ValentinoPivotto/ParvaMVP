@@ -16,7 +16,7 @@ from typing import Any, Callable
 from urllib.parse import parse_qsl, urlsplit
 
 from ..config import RAIZ, config, falta_config_meta
-from ..formato import a_json, bindeable, numero
+from ..formato import a_json, bindeable, numero, recortar
 from ..repository import repo
 from ..repository.db import init_schema
 from ..repository.seed import seed_if_empty
@@ -112,7 +112,7 @@ def manejar_entrante(m: MensajeEntrante) -> None:
         enviar_texto(m.from_, 'Por ahora solo entiendo mensajes de texto 🙏 Las notas de voz llegan pronto.',
                      m.wa_message_id, m.phone_number_id)
         return
-    if not m.texto.strip():
+    if not recortar(m.texto):
         return
 
     # `or None` y no el id tal cual: extraer_entrantes usa '' cuando el envelope

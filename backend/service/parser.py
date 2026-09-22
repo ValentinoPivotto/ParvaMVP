@@ -12,7 +12,7 @@ import threading
 from typing import Any
 
 from ..config import config, use_bedrock
-from ..formato import NAN, a_json, fecha_iso, numero, percent_encode, texto_numero
+from ..formato import ESPACIOS, NAN, a_json, fecha_iso, numero, percent_encode, recortar, texto_numero
 from ..red import pedir
 from ..types import ParsedIntent
 from .sigv4 import AwsCreds, firmar_aws
@@ -35,7 +35,7 @@ _JSI = re.ASCII | re.IGNORECASE
 # escribir "lote 4" en iOS. Con `\s` en modo ASCII ese mensaje se guardaba sin
 # lote y sin pedir confirmación, así que la clase va escrita a mano con todos
 # los separadores Unicode.
-_ESP = r'[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]' 
+_ESP = '[' + ''.join(re.escape(c) for c in ESPACIOS) + ']'
 
 CATEGORIAS_ANIMAL: dict[str, str] = {
     'ternero': 'ternero', 'terneros': 'ternero', 'ternera': 'ternero', 'terneras': 'ternero',
@@ -100,6 +100,16 @@ def _parse_float(s: str) -> float:
     return float(m.group(0)) if m else NAN
 
 
+def _finito(n: float) -> float | None:
+    """El número si es finito; si no, None: se trata como si no se hubiera dicho.
+
+    Un importe de 400 dígitos entra en un mensaje de WhatsApp y `float` lo
+    convierte en infinito. Guardado, envenenaba la base: cada consulta que lo
+    sumara ("¿cuánto gasté?") explotaba al formatearlo, para siempre.
+    """
+    return n if math.isfinite(n) else None
+
+
 def _num(s: str) -> float:
     """Tolera "1.200.000" (miles con punto) y "2,5" (decimal con coma)."""
     x = s.strip()
@@ -114,7 +124,7 @@ def _num(s: str) -> float:
 
 def _extraer_monto(t: str) -> float | None:
     m = _RE_MONTO_PESO.search(t) or _RE_MONTO_PALABRA.search(t)
-    return _num(m.group(1)) if m else None
+    return _finito(_num(m.group(1))) if m else None
 
 
 def _extraer_cantidad_unidad(t: str) -> tuple[float | None, str | None]:
@@ -122,7 +132,7 @@ def _extraer_cantidad_unidad(t: str) -> tuple[float | None, str | None]:
     m = _RE_CANTIDAD.search(sin_monto)
     if not m:
         return None, None
-    return _num(m.group(1)), (m.group(2).lower() if m.group(2) else None)
+    return _finito(_num(m.group(1))), (m.group(2).lower() if m.group(2) else None)
 
 
 def _extraer_lote_ref(t: str) -> str | None:
@@ -154,7 +164,7 @@ def _extraer_producto(t: str) -> str | None:
 
 
 def parse_mock(texto: str) -> ParsedIntent:
-    t = texto.lower().strip()
+    t = recortar(texto.lower())
     base = ParsedIntent(intent='unknown', record_type=None, fields={}, query=None, confidence=0, raw_text=texto)
 
     # 1) Confirmación
@@ -311,7 +321,28 @@ def _construir_mensajes(texto: str) -> list[dict[str, str]]:
 #: o INTEGER; los de texto se concatenan en los mensajes y se bindean como TEXT.
 _CAMPOS_NUMERICOS = ('cantidad', 'monto')
 _CAMPOS_TEXTO = ('producto', 'unidad', 'moneda', 'loteRef', 'categoriaAnimal',
-                 'eventoTipo', 'laborTipo', 'categoria', 'fecha', 'descripcion')
+                 'eventoTipo', 'laborTipo', 'categoria', 'fecha', 'descripcion',
+                 'metric')   # éste de la query, que se sanea igual que los campos
+
+
+def _numero_valido(valor: Any) -> float | int | None:
+    """Un número que se puede guardar y mostrar, o None.
+
+    Descarta lo que no es número, el infinito y el NaN. Un entero gigante pasa a
+    float: SQLite no acepta enteros de más de 64 bits y el INSERT tiraba
+    OverflowError con el mensaje ya marcado como procesado.
+    """
+    if isinstance(valor, bool):
+        return None
+    n = valor if isinstance(valor, (int, float)) else numero(valor)
+    if isinstance(n, int):
+        if abs(n) <= 2 ** 53:
+            return n
+        try:
+            n = float(n)
+        except OverflowError:
+            return None
+    return n if math.isfinite(n) else None
 
 
 def _campos_saneados(fields: Any) -> dict[str, Any]:
@@ -327,7 +358,8 @@ def _campos_saneados(fields: Any) -> dict[str, Any]:
     Los números que llegan como texto se convierten; los textos que llegan como
     número se pasan a texto (un `loteRef: 4` claramente quiso decir "lote 4").
     Lo que no es un valor simple —una lista, un objeto— se descarta: se trata
-    como si el modelo no hubiera dicho nada de ese campo.
+    como si el modelo no hubiera dicho nada de ese campo. Lo mismo un texto en
+    blanco: un `loteRef` de puros espacios cargaba el movimiento al primer lote.
     """
     if not isinstance(fields, dict):
         return {}
@@ -336,16 +368,16 @@ def _campos_saneados(fields: Any) -> dict[str, Any]:
         if valor is None:
             continue
         if clave in _CAMPOS_NUMERICOS:
-            n = valor if isinstance(valor, (int, float)) and not isinstance(valor, bool) else numero(valor)
-            if not (isinstance(n, float) and math.isnan(n)):
+            n = _numero_valido(valor)
+            if n is not None:
                 salida[clave] = n
             continue
         if clave in _CAMPOS_TEXTO:
-            if isinstance(valor, str):
-                salida[clave] = valor
-            elif isinstance(valor, (int, float)) and not isinstance(valor, bool):
-                salida[clave] = texto_numero(valor)
-            # Cualquier otra cosa se descarta.
+            if isinstance(valor, (int, float)) and not isinstance(valor, bool):
+                valor = texto_numero(valor)
+            if isinstance(valor, str) and recortar(valor):
+                salida[clave] = recortar(valor)
+            # Cualquier otra cosa —o un texto en blanco— se descarta.
             continue
         salida[clave] = valor
     return salida
@@ -354,17 +386,21 @@ def _campos_saneados(fields: Any) -> dict[str, Any]:
 def _normalizar_salida(p: Any, texto: str) -> ParsedIntent:
     if not isinstance(p, dict):
         p = {}
-    confidence = p.get('confidence')
-    # Un bool no cuenta como número, aunque en Python sea un int.
-    es_numero = isinstance(confidence, (int, float)) and not isinstance(confidence, bool)
+    # Una confianza que no es un número finito vale como ausente. Un NaN, por
+    # ejemplo, hacía que `confianza < umbral` diera siempre False: se guardaba
+    # sin pedir confirmación.
+    confidence = _numero_valido(p.get('confidence'))
+    query = p.get('query')
     return ParsedIntent(
         intent=p.get('intent') if p.get('intent') is not None else 'unknown',
         record_type=p.get('recordType'),
         fields=_campos_saneados(p.get('fields')),
         # Una `query` que no es un objeto se trata como si no viniera: más
-        # adelante se le pide `.get('metric')` sin preguntar.
-        query=p.get('query') if isinstance(p.get('query'), dict) else None,
-        confidence=confidence if es_numero else 0.8,
+        # adelante se le pide `.get('metric')` sin preguntar. Si lo es, se sanea
+        # igual que los campos: un `loteRef` numérico ahí adentro también
+        # terminaba en un `.strip()`.
+        query=_campos_saneados(query) if isinstance(query, dict) else None,
+        confidence=confidence if confidence is not None else 0.8,
         raw_text=texto,
     )
 
