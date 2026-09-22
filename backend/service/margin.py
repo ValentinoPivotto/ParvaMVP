@@ -24,8 +24,8 @@ class MargenLote:
     def to_json(self) -> dict[str, Any]:
         """Claves camelCase: son las que lee el frontend (`m.loteNombre`).
 
-        `razon` se omite cuando no hay, igual que hacía `JSON.stringify` con un
-        campo `undefined`.
+        `razon` se omite cuando el margen es confiable: no hay nada que
+        explicar y el frontend sólo la lee cuando `confiable` es false.
         """
         d: dict[str, Any] = {
             'loteId': self.lote_id,

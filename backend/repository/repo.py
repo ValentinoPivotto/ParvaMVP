@@ -5,7 +5,7 @@ TODA lectura/escritura va filtrada por productor_id => aislamiento por tenant
 """
 from typing import Any
 
-from ..jscompat import texto_numero
+from ..formato import texto_numero
 from ..phone import phone_variants
 from ..types import Sender
 from . import db

@@ -1,10 +1,10 @@
 """Backend de Parva."""
 import sys
 
-# Node escribe los logs apenas se producen aunque la salida esté redirigida;
-# Python los acumula en bloques de 8 KB cuando stdout no es una terminal. Con
-# `parva > parva.log` (o corriendo bajo un supervisor) el arranque y los
-# `[wa] ←` salían al instante: sin esto no se vería nada hasta llenar el buffer.
+# Python acumula stdout en bloques de 8 KB cuando la salida no es una terminal.
+# Corriendo con `> parva.log` o bajo un supervisor, el arranque y los `[wa] ←`
+# no aparecerían hasta llenar el buffer, que es justo cuando hacen falta.
+# Con line buffering cada línea sale apenas se escribe.
 for _flujo in (sys.stdout, sys.stderr):
     if hasattr(_flujo, 'reconfigure'):
         _flujo.reconfigure(line_buffering=True)

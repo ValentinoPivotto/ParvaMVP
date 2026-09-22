@@ -15,14 +15,14 @@ from ..config import config
 
 os.makedirs(os.path.dirname(os.path.abspath(config.db_path)), exist_ok=True)
 
-# `isolation_level=None` = autocommit, que es como se comportaba node:sqlite:
-# sin esto Python abre una transacción implícita en cada INSERT y no la cierra,
-# y los datos quedan invisibles para cualquier otra conexión hasta el commit.
+# `isolation_level=None` = autocommit. Sin esto Python abre una transacción
+# implícita en cada INSERT y no la cierra, y los datos quedan invisibles para
+# cualquier otra conexión hasta que alguien haga commit. Las secuencias que sí
+# tienen que ser atómicas se agrupan a mano con `transaccion()`.
 #
 # `check_same_thread=False` + el lock: el servidor atiende cada request en su
-# propio hilo y el pipeline de WhatsApp corre en hilos de cola, mientras que la
-# versión anterior tenía un solo hilo para todo. El lock devuelve esa garantía:
-# una operación por vez, en orden, como antes.
+# propio hilo y el pipeline de WhatsApp corre en hilos de cola, así que la
+# conexión se comparte. El lock la serializa: una operación por vez, en orden.
 _conn = sqlite3.connect(config.db_path, check_same_thread=False, isolation_level=None)
 _conn.row_factory = sqlite3.Row
 _lock = threading.RLock()
@@ -30,34 +30,34 @@ _lock = threading.RLock()
 
 @dataclass
 class InfoEscritura:
-    """Lo que devolvía `stmt.run()` de node:sqlite."""
+    """Resultado de una escritura: el rowid nuevo y las filas afectadas."""
 
     last_insert_rowid: int
     changes: int
 
 
 def all(sql: str, *params: Any) -> list[dict[str, Any]]:
-    """`stmt.all(...)`: todas las filas como dicts."""
+    """Todas las filas, como dicts."""
     with _lock:
         return [dict(f) for f in _conn.execute(sql, params).fetchall()]
 
 
 def get(sql: str, *params: Any) -> dict[str, Any] | None:
-    """`stmt.get(...)`: la primera fila, o None."""
+    """La primera fila, o None si no hay ninguna."""
     with _lock:
         fila = _conn.execute(sql, params).fetchone()
         return dict(fila) if fila is not None else None
 
 
 def run(sql: str, *params: Any) -> InfoEscritura:
-    """`stmt.run(...)`: ejecuta y devuelve rowid y filas afectadas."""
+    """Ejecuta una escritura y devuelve el rowid nuevo y las filas afectadas."""
     with _lock:
         cur = _conn.execute(sql, params)
         return InfoEscritura(last_insert_rowid=cur.lastrowid or 0, changes=cur.rowcount)
 
 
 def exec_(sql: str) -> None:
-    """`db.exec(...)`: una o varias sentencias sin parámetros.
+    """Ejecuta una o varias sentencias sin parámetros.
 
     No usar dentro de `transaccion()`: `executescript` hace COMMIT antes de
     empezar y cortaría la transacción abierta. Sólo se usa para el esquema.
@@ -73,17 +73,15 @@ _nivel_transaccion = 0
 def transaccion() -> Iterator[None]:
     """Agrupa varias sentencias en una operación indivisible.
 
-    Node corría todo en un solo hilo: un SELECT y el UPDATE que lo sigue no
-    podían intercalarse con nada, y el código de arriba dependía de eso sin
-    decirlo. Acá el servidor atiende cada request en su hilo y encola por
-    remitente, así que dos usuarios del MISMO productor escriben a la vez —
-    y el lock por sentencia no alcanza: los dos leen el mismo stock y el
-    último UPDATE pisa al otro.
+    El lock por sentencia no alcanza cuando una operación son varias: el
+    servidor atiende cada request en su hilo y encola por remitente, así que
+    dos usuarios del MISMO productor pueden estar escribiendo a la vez. En un
+    `SELECT` seguido de su `UPDATE`, los dos leen el mismo stock y el último
+    `UPDATE` se come el delta del otro.
 
-    Este bloque sostiene el lock durante toda la secuencia (que es la garantía
-    que daba el hilo único) y además la envuelve en una transacción de SQLite,
-    para que un corte a mitad de camino no deje el evento sin su movimiento de
-    stock.
+    Este bloque sostiene el lock durante toda la secuencia y además la envuelve
+    en una transacción de SQLite, para que un corte a mitad de camino no deje
+    el evento sin su movimiento de stock.
 
     Reentrante: sólo el bloque más externo abre y cierra la transacción.
     """

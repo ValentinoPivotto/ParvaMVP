@@ -20,7 +20,7 @@ from datetime import datetime
 from typing import Any
 
 from ..config import config
-from ..jscompat import encode_uri_component
+from ..formato import percent_encode
 
 G = f'https://graph.facebook.com/{config.meta_graph_version}'
 
@@ -93,7 +93,7 @@ def probar_handshake(url: str) -> tuple[bool, str]:
     challenge = f'parva-{int(datetime.now().timestamp() * 1000)}'
     sep = '&' if '?' in url else '?'
     full = (f'{url}{sep}hub.mode=subscribe'
-            f'&hub.verify_token={encode_uri_component(config.meta_verify_token)}'
+            f'&hub.verify_token={percent_encode(config.meta_verify_token)}'
             f'&hub.challenge={challenge}')
     try:
         try:
@@ -224,8 +224,8 @@ def main() -> None:
         # debug_token necesita un app access token (`APP_ID|APP_SECRET`); con el token
         # de usuario solo, Meta devuelve los scopes vacíos y no se deduce nada.
         if config.meta_app_id and config.meta_app_secret:
-            app = encode_uri_component(f'{config.meta_app_id}|{config.meta_app_secret}')
-            dbg = graph(f'debug_token?input_token={encode_uri_component(config.meta_access_token)}'
+            app = percent_encode(f'{config.meta_app_id}|{config.meta_app_secret}')
+            dbg = graph(f'debug_token?input_token={percent_encode(config.meta_access_token)}'
                         f'&access_token={app}')
             if not dbg.ok:
                 print(f'  · No pude inspeccionar el token: {dbg.message}')

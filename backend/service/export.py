@@ -2,7 +2,7 @@
 import re
 from typing import Any
 
-from ..jscompat import texto_numero
+from ..formato import texto_numero
 from ..repository.repo import list_hacienda, list_movimientos
 from .margin import margen_por_lote
 

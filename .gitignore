@@ -14,6 +14,6 @@ __pycache__/
 .venv/
 venv/
 
-# Quedó del stack anterior (Node/TypeScript); ya no se usa ni se regenera.
+# El frontend no tiene dependencias; esto es por si alguna herramienta lo crea.
 node_modules/
 

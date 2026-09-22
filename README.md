@@ -327,7 +327,7 @@ backend/
   config.py          Configuración por entorno, .env y ruta de la base
   types.py           Tipos compartidos del dominio y mensajes
   phone.py           Normalización de teléfonos compartida
-  jscompat.py        Formato de números, fechas y JSON heredado del stack anterior
+  formato.py         Números, fechas y JSON en los formatos que usa la app
 frontend/            index.html, app.js, styles.css y brandbook.html
 data/                SQLite local (ignorado por Git)
 ```
@@ -367,23 +367,25 @@ identidad y del listado de productores se hacen desde el handler al repositorio.
 
 ### Concurrencia
 
-Node atendía todo en un solo hilo, así que una secuencia como «leé el stock,
-sumale 8, guardalo» era indivisible sin que nadie tuviera que pedirlo. El
-servidor Python atiende cada request en su propio hilo y encola por remitente,
-de modo que dos usuarios del **mismo** productor (el dueño y el gestor de campo)
-pueden estar escribiendo a la vez.
+El servidor atiende cada request en su propio hilo y el pipeline del bot corre
+en una cola por remitente, de modo que dos usuarios del **mismo** productor (el
+dueño y el gestor de campo) pueden estar escribiendo a la vez.
 
-Esa garantía se repone explícitamente con `db.transaccion()`, que sostiene el
-lock de la conexión durante toda la secuencia y la envuelve en una transacción
-de SQLite. La regla: **todo lo que antes era indivisible por el hilo único va
-adentro de un `transaccion()`**. Hoy son las escrituras compuestas
-(`insert_movimiento`, `adjust_hacienda`, `insert_evento_hacienda`,
-`insert_evento_sanitario`) y las lecturas que arman una respuesta a partir de
-varias consultas (`build_state`, `answer_query`, `margen_por_lote`,
-`totales_por_lote`).
+La conexión a SQLite está protegida por un lock, pero eso sólo serializa cada
+sentencia. Una secuencia como «leé el stock, sumale 8, guardalo» son tres, y
+entre la primera y la última se puede colar otro hilo: los dos leen el mismo
+stock y el último `UPDATE` se come el delta del otro.
 
-`test/test_concurrencia.py` es la regresión: sin la transacción, ocho hilos
-cargando nacimientos a la vez dejan los eventos registrados y el stock corto.
+Para eso está `db.transaccion()`, que sostiene el lock durante toda la secuencia
+y la envuelve en una transacción de SQLite. La regla: **si una operación son
+varias sentencias y tiene que valer como una sola, va adentro de un
+`transaccion()`**. Hoy son las escrituras compuestas (`insert_movimiento`,
+`adjust_hacienda`, `insert_evento_hacienda`, `insert_evento_sanitario`) y las
+lecturas que arman una respuesta a partir de varias consultas (`build_state`,
+`answer_query`, `margen_por_lote`, `totales_por_lote`).
+
+`test/test_concurrencia.py` lo cubre: sin la transacción, ocho hilos cargando
+nacimientos a la vez dejan los eventos registrados y el stock corto.
 
 **Fuente de verdad:** la base estructurada. La "planilla" es una vista + export CSV
 (resuelve el riesgo de la planilla editable libre). Un **margen** solo se muestra si

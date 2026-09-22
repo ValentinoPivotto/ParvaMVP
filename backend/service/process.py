@@ -7,9 +7,9 @@ con confirmación ante baja confianza/ambigüedad y permisos por rol.
 import json
 from typing import Any
 
-from ..jscompat import a_json
-from ..jscompat import pesos as fmt
-from ..jscompat import texto_js, texto_numero
+from ..formato import a_json
+from ..formato import pesos as fmt
+from ..formato import texto_o_undefined, texto_numero
 from ..repository import repo
 from ..types import ProcessResult, Sender
 from .normalizer import Normalized, normalize
@@ -45,7 +45,7 @@ def _confirm_txt(n: Normalized) -> str:
         cant = f'{texto_numero(n.cantidad)}{" " + n.unidad if n.unidad else ""} de ' if n.cantidad is not None else ''
         por = f' por {fmt(n.monto)}' if n.monto is not None else ''
         en = f' en el lote {n.lote_ref}' if n.lote_ref else ''
-        return f'Registré {cant}{texto_js(n.producto)}{por}{en}.'
+        return f'Registré {cant}{texto_o_undefined(n.producto)}{por}{en}.'
     if rt == 'labor':
         en = f' en el lote {n.lote_ref}' if n.lote_ref else ''
         monto = f' ({fmt(n.monto)})' if n.monto is not None else ''
@@ -77,7 +77,7 @@ def _persistir(sender: Sender, n: Normalized) -> str:
             categoria=n.categoria, cantidad=n.cantidad,
             monto=n.monto, fecha=n.fecha, origen='bot', created_by=sender.usuario_id,
         )
-        return f'✅ Registré {texto_js(n.evento_tipo)} de {texto_js(n.cantidad)} {texto_js(n.categoria)}. Stock actualizado.'
+        return f'✅ Registré {texto_o_undefined(n.evento_tipo)} de {texto_o_undefined(n.cantidad)} {texto_o_undefined(n.categoria)}. Stock actualizado.'
     if rt == 'evento_sanitario':
         repo.insert_evento_sanitario(
             productor_id=sender.productor_id, campo_id=campo_id, producto=n.producto,
@@ -85,7 +85,7 @@ def _persistir(sender: Sender, n: Normalized) -> str:
             fecha=n.fecha, origen='bot', created_by=sender.usuario_id,
         )
         cant = f' ({texto_numero(n.cantidad)})' if n.cantidad is not None else ''
-        return f'✅ Registré sanidad: {texto_js(n.producto)}{cant}.'
+        return f'✅ Registré sanidad: {texto_o_undefined(n.producto)}{cant}.'
     return 'Registrado.'
 
 

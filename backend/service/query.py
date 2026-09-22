@@ -5,7 +5,7 @@ Respeta permisos por rol (el gestor no ve margen ni ventas).
 from dataclasses import dataclass
 from typing import Any
 
-from ..jscompat import pesos as fmt
+from ..formato import pesos as fmt
 from ..repository.db import transaccion
 from ..repository.repo import find_lote_by_ref, gasto_total, list_hacienda, venta_total
 from ..types import ParsedQuery, Rol

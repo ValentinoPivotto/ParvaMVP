@@ -9,7 +9,7 @@ base vacía o con --reset, y --reset BORRA los datos (incluido este vínculo).
 """
 import sys
 
-from ..jscompat import bindeable, numero
+from ..formato import bindeable, numero
 from ..phone import normalize_telefono, phone_variants
 from ..repository import db
 

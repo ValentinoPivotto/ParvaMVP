@@ -13,7 +13,7 @@ import urllib.request
 from typing import Any
 
 from ..config import config, use_bedrock
-from ..jscompat import NAN, a_json, encode_uri_component, fecha_iso
+from ..formato import NAN, a_json, percent_encode, fecha_iso
 from ..types import ParsedIntent
 from .sigv4 import AwsCreds, firmar_aws
 
@@ -22,11 +22,11 @@ from .sigv4 import AwsCreds, firmar_aws
 # siempre. Mismo criterio que el timeout de whatsapp.py.
 TIMEOUT_MODELO_S = 10.0
 
-# Las regex de JS sin flag `u` son ASCII: `\b`, `\d` y `\w` ignoran los
-# acentos. `re.ASCII` reproduce eso. No es cosmético: en `qu[eé]\b` la variante
-# con tilde nunca llega a matchear (después de 'é' no hay borde de palabra), y
-# en modo Unicode Python sí matchearía, cambiando qué mensajes se toman por
-# pregunta.
+# Las regex van en modo ASCII: `\b`, `\d` y `\w` no toman los acentos como
+# parte de una palabra. No es cosmético. En `qu[eé]\b` la variante con tilde
+# nunca llega a matchear, porque después de 'é' no hay borde de palabra; en
+# modo Unicode sí matchearía y "qué vendí" pasaría de registrar una venta a
+# contestar cuánto se vendió.
 _JS = re.ASCII
 _JSI = re.ASCII | re.IGNORECASE
 
@@ -90,7 +90,7 @@ def _num(s: str) -> float:
     """Tolera "1.200.000" (miles con punto) y "2,5" (decimal con coma)."""
     x = s.strip()
     if ',' in x:
-        x = _RE_PUNTOS.sub('', x).replace(',', '.', 1)   # JS reemplaza solo la primera coma
+        x = _RE_PUNTOS.sub('', x).replace(',', '.', 1)   # sólo la primera coma: es el decimal
     elif len(_RE_PUNTOS.findall(x)) > 1:
         x = _RE_PUNTOS.sub('', x)
     elif _RE_MILES_FINAL.search(x):
@@ -297,7 +297,7 @@ def _normalizar_salida(p: Any, texto: str) -> ParsedIntent:
     if not isinstance(p, dict):
         p = {}
     confidence = p.get('confidence')
-    # `typeof x === 'number'`: en Python un bool pasa por int, en JS no es number.
+    # Un bool no cuenta como número, aunque en Python sea un int.
     es_numero = isinstance(confidence, (int, float)) and not isinstance(confidence, bool)
     return ParsedIntent(
         intent=p.get('intent') if p.get('intent') is not None else 'unknown',
@@ -352,7 +352,7 @@ def _parse_bedrock(texto: str) -> ParsedIntent:
     req = firmar_aws(
         method='POST',
         host=f'bedrock-runtime.{config.aws_region}.amazonaws.com',
-        path=f'/model/{encode_uri_component(config.bedrock_model_id)}/converse',
+        path=f'/model/{percent_encode(config.bedrock_model_id)}/converse',
         region=config.aws_region,
         service='bedrock',
         body=cuerpo,
@@ -393,8 +393,8 @@ _probe_lock = threading.Lock()
 
 def ollama_disponible() -> bool:
     global _ollama_probe
-    # El lock hace lo que hacía cachear la promesa en JS: si dos mensajes entran
-    # juntos, el probe corre una sola vez y el segundo espera ese resultado.
+    # El lock evita que dos mensajes simultáneos disparen dos probes: el
+    # primero lo corre y el segundo espera ese resultado.
     with _probe_lock:
         if _ollama_probe is None:
             try:

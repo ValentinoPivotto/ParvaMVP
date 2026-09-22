@@ -1,4 +1,4 @@
-# Atajos equivalentes a los scripts de npm que había antes.
+# Atajos para las tareas habituales.
 # Todos se pueden correr también a mano: `python3 -m backend.<módulo>`.
 PY ?= python3
 
@@ -25,6 +25,6 @@ check-meta:           ## diagnostica el setup de Meta: make check-meta ARGS="<WA
 tunnel:               ## abre el túnel ngrok hacia el puerto del .env
 	$(PY) -m backend.scripts.tunnel
 
-test:                 ## todos los tests: backend (Python) y frontend (Node)
+test:                 ## todos los tests: los del backend y los del frontend
 	$(PY) -m unittest discover -s test -t .
 	node --test test/

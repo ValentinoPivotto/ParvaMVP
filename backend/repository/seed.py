@@ -6,7 +6,7 @@ Crea dos productores que ejercitan las dos variantes:
 """
 import sys
 
-from ..jscompat import fecha_iso as hoy
+from ..formato import fecha_iso as hoy
 from . import db
 from .db import drop_all, init_schema, is_empty
 

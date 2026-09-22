@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 
-from .jscompat import numero
+from .formato import numero
 
 # Raíz del proyecto: este archivo vive en backend/, así que un nivel arriba.
 RAIZ = Path(__file__).resolve().parent.parent
@@ -11,15 +11,13 @@ RAIZ = Path(__file__).resolve().parent.parent
 def _cargar_env(ruta: Path) -> None:
     """Carga el .env al entorno del proceso.
 
-    Antes lo hacían los scripts de npm con `node --env-file-if-exists=.env`; sin
-    npm hay que hacerlo desde el código. Se respeta la misma precedencia que
-    usaba Node: **lo que ya está en el entorno gana sobre el archivo**. De eso
-    depende el flujo de Bedrock del README — `eval "$(aws configure
-    export-credentials …)"` deja las credenciales en el shell y el .env las
-    tiene vacías; al revés, el archivo las pisaría con '' y el parser caería al
+    **Lo que ya está en el entorno gana sobre el archivo.** De eso depende el
+    flujo de Bedrock del README: `eval "$(aws configure export-credentials …)"`
+    deja las credenciales en el shell y el .env las tiene vacías. Con la
+    precedencia al revés, el archivo las pisaría con '' y el parser caería al
     mock sin explicación.
 
-    Si el archivo no existe no pasa nada, igual que con `--env-file-if-exists`.
+    Si el archivo no existe, no pasa nada: el .env es opcional.
     """
     try:
         texto = ruta.read_text(encoding='utf-8')

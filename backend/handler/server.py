@@ -15,7 +15,7 @@ from typing import Any, Callable
 from urllib.parse import parse_qsl, urlsplit
 
 from ..config import RAIZ, config, falta_config_meta
-from ..jscompat import a_json, bindeable, numero
+from ..formato import a_json, bindeable, numero
 from ..repository import repo
 from ..repository.db import init_schema
 from ..repository.seed import seed_if_empty
@@ -115,13 +115,17 @@ class _Handler(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
 
     def log_message(self, formato: str, *args: Any) -> None:
-        """Silencio: Node no loguea un renglón por request, y el log del bot
-        (`[wa] ←`, `[wa] →`) quedaría enterrado entre los accesos a estáticos.
+        """Sin log por request.
+
+        El servidor sirve estáticos y el dashboard le pega cada 5 s: un renglón
+        por acceso enterraría el log que importa, que es el del bot
+        (`[wa] ←`, `[wa] →`).
         """
 
     def send_response(self, code: int, message: str | None = None) -> None:
-        """Igual que la de la clase base pero sin el header `Server`, que Node no
-        manda y que acá publicaría la versión de Python en cada respuesta.
+        """Igual que la de la clase base, pero sin el header `Server`.
+
+        No aporta nada y publicaría la versión de Python en cada respuesta.
         """
         self.log_request(code)
         self.send_response_only(code, message)
@@ -195,10 +199,10 @@ class _Handler(BaseHTTPRequestHandler):
         path = partes.path
         qs = {}
         for k, v in parse_qsl(partes.query, keep_blank_values=True):
-            qs.setdefault(k, v)   # `searchParams.get` devuelve la primera
+            qs.setdefault(k, v)   # con la clave repetida, vale la primera
 
         def num_param(clave: str) -> Any:
-            # `Number(url.searchParams.get(x))`: un parámetro ausente da 0 (no NaN).
+            # Un parámetro ausente cuenta como 0; uno no numérico, como NULL.
             v = qs.get(clave)
             return bindeable(numero(v if v is not None else 0))
 
@@ -298,8 +302,8 @@ class _Handler(BaseHTTPRequestHandler):
 
 class _Servidor(ThreadingHTTPServer):
     daemon_threads = True
-    # Node escucha en '::' con dual-stack. En macOS `localhost` resuelve primero
-    # a ::1, así que un servidor solo-IPv4 dejaría afuera esa mitad.
+    # Dual-stack sobre '::'. En macOS `localhost` resuelve primero a ::1, así
+    # que un servidor solo-IPv4 dejaría afuera esa mitad.
     address_family = socket.AF_INET6
 
     def server_bind(self) -> None:
@@ -330,8 +334,8 @@ def main() -> None:
     else:
         print(f'   ✓ credenciales de Meta cargadas (Graph {config.meta_graph_version})')
     print('   webhook de Meta: /webhook/whatsapp  ·  estado: /api/state?productorId=1\n')
-    # Va última porque puede tardar (el probe de Ollama son 800 ms), igual que
-    # cuando salía al resolverse la promesa en la versión anterior.
+    # Va última porque puede tardar: si el parser está en modo local, el probe
+    # de Ollama se lleva 800 ms y no tiene sentido demorar el resto del banner.
     print(f'   Parser activo: {parser_activo()}')
 
     try:

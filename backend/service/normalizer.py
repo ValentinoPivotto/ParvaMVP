@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from ..jscompat import fecha_iso
+from ..formato import fecha_iso
 from ..repository.repo import find_lote_by_ref
 from ..types import EventoHaciendaTipo, ParsedIntent, RecordType
 
@@ -36,12 +36,14 @@ class Normalized:
     descripcion: str | None = None
 
     def to_json(self) -> dict[str, Any]:
-        """Claves camelCase y en el mismo orden que escribía `JSON.stringify` sobre
-        el objeto de la versión TS: `parsed_json` queda byte a byte igual, así una
-        base existente no muestra dos formatos según quién escribió la fila.
+        """Claves camelCase, en un orden fijo.
+
+        `parsed_json` se vuelve a leer para confirmar un pendiente, así que el
+        formato tiene que ser estable: una base con filas viejas y nuevas no
+        puede terminar con dos formatos conviviendo.
         """
-        # (clave, valor, siempre). Los `siempre=False` se omiten cuando no hay
-        # valor, que es lo que hacía JSON.stringify con un `undefined`.
+        # (clave, valor, siempre). Los `siempre=False` se omiten cuando están
+        # vacíos: la clave directamente no aparece.
         campos: list[tuple[str, Any, bool]] = [
             ('recordType', self.record_type, True),
             ('loteId', self.lote_id, True),
@@ -61,8 +63,9 @@ class Normalized:
 
     @staticmethod
     def from_json(d: dict[str, Any]) -> 'Normalized':
-        """Lee un `parsed_json` guardado. Tolera claves ausentes: las filas que
-        escribió la versión en TypeScript omitían los campos vacíos.
+        """Lee un `parsed_json` guardado.
+
+        Tolera las claves ausentes, porque `to_json()` no escribe las vacías.
         """
         return Normalized(
             record_type=d.get('recordType'),
