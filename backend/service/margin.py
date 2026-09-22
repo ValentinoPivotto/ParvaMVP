@@ -6,6 +6,7 @@ ventas o costos, se indica en vez de mentir.
 from dataclasses import dataclass
 from typing import Any
 
+from ..repository.db import transaccion
 from ..repository.repo import list_lotes, totales_por_lote
 
 
@@ -41,19 +42,23 @@ class MargenLote:
 
 
 def margen_por_lote(productor_id: Any) -> list[MargenLote]:
-    salida: list[MargenLote] = []
-    for l in list_lotes(productor_id):
-        totales = totales_por_lote(productor_id, l['id'])
-        ventas, costos = totales['ventas'], totales['costos']
-        confiable = True
-        razon: str | None = None
-        if ventas == 0:
-            confiable, razon = False, 'sin ventas registradas'
-        elif costos == 0:
-            confiable, razon = False, 'sin costos registrados'
-        salida.append(MargenLote(
-            lote_id=l['id'], lote_nombre=l['nombre'], uso=l['uso_actual'],
-            ventas=ventas, costos=costos, margen=ventas - costos,
-            confiable=confiable, razon=razon,
-        ))
-    return salida
+    # Los márgenes de todos los lotes salen de la misma foto: si entra una venta
+    # mientras se recorren, dos lotes quedarían calculados sobre estados
+    # distintos de la misma tabla.
+    with transaccion():
+        salida: list[MargenLote] = []
+        for l in list_lotes(productor_id):
+            totales = totales_por_lote(productor_id, l['id'])
+            ventas, costos = totales['ventas'], totales['costos']
+            confiable = True
+            razon: str | None = None
+            if ventas == 0:
+                confiable, razon = False, 'sin ventas registradas'
+            elif costos == 0:
+                confiable, razon = False, 'sin costos registrados'
+            salida.append(MargenLote(
+                lote_id=l['id'], lote_nombre=l['nombre'], uso=l['uso_actual'],
+                ventas=ventas, costos=costos, margen=ventas - costos,
+                confiable=confiable, razon=razon,
+            ))
+        return salida

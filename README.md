@@ -16,9 +16,9 @@ El código lleva anotaciones de tipo en todo el backend. No hace falta ningún
 chequeador para ejecutarlo; si querés validarlas en el editor, cualquier
 `mypy`/`pyright` instalado aparte las lee sin configuración extra.
 
-Para los tests del frontend hace falta **Node.js** (el frontend es JavaScript de
-navegador y sus tests corren con el runner de Node). No se necesita para usar la
-aplicación.
+Los tests del backend corren con `unittest` de la stdlib. Para los del frontend
+hace falta **Node.js** (el frontend es JavaScript de navegador y sus tests corren
+con el runner de Node); no se necesita para usar la aplicación.
 
 ## Cómo correr
 
@@ -41,7 +41,7 @@ make start       # python3 -m backend.handler.server
 make dev         # recarga al guardar un .py
 make seed        # recarga datos de ejemplo
 make reset       # borra y recarga la base
-make test        # tests del frontend (necesita Node)
+make test        # tests: backend (Python) + frontend (necesita Node)
 ```
 
 ## Qué tiene el MVP
@@ -364,6 +364,26 @@ Para seguir **«Compré 200 litros de gasoil para el lote 4»** en el código:
 Las consultas del bot pasan por `service/query.py`; las reglas del margen están
 en `service/margin.py` y las sumas SQL en el repositorio. Las lecturas simples de
 identidad y del listado de productores se hacen desde el handler al repositorio.
+
+### Concurrencia
+
+Node atendía todo en un solo hilo, así que una secuencia como «leé el stock,
+sumale 8, guardalo» era indivisible sin que nadie tuviera que pedirlo. El
+servidor Python atiende cada request en su propio hilo y encola por remitente,
+de modo que dos usuarios del **mismo** productor (el dueño y el gestor de campo)
+pueden estar escribiendo a la vez.
+
+Esa garantía se repone explícitamente con `db.transaccion()`, que sostiene el
+lock de la conexión durante toda la secuencia y la envuelve en una transacción
+de SQLite. La regla: **todo lo que antes era indivisible por el hilo único va
+adentro de un `transaccion()`**. Hoy son las escrituras compuestas
+(`insert_movimiento`, `adjust_hacienda`, `insert_evento_hacienda`,
+`insert_evento_sanitario`) y las lecturas que arman una respuesta a partir de
+varias consultas (`build_state`, `answer_query`, `margen_por_lote`,
+`totales_por_lote`).
+
+`test/test_concurrencia.py` es la regresión: sin la transacción, ocho hilos
+cargando nacimientos a la vez dejan los eventos registrados y el stock corto.
 
 **Fuente de verdad:** la base estructurada. La "planilla" es una vista + export CSV
 (resuelve el riesgo de la planilla editable libre). Un **margen** solo se muestra si

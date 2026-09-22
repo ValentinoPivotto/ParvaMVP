@@ -25,5 +25,6 @@ check-meta:           ## diagnostica el setup de Meta: make check-meta ARGS="<WA
 tunnel:               ## abre el túnel ngrok hacia el puerto del .env
 	$(PY) -m backend.scripts.tunnel
 
-test:                 ## tests del frontend (JS, con el runner de Node)
+test:                 ## todos los tests: backend (Python) y frontend (Node)
+	$(PY) -m unittest discover -s test -t .
 	node --test test/

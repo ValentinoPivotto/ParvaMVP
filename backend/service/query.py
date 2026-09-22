@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..jscompat import pesos as fmt
+from ..repository.db import transaccion
 from ..repository.repo import find_lote_by_ref, gasto_total, list_hacienda, venta_total
 from ..types import ParsedQuery, Rol
 from .margin import margen_por_lote
@@ -20,6 +21,13 @@ class QueryAnswer:
 
 
 def answer_query(productor_id: Any, rol: Rol, q: ParsedQuery) -> QueryAnswer:
+    # Igual que el dashboard: la respuesta sale de varias consultas y tiene que
+    # ser coherente entre sí (un margen mezclando dos fotos miente).
+    with transaccion():
+        return _responder(productor_id, rol, q)
+
+
+def _responder(productor_id: Any, rol: Rol, q: ParsedQuery) -> QueryAnswer:
     metric = q.get('metric')
     categoria_animal = q.get('categoriaAnimal')
     lote_ref = q.get('loteRef')

@@ -6,6 +6,8 @@ aísla el resto del código de este detalle.
 import os
 import sqlite3
 import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
 
@@ -55,9 +57,53 @@ def run(sql: str, *params: Any) -> InfoEscritura:
 
 
 def exec_(sql: str) -> None:
-    """`db.exec(...)`: una o varias sentencias sin parámetros."""
+    """`db.exec(...)`: una o varias sentencias sin parámetros.
+
+    No usar dentro de `transaccion()`: `executescript` hace COMMIT antes de
+    empezar y cortaría la transacción abierta. Sólo se usa para el esquema.
+    """
     with _lock:
         _conn.executescript(sql)
+
+
+_nivel_transaccion = 0
+
+
+@contextmanager
+def transaccion() -> Iterator[None]:
+    """Agrupa varias sentencias en una operación indivisible.
+
+    Node corría todo en un solo hilo: un SELECT y el UPDATE que lo sigue no
+    podían intercalarse con nada, y el código de arriba dependía de eso sin
+    decirlo. Acá el servidor atiende cada request en su hilo y encola por
+    remitente, así que dos usuarios del MISMO productor escriben a la vez —
+    y el lock por sentencia no alcanza: los dos leen el mismo stock y el
+    último UPDATE pisa al otro.
+
+    Este bloque sostiene el lock durante toda la secuencia (que es la garantía
+    que daba el hilo único) y además la envuelve en una transacción de SQLite,
+    para que un corte a mitad de camino no deje el evento sin su movimiento de
+    stock.
+
+    Reentrante: sólo el bloque más externo abre y cierra la transacción.
+    """
+    global _nivel_transaccion
+    with _lock:
+        externa = _nivel_transaccion == 0
+        if externa:
+            _conn.execute('BEGIN IMMEDIATE')
+        _nivel_transaccion += 1
+        try:
+            yield
+        except BaseException:
+            _nivel_transaccion -= 1
+            if externa:
+                _conn.execute('ROLLBACK')
+            raise
+        else:
+            _nivel_transaccion -= 1
+            if externa:
+                _conn.execute('COMMIT')
 
 
 exec_('PRAGMA foreign_keys = ON;')

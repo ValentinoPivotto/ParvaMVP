@@ -98,19 +98,20 @@ def insert_movimiento(
     origen: str = 'web',
     created_by: int | None = None,
 ) -> int:
-    info = db.run(
-        """
+    with db.transaccion():
+        info = db.run(
+            """
     INSERT INTO movimiento
       (productor_id, tipo, lote_id, campania_id, fecha, producto, cantidad, unidad,
        monto, moneda, categoria, descripcion, origen, created_by)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   """,
-        productor_id, tipo, lote_id, campania_id, fecha, producto, cantidad, unidad,
-        monto, moneda, categoria, descripcion, origen, created_by,
-    )
-    id = info.last_insert_rowid
-    detalle = f'{tipo} {producto or ""} {texto_numero(monto)}'.strip()
-    audit(productor_id, 'movimiento', id, 'create', created_by, origen, detalle)
+            productor_id, tipo, lote_id, campania_id, fecha, producto, cantidad, unidad,
+            monto, moneda, categoria, descripcion, origen, created_by,
+        )
+        id = info.last_insert_rowid
+        detalle = f'{tipo} {producto or ""} {texto_numero(monto)}'.strip()
+        audit(productor_id, 'movimiento', id, 'create', created_by, origen, detalle)
     return id
 
 
@@ -151,10 +152,13 @@ def _suma_por_lote(productor_id: Any, lote_id: Any, where: str) -> float:
 
 
 def totales_por_lote(productor_id: Any, lote_id: Any) -> dict[str, float]:
-    return {
-        'ventas': _suma_por_lote(productor_id, lote_id, "tipo='venta'"),
-        'costos': _suma_por_lote(productor_id, lote_id, "tipo IN ('insumo','labor','gasto')"),
-    }
+    # Las dos sumas van juntas: si entra una venta entre una y otra, el margen
+    # sale de dos fotos distintas de la misma tabla.
+    with db.transaccion():
+        return {
+            'ventas': _suma_por_lote(productor_id, lote_id, "tipo='venta'"),
+            'costos': _suma_por_lote(productor_id, lote_id, "tipo IN ('insumo','labor','gasto')"),
+        }
 
 
 # --- Hacienda (ganadero) --------------------------------------------------
@@ -165,16 +169,22 @@ def list_hacienda(productor_id: Any) -> list[dict[str, Any]]:
 
 
 def adjust_hacienda(productor_id: Any, campo_id: int | None, categoria: str, delta: float) -> None:
-    """Ajusta el stock de una categoría (crea la fila si no existe). delta puede ser + o -."""
-    fila = db.get('SELECT * FROM hacienda WHERE productor_id = ? AND categoria = ?', productor_id, categoria)
-    if fila:
-        nueva = max(0, (fila['cantidad'] or 0) + delta)
-        db.run('UPDATE hacienda SET cantidad = ? WHERE id = ?', nueva, fila['id'])
-    elif delta > 0:
-        db.run(
-            'INSERT INTO hacienda (productor_id, campo_id, categoria, cantidad) VALUES (?,?,?,?)',
-            productor_id, campo_id, categoria, delta,
-        )
+    """Ajusta el stock de una categoría (crea la fila si no existe). delta puede ser + o -.
+
+    El leer-modificar-escribir va entero adentro de la transacción: si dos
+    remitentes del mismo productor cargan animales a la vez, sin esto los dos
+    leen el mismo stock y el último UPDATE se come el delta del otro.
+    """
+    with db.transaccion():
+        fila = db.get('SELECT * FROM hacienda WHERE productor_id = ? AND categoria = ?', productor_id, categoria)
+        if fila:
+            nueva = max(0, (fila['cantidad'] or 0) + delta)
+            db.run('UPDATE hacienda SET cantidad = ? WHERE id = ?', nueva, fila['id'])
+        elif delta > 0:
+            db.run(
+                'INSERT INTO hacienda (productor_id, campo_id, categoria, cantidad) VALUES (?,?,?,?)',
+                productor_id, campo_id, categoria, delta,
+            )
 
 
 def insert_evento_hacienda(
@@ -189,21 +199,24 @@ def insert_evento_hacienda(
     origen: str = 'web',
     created_by: int | None = None,
 ) -> int:
-    info = db.run(
-        """
+    # El evento y el stock que mueve son un solo hecho: o entran los dos, o
+    # queda un nacimiento registrado que no se ve en el stock.
+    with db.transaccion():
+        info = db.run(
+            """
     INSERT INTO evento_hacienda
       (productor_id, campo_id, tipo, categoria, cantidad, monto, fecha, origen, created_by)
     VALUES (?,?,?,?,?,?,?,?,?)
   """,
-        productor_id, campo_id, tipo, categoria, cantidad, monto, fecha, origen, created_by,
-    )
-    # El stock se mueve según el tipo de evento.
-    signo = 1 if tipo in ('nacimiento', 'compra') else -1 if tipo in ('muerte', 'venta') else 0
-    if signo != 0:
-        adjust_hacienda(productor_id, campo_id, categoria, signo * cantidad)
-    id = info.last_insert_rowid
-    audit(productor_id, 'evento_hacienda', id, 'create', created_by, origen,
-          f'{tipo} {texto_numero(cantidad)} {categoria}')
+            productor_id, campo_id, tipo, categoria, cantidad, monto, fecha, origen, created_by,
+        )
+        # El stock se mueve según el tipo de evento.
+        signo = 1 if tipo in ('nacimiento', 'compra') else -1 if tipo in ('muerte', 'venta') else 0
+        if signo != 0:
+            adjust_hacienda(productor_id, campo_id, categoria, signo * cantidad)
+        id = info.last_insert_rowid
+        audit(productor_id, 'evento_hacienda', id, 'create', created_by, origen,
+              f'{tipo} {texto_numero(cantidad)} {categoria}')
     return id
 
 
@@ -218,17 +231,18 @@ def insert_evento_sanitario(
     origen: str = 'web',
     created_by: int | None = None,
 ) -> int:
-    info = db.run(
-        """
+    with db.transaccion():
+        info = db.run(
+            """
     INSERT INTO evento_sanitario
       (productor_id, campo_id, producto, categoria, cantidad, fecha, origen, created_by)
     VALUES (?,?,?,?,?,?,?,?)
   """,
-        productor_id, campo_id, producto, categoria, cantidad, fecha, origen, created_by,
-    )
-    id = info.last_insert_rowid
-    audit(productor_id, 'evento_sanitario', id, 'create', created_by, origen,
-          f'{producto if producto is not None else "sanidad"} {texto_numero(cantidad)}'.strip())
+            productor_id, campo_id, producto, categoria, cantidad, fecha, origen, created_by,
+        )
+        id = info.last_insert_rowid
+        audit(productor_id, 'evento_sanitario', id, 'create', created_by, origen,
+              f'{producto if producto is not None else "sanidad"} {texto_numero(cantidad)}'.strip())
     return id
 
 
