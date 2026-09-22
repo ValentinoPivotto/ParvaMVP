@@ -12,15 +12,13 @@ import json
 import os
 import re
 import sys
-import urllib.error
-import urllib.parse
-import urllib.request
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
 from ..config import config
 from ..formato import percent_encode
+from ..red import pedir
 
 G = f'https://graph.facebook.com/{config.meta_graph_version}'
 
@@ -57,25 +55,24 @@ class Respuesta:
 
 def graph(path: str, token: str | None = None) -> Respuesta:
     token = config.meta_access_token if token is None else token
-    req = urllib.request.Request(f'{G}/{path}', headers={'Authorization': f'Bearer {token}'})
     try:
-        try:
-            with urllib.request.urlopen(req, timeout=10.0) as res:
-                status, crudo = res.status, res.read().decode('utf-8', 'replace')
-        except urllib.error.HTTPError as e:
-            status, crudo = e.code, e.read().decode('utf-8', 'replace')
-        try:
-            data = json.loads(crudo)
-            if not isinstance(data, dict):
-                data = {}
-        except ValueError:
-            data = {}
-        if not 200 <= status < 300:
-            err = data.get('error') or {}
-            return Respuesta(ok=False, code=err.get('code'), message=err.get('message') or f'HTTP {status}')
-        return Respuesta(ok=True, data=data)
+        r = pedir('GET', f'{G}/{path}', plazo=10.0, headers={'Authorization': f'Bearer {token}'})
     except Exception as err:
         return Respuesta(ok=False, message=str(err))
+    try:
+        data = json.loads(r.texto)
+        if not isinstance(data, dict):
+            data = {}
+    except ValueError:
+        data = {}
+    if not r.ok:
+        err = data.get('error')
+        # Un `error` que no es un objeto no puede tumbar el diagnóstico: justo
+        # se lo corre cuando algo de Meta ya está raro.
+        if not isinstance(err, dict):
+            err = {}
+        return Respuesta(ok=False, code=err.get('code'), message=err.get('message') or f'HTTP {r.status}')
+    return Respuesta(ok=True, data=data)
 
 
 # Los túneles gratis (trycloudflare, ngrok free) cambian de URL en CADA restart,
@@ -96,24 +93,21 @@ def probar_handshake(url: str) -> tuple[bool, str]:
             f'&hub.verify_token={percent_encode(config.meta_verify_token)}'
             f'&hub.challenge={challenge}')
     try:
-        try:
-            with urllib.request.urlopen(full, timeout=10.0) as res:
-                status, body = res.status, res.read().decode('utf-8', 'replace').strip()
-        except urllib.error.HTTPError as e:
-            status, body = e.code, e.read().decode('utf-8', 'replace').strip()
-        if 200 <= status < 300 and body == challenge:
-            return True, 'ok'
-        # El 403 solo es nuestro si viene con el cuerpo que manda server.py; si no,
-        # es algún intermediario (proxy, Cloudflare) y afirmar "verify token mal"
-        # mandaría a buscar el problema al lugar equivocado.
-        if status == 403 and body == 'forbidden':
-            return False, ('el server contesta 403: el META_VERIFY_TOKEN que tiene corriendo '
-                           'no coincide con el de este .env')
-        extra = f' · {body[:60]}' if body else ''
-        return False, (f'devuelve HTTP {status}{extra} — no es este server '
-                       '(túnel caído, o algo en el medio)')
+        r = pedir('GET', full, plazo=10.0)
     except Exception as err:
         return False, f'no responde — {err}'
+    status, body = r.status, r.texto.strip()
+    if 200 <= status < 300 and body == challenge:
+        return True, 'ok'
+    # El 403 solo es nuestro si viene con el cuerpo que manda server.py; si no,
+    # es algún intermediario (proxy, Cloudflare) y afirmar "verify token mal"
+    # mandaría a buscar el problema al lugar equivocado.
+    if status == 403 and body == 'forbidden':
+        return False, ('el server contesta 403: el META_VERIFY_TOKEN que tiene corriendo '
+                       'no coincide con el de este .env')
+    extra = f' · {body[:60]}' if body else ''
+    return False, (f'devuelve HTTP {status}{extra} — no es este server '
+                   '(túnel caído, o algo en el medio)')
 
 
 def main() -> None:

@@ -9,12 +9,11 @@ import math
 import re
 import sys
 import threading
-import urllib.error
-import urllib.request
 from typing import Any
 
 from ..config import config, use_bedrock
-from ..formato import NAN, a_json, fecha_iso, numero, percent_encode
+from ..formato import ESPACIOS, NAN, a_json, fecha_iso, numero, percent_encode, recortar, texto_numero
+from ..red import pedir
 from ..types import ParsedIntent
 from .sigv4 import AwsCreds, firmar_aws
 
@@ -28,15 +27,15 @@ TIMEOUT_MODELO_S = 10.0
 # nunca llega a matchear, porque después de 'é' no hay borde de palabra; en
 # modo Unicode sí matchearía y "qué vendí" pasaría de registrar una venta a
 # contestar cuánto se vendió.
-_JS = re.ASCII
-_JSI = re.ASCII | re.IGNORECASE
+_ASCII = re.ASCII
+_ASCII_I = re.ASCII | re.IGNORECASE
 
 # `re.ASCII` también achica `\s` a los cinco espacios de siempre, y los mensajes
 # llegan de teclados de celular: el espacio no separable U+00A0 aparece solo al
 # escribir "lote 4" en iOS. Con `\s` en modo ASCII ese mensaje se guardaba sin
 # lote y sin pedir confirmación, así que la clase va escrita a mano con todos
 # los separadores Unicode.
-_ESP = r'[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]' 
+_ESP = '[' + ''.join(re.escape(c) for c in ESPACIOS) + ']'
 
 CATEGORIAS_ANIMAL: dict[str, str] = {
     'ternero': 'ternero', 'terneros': 'ternero', 'ternera': 'ternero', 'terneras': 'ternero',
@@ -48,38 +47,46 @@ CATEGORIAS_ANIMAL: dict[str, str] = {
 
 UNIDADES = 'litros?|lts?|l|kg|kilos?|tn|toneladas?|ton|bolsas?|cabezas?|unidades?|has?|hect[aá]reas?'
 
-_RE_CATEGORIA = {p: re.compile(rf'\b{p}\b', _JS) for p in CATEGORIAS_ANIMAL}
-_RE_MONTO_PESO = re.compile(r'\$' + _ESP + r'*([\d.,]+)', _JS)
-_RE_MONTO_PALABRA = re.compile(r'([\d.,]+)' + _ESP + r'*pesos', _JS)
-_RE_QUITA_MONTO_PESO = re.compile(r'\$' + _ESP + r'*[\d.,]+', _JS)
-_RE_QUITA_MONTO_PALABRA = re.compile(r'[\d.,]+' + _ESP + r'*pesos', _JS)
-_RE_CANTIDAD = re.compile(rf'(\d+(?:[.,]\d+)?){_ESP}*({UNIDADES})?', _JSI)
-_RE_LOTE = re.compile(r'lote' + _ESP + r'*([a-zA-Z0-9]+)', _JS)
-_RE_AYER = re.compile(r'\bayer\b', _JS)
-_RE_ANTEAYER = re.compile(r'anteayer', _JS)
-_RE_PRODUCTO_DE = re.compile(rf'de{_ESP}+([a-záéíóúñ]+(?:{_ESP}+[a-záéíóúñ]+)?)', _JSI)
-_RE_PUNTOS = re.compile(r'\.', _JS)
-_RE_MILES_FINAL = re.compile(r'\.\d{3}$', _JS)
-# `parseFloat`: toma el prefijo numérico y devuelve NaN si no hay ninguno.
-_RE_PARSE_FLOAT = re.compile(r'^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?', _JS)
+# Cuántos caracteres puede tener un importe escrito. El tope no es estético:
+# con `[\d.,]+` seguido de "pesos", el motor prueba desde cada posición y
+# consume todos los dígitos en cada intento — sobre un mensaje de 20.000
+# dígitos eso son segundos, y crece al cuadrado. Un monto de 40 caracteres ya
+# es absurdo, así que acotarlo lo vuelve lineal sin perder ningún caso real.
+_LARGO_IMPORTE = 40
 
-# Sin \b: no asierta bien tras vocal acentuada en una regex sin flag `u`.
+_RE_CATEGORIA = {p: re.compile(rf'\b{p}\b', _ASCII) for p in CATEGORIAS_ANIMAL}
+_RE_MONTO_PESO = re.compile(r'\$' + _ESP + r'*([\d.,]+)', _ASCII)
+_RE_MONTO_PALABRA = re.compile(r'([\d.,]{1,%d})' % _LARGO_IMPORTE + _ESP + r'*pesos', _ASCII)
+_RE_QUITA_MONTO_PESO = re.compile(r'\$' + _ESP + r'*[\d.,]+', _ASCII)
+_RE_QUITA_MONTO_PALABRA = re.compile(r'[\d.,]{1,%d}' % _LARGO_IMPORTE + _ESP + r'*pesos', _ASCII)
+_RE_CANTIDAD = re.compile(rf'(\d+(?:[.,]\d+)?){_ESP}*({UNIDADES})?', _ASCII_I)
+_RE_LOTE = re.compile(r'lote' + _ESP + r'*([a-zA-Z0-9]+)', _ASCII)
+_RE_AYER = re.compile(r'\bayer\b', _ASCII)
+_RE_ANTEAYER = re.compile(r'anteayer', _ASCII)
+_RE_PRODUCTO_DE = re.compile(rf'de{_ESP}+([a-záéíóúñ]+(?:{_ESP}+[a-záéíóúñ]+)?)', _ASCII_I)
+_RE_PUNTOS = re.compile(r'\.', _ASCII)
+_RE_MILES_FINAL = re.compile(r'\.\d{3}$', _ASCII)
+# El número con que empieza el texto: '12abc' da 12, y 'abc' da NaN.
+_RE_PREFIJO_NUMERICO = re.compile(r'^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?', _ASCII)
+
+# Sin \b: en modo ASCII una vocal acentuada no es parte de la palabra, así
+# que después de "sí" no hay borde.
 _RE_CONFIRMA = re.compile(
     r'^(s[ií]|sip|dale|ok(ey)?|oka|listo|correcto|confirmo|confirm[aá]|exacto|as[ií] es|de una|tal cual|s[ií] dale)(' + _ESP + r'|$|[,.!])',
-    _JS)
-_RE_PREGUNTA = re.compile(r'\?|cu[aá]nt|cu[aá]l|qu[eé]\b|tengo|hay\b|stock|mostr|dec[ií]me', _JS)
-_RE_MARGEN = re.compile(r'margen', _JS)
-_RE_STOCK = re.compile(r'stock|hacienda|animales|cabezas', _JS)
-_RE_GAST = re.compile(r'gast', _JS)
-_RE_VEND = re.compile(r'vend|venta', _JS)
-_RE_NACI = re.compile(r'naci', _JS)
-_RE_MUERTE = re.compile(r'muri|murieron|se murió|se murio|perd[ií]', _JS)
-_RE_COMPR = re.compile(r'compr', _JS)
-_RE_TRASLADO = re.compile(r'traslad|pas[eé]|mov[ií]', _JS)
-_RE_SANIDAD = re.compile(r'vacun|desparasit|tratamiento|sanidad|dosis', _JS)
-_RE_LABOR = re.compile(r'sembr|pulveric|fumig|cosech|apliqu|fertilic|ar[ée]\b|rastr|disc', _JS)
-_RE_GASTO = re.compile(r'pagu[ée]|gast[ée]|abon[ée]|gasto', _JS)
-_RE_COMPRA = re.compile(r'compr[ée]|compre|carg[ué]', _JS)
+    _ASCII)
+_RE_PREGUNTA = re.compile(r'\?|cu[aá]nt|cu[aá]l|qu[eé]\b|tengo|hay\b|stock|mostr|dec[ií]me', _ASCII)
+_RE_MARGEN = re.compile(r'margen', _ASCII)
+_RE_STOCK = re.compile(r'stock|hacienda|animales|cabezas', _ASCII)
+_RE_GAST = re.compile(r'gast', _ASCII)
+_RE_VEND = re.compile(r'vend|venta', _ASCII)
+_RE_NACI = re.compile(r'naci', _ASCII)
+_RE_MUERTE = re.compile(r'muri|murieron|se murió|se murio|perd[ií]', _ASCII)
+_RE_COMPR = re.compile(r'compr', _ASCII)
+_RE_TRASLADO = re.compile(r'traslad|pas[eé]|mov[ií]', _ASCII)
+_RE_SANIDAD = re.compile(r'vacun|desparasit|tratamiento|sanidad|dosis', _ASCII)
+_RE_LABOR = re.compile(r'sembr|pulveric|fumig|cosech|apliqu|fertilic|ar[ée]\b|rastr|disc', _ASCII)
+_RE_GASTO = re.compile(r'pagu[ée]|gast[ée]|abon[ée]|gasto', _ASCII)
+_RE_COMPRA = re.compile(r'compr[ée]|compre|carg[ué]', _ASCII)
 
 
 def _detectar_categoria_animal(t: str) -> str | None:
@@ -89,9 +96,19 @@ def _detectar_categoria_animal(t: str) -> str | None:
     return None
 
 
-def _parse_float(s: str) -> float:
-    m = _RE_PARSE_FLOAT.match(s.lstrip())
+def _prefijo_numerico(s: str) -> float:
+    m = _RE_PREFIJO_NUMERICO.match(s.lstrip())
     return float(m.group(0)) if m else NAN
+
+
+def _finito(n: float) -> float | None:
+    """El número si es finito; si no, None: se trata como si no se hubiera dicho.
+
+    Un importe de 400 dígitos entra en un mensaje de WhatsApp y `float` lo
+    convierte en infinito. Guardado, envenenaba la base: cada consulta que lo
+    sumara ("¿cuánto gasté?") explotaba al formatearlo, para siempre.
+    """
+    return n if math.isfinite(n) else None
 
 
 def _num(s: str) -> float:
@@ -103,12 +120,12 @@ def _num(s: str) -> float:
         x = _RE_PUNTOS.sub('', x)
     elif _RE_MILES_FINAL.search(x):
         x = _RE_PUNTOS.sub('', x)
-    return _parse_float(x)
+    return _prefijo_numerico(x)
 
 
 def _extraer_monto(t: str) -> float | None:
     m = _RE_MONTO_PESO.search(t) or _RE_MONTO_PALABRA.search(t)
-    return _num(m.group(1)) if m else None
+    return _finito(_num(m.group(1))) if m else None
 
 
 def _extraer_cantidad_unidad(t: str) -> tuple[float | None, str | None]:
@@ -116,7 +133,7 @@ def _extraer_cantidad_unidad(t: str) -> tuple[float | None, str | None]:
     m = _RE_CANTIDAD.search(sin_monto)
     if not m:
         return None, None
-    return _num(m.group(1)), (m.group(2).lower() if m.group(2) else None)
+    return _finito(_num(m.group(1))), (m.group(2).lower() if m.group(2) else None)
 
 
 def _extraer_lote_ref(t: str) -> str | None:
@@ -148,7 +165,7 @@ def _extraer_producto(t: str) -> str | None:
 
 
 def parse_mock(texto: str) -> ParsedIntent:
-    t = texto.lower().strip()
+    t = recortar(texto.lower())
     base = ParsedIntent(intent='unknown', record_type=None, fields={}, query=None, confidence=0, raw_text=texto)
 
     # 1) Confirmación
@@ -301,61 +318,98 @@ def _construir_mensajes(texto: str) -> list[dict[str, str]]:
     return msgs
 
 
-#: Campos que el pipeline trata como números. Un modelo devuelve lo que quiere.
+#: Cómo se usa cada campo más adelante. Los numéricos entran en columnas REAL
+#: o INTEGER; los de texto se concatenan en los mensajes y se bindean como TEXT.
 _CAMPOS_NUMERICOS = ('cantidad', 'monto')
+_CAMPOS_TEXTO = ('producto', 'unidad', 'moneda', 'loteRef', 'categoriaAnimal',
+                 'eventoTipo', 'laborTipo', 'categoria', 'fecha', 'descripcion',
+                 'metric')   # éste de la query, que se sanea igual que los campos
 
 
-def _numeros_de_los_campos(fields: Any) -> dict[str, Any]:
-    """Convierte a número las cantidades y montos que lleguen como texto.
+def _numero_valido(valor: Any) -> float | int | None:
+    """Un número que se puede guardar y mostrar, o None.
 
-    Si `cantidad` viene como "200", el registro se guarda igual (SQLite
-    convierte solo), pero armar la respuesta revienta con un TypeError. Y para
-    entonces el mensaje ya quedó marcado como procesado: el productor no recibe
-    nada y el reintento de Meta se descarta por duplicado.
+    Descarta lo que no es número, el infinito y el NaN. Un entero gigante pasa a
+    float: SQLite no acepta enteros de más de 64 bits y el INSERT tiraba
+    OverflowError con el mensaje ya marcado como procesado.
+    """
+    if isinstance(valor, bool):
+        return None
+    n = valor if isinstance(valor, (int, float)) else numero(valor)
+    if isinstance(n, int):
+        if abs(n) <= 2 ** 53:
+            return n
+        try:
+            n = float(n)
+        except OverflowError:
+            return None
+    return n if math.isfinite(n) else None
 
-    Lo que no se puede leer como número se trata como ausente. Guardar un NaN
-    sería peor: el campo queda vacío en la base igual, pero sin que nadie lo
-    note. Así, en cambio, salta la confirmación.
+
+def _campos_saneados(fields: Any) -> dict[str, Any]:
+    """Deja los campos del modelo con los tipos que el pipeline espera.
+
+    Un modelo devuelve el JSON que quiere, y de acá en adelante nadie vuelve a
+    chequear tipos: `loteRef` se le pasa a `.strip()`, `unidad` se concatena a
+    un string y `descripcion` se bindea a SQLite. Cada uno de esos revienta con
+    un tipo distinto, y siempre tarde — con el movimiento ya guardado y el
+    mensaje marcado como procesado, así que el productor no recibe nada y el
+    reintento de Meta se descarta por duplicado.
+
+    Los números que llegan como texto se convierten; los textos que llegan como
+    número se pasan a texto (un `loteRef: 4` claramente quiso decir "lote 4").
+    Lo que no es un valor simple —una lista, un objeto— se descarta: se trata
+    como si el modelo no hubiera dicho nada de ese campo. Lo mismo un texto en
+    blanco: un `loteRef` de puros espacios cargaba el movimiento al primer lote.
     """
     if not isinstance(fields, dict):
         return {}
-    salida = dict(fields)
-    for clave in _CAMPOS_NUMERICOS:
-        valor = salida.get(clave)
-        if valor is None or (isinstance(valor, (int, float)) and not isinstance(valor, bool)):
+    salida: dict[str, Any] = {}
+    for clave, valor in fields.items():
+        if valor is None:
             continue
-        n = numero(valor)
-        if isinstance(n, float) and math.isnan(n):
-            del salida[clave]
-        else:
-            salida[clave] = n
+        if clave in _CAMPOS_NUMERICOS:
+            n = _numero_valido(valor)
+            if n is not None:
+                salida[clave] = n
+            continue
+        if clave in _CAMPOS_TEXTO:
+            if isinstance(valor, (int, float)) and not isinstance(valor, bool):
+                valor = texto_numero(valor)
+            if isinstance(valor, str) and recortar(valor):
+                salida[clave] = recortar(valor)
+            # Cualquier otra cosa —o un texto en blanco— se descarta.
+            continue
+        salida[clave] = valor
     return salida
 
 
 def _normalizar_salida(p: Any, texto: str) -> ParsedIntent:
     if not isinstance(p, dict):
         p = {}
-    confidence = p.get('confidence')
-    # Un bool no cuenta como número, aunque en Python sea un int.
-    es_numero = isinstance(confidence, (int, float)) and not isinstance(confidence, bool)
+    # Una confianza que no es un número finito vale como ausente. Un NaN, por
+    # ejemplo, hacía que `confianza < umbral` diera siempre False: se guardaba
+    # sin pedir confirmación.
+    confidence = _numero_valido(p.get('confidence'))
+    query = p.get('query')
     return ParsedIntent(
         intent=p.get('intent') if p.get('intent') is not None else 'unknown',
         record_type=p.get('recordType'),
-        fields=_numeros_de_los_campos(p.get('fields')),
-        query=p.get('query'),
-        confidence=confidence if es_numero else 0.8,
+        fields=_campos_saneados(p.get('fields')),
+        # Una `query` que no es un objeto se trata como si no viniera: más
+        # adelante se le pide `.get('metric')` sin preguntar. Si lo es, se sanea
+        # igual que los campos: un `loteRef` numérico ahí adentro también
+        # terminaba en un `.strip()`.
+        query=_campos_saneados(query) if isinstance(query, dict) else None,
+        confidence=confidence if confidence is not None else 0.8,
         raw_text=texto,
     )
 
 
 def _post(url: str, headers: dict[str, str], body: str, timeout: float) -> tuple[int, str]:
-    """POST con timeout. Devuelve (status, texto); un 4xx/5xx no tira, se reporta."""
-    req = urllib.request.Request(url, data=body.encode('utf-8'), headers=headers, method='POST')
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as res:
-            return res.status, res.read().decode('utf-8')
-    except urllib.error.HTTPError as e:
-        return e.code, e.read().decode('utf-8', 'replace')
+    """POST con plazo total. Devuelve (status, texto); un 4xx/5xx no tira, se reporta."""
+    r = pedir('POST', url, plazo=timeout, headers=headers, cuerpo=body)
+    return r.status, r.texto
 
 
 def _parse_local(texto: str) -> ParsedIntent:
@@ -411,8 +465,8 @@ def _parse_bedrock(texto: str) -> ParsedIntent:
     return _normalizar_salida(json.loads(_recortar_json(crudo)), texto)
 
 
-_RE_CERCA_INICIO = re.compile(rf'^{_ESP}*```(?:json)?{_ESP}*', _JSI)
-_RE_CERCA_FIN = re.compile(rf'{_ESP}*```{_ESP}*$', _JS)
+_RE_CERCA_INICIO = re.compile(rf'^{_ESP}*```(?:json)?{_ESP}*', _ASCII_I)
+_RE_CERCA_FIN = re.compile(rf'{_ESP}*```{_ESP}*$', _ASCII)
 
 
 def _recortar_json(s: str) -> str:
@@ -437,8 +491,7 @@ def ollama_disponible() -> bool:
     with _probe_lock:
         if _ollama_probe is None:
             try:
-                with urllib.request.urlopen(f'{config.ollama_url}/api/tags', timeout=0.8) as r:
-                    _ollama_probe = 200 <= r.status < 300
+                _ollama_probe = pedir('GET', f'{config.ollama_url}/api/tags', plazo=0.8).ok
             except Exception:
                 _ollama_probe = False
         return _ollama_probe

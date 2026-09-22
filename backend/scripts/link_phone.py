@@ -29,10 +29,14 @@ def listar() -> None:
     print('\n Uso: python3 -m backend.scripts.link_phone <usuarioId> <+telefono>\n')
 
 
-def vincular(id: object, telefono_raw: str) -> None:
+def vincular(id_crudo: str, telefono_raw: str) -> None:
+    # El id se busca como número, pero se muestra tal como se escribió: un
+    # `link_phone abc …` tiene que decir "id abc", no el valor interno que
+    # quedó después de intentar convertirlo.
+    id = bindeable(numero(id_crudo))
     actual = db.get('SELECT id, nombre, telefono FROM usuario WHERE id = ?', id)
     if not actual:
-        print(f'✗ No existe el usuario con id {id}. Corré --list para ver los disponibles.', file=sys.stderr)
+        print(f'✗ No existe el usuario con id {id_crudo}. Corré --list para ver los disponibles.', file=sys.stderr)
         sys.exit(1)
 
     nuevo = normalize_telefono(telefono_raw)
@@ -48,7 +52,7 @@ def vincular(id: object, telefono_raw: str) -> None:
 
     db.run('UPDATE usuario SET telefono = ? WHERE id = ?', nuevo, id)
 
-    print(f'\n✓ {actual["nombre"]} (id {id})')
+    print(f'\n✓ {actual["nombre"]} (id {actual["id"]})')
     print(f'   antes:   {actual["telefono"]}')
     print(f'   ahora:   {nuevo}')
     print('\n   Formas que van a matchear cuando escriba por WhatsApp:')
@@ -64,9 +68,7 @@ def main() -> None:
     if len(args) == 0 or args[0] in ('--list', '-l'):
         listar()
     elif len(args) == 2:
-        # `Number(args[0])`: un id no numérico queda en NaN y no matchea ninguna
-        # fila, que es lo que hace caer en el "No existe el usuario".
-        vincular(bindeable(numero(args[0])), args[1])
+        vincular(args[0], args[1])
     else:
         print(USO, file=sys.stderr)
         sys.exit(1)

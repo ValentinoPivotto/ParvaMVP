@@ -1,0 +1,40 @@
+=== productor ===
+id=1 | nombre='Estancia La Esperanza' | pais='Argentina' | tipo_campo='agricola'
+id=2 | nombre='Don Pedro e Hijos' | pais='Argentina' | tipo_campo='ganadero'
+=== usuario ===
+id=1 | productor_id=1 | nombre='Juan Pérez' | telefono='+5491100000001' | rol='owner'
+id=2 | productor_id=1 | nombre='Juan Gómez' | telefono='+5491100000002' | rol='gestor_campo'
+id=3 | productor_id=2 | nombre='Pedro Díaz' | telefono='+5491100000003' | rol='owner'
+id=4 | productor_id=2 | nombre='Marta Ruiz' | telefono='+5491100000004' | rol='gestor_campo'
+=== campo ===
+id=1 | productor_id=1 | nombre='Campo Norte' | hectareas=320.0
+id=2 | productor_id=2 | nombre='La Lomada' | hectareas=500.0
+=== lote ===
+id=1 | productor_id=1 | campo_id=1 | nombre='Lote 1' | numero='1' | hectareas=80.0 | uso_actual='Soja'
+id=2 | productor_id=1 | campo_id=1 | nombre='Lote 4' | numero='4' | hectareas=100.0 | uso_actual='Maíz'
+id=3 | productor_id=1 | campo_id=1 | nombre='Lote 7' | numero='7' | hectareas=60.0 | uso_actual='Trigo'
+=== campania ===
+id=1 | productor_id=1 | nombre='Gruesa 2025/26' | cultivo_actividad='Soja / Maíz' | fecha_inicio='{HOY-120}' | fecha_fin=None
+=== movimiento ===
+id=1 | productor_id=1 | tipo='insumo' | lote_id=1 | campania_id=None | fecha='{HOY-110}' | producto='Semilla soja' | cantidad=80.0 | unidad='bolsa' | monto=1200000.0 | moneda='ARS' | categoria='semilla' | descripcion=None | origen='seed' | created_by=1
+id=2 | productor_id=1 | tipo='insumo' | lote_id=1 | campania_id=None | fecha='{HOY-108}' | producto='Fertilizante' | cantidad=4000.0 | unidad='kg' | monto=2500000.0 | moneda='ARS' | categoria='fertilizante' | descripcion=None | origen='seed' | created_by=2
+id=3 | productor_id=1 | tipo='labor' | lote_id=1 | campania_id=None | fecha='{HOY-107}' | producto='Siembra' | cantidad=None | unidad=None | monto=800000.0 | moneda='ARS' | categoria='labor' | descripcion=None | origen='seed' | created_by=2
+id=4 | productor_id=1 | tipo='gasto' | lote_id=1 | campania_id=None | fecha='{HOY-60}' | producto='Fumigación' | cantidad=None | unidad=None | monto=600000.0 | moneda='ARS' | categoria='servicios' | descripcion=None | origen='seed' | created_by=2
+id=5 | productor_id=1 | tipo='venta' | lote_id=1 | campania_id=None | fecha='{HOY-10}' | producto='Soja' | cantidad=240.0 | unidad='tn' | monto=9600000.0 | moneda='ARS' | categoria='grano' | descripcion=None | origen='seed' | created_by=1
+id=6 | productor_id=1 | tipo='insumo' | lote_id=2 | campania_id=None | fecha='{HOY-100}' | producto='Semilla maíz' | cantidad=1.0 | unidad='bolsa' | monto=1500000.0 | moneda='ARS' | categoria='semilla' | descripcion=None | origen='seed' | created_by=1
+id=7 | productor_id=1 | tipo='insumo' | lote_id=2 | campania_id=None | fecha='{HOY-98}' | producto='Urea' | cantidad=5000.0 | unidad='kg' | monto=1800000.0 | moneda='ARS' | categoria='fertilizante' | descripcion=None | origen='seed' | created_by=2
+id=8 | productor_id=1 | tipo='labor' | lote_id=2 | campania_id=None | fecha='{HOY-97}' | producto='Siembra' | cantidad=None | unidad=None | monto=900000.0 | moneda='ARS' | categoria='labor' | descripcion=None | origen='seed' | created_by=2
+id=9 | productor_id=2 | tipo='gasto' | lote_id=None | campania_id=None | fecha='{HOY-40}' | producto='Ración' | cantidad=8000.0 | unidad='kg' | monto=1200000.0 | moneda='ARS' | categoria='alimentacion' | descripcion=None | origen='seed' | created_by=3
+id=10 | productor_id=2 | tipo='venta' | lote_id=None | campania_id=None | fecha='{HOY-15}' | producto='Venta novillos' | cantidad=15.0 | unidad='cabeza' | monto=7500000.0 | moneda='ARS' | categoria='hacienda' | descripcion=None | origen='seed' | created_by=3
+=== hacienda ===
+id=1 | productor_id=2 | campo_id=2 | categoria='vaca' | cantidad=120
+id=2 | productor_id=2 | campo_id=2 | categoria='ternero' | cantidad=45
+id=3 | productor_id=2 | campo_id=2 | categoria='novillo' | cantidad=60
+id=4 | productor_id=2 | campo_id=2 | categoria='vaquillona' | cantidad=30
+id=5 | productor_id=2 | campo_id=2 | categoria='toro' | cantidad=4
+=== evento_hacienda ===
+id=1 | productor_id=2 | campo_id=2 | tipo='nacimiento' | categoria='ternero' | cantidad=12 | monto=None | fecha='{HOY-25}' | origen='seed' | created_by=4
+id=2 | productor_id=2 | campo_id=2 | tipo='venta' | categoria='novillo' | cantidad=15 | monto=7500000.0 | fecha='{HOY-15}' | origen='seed' | created_by=3
+=== evento_sanitario ===
+id=1 | productor_id=2 | campo_id=2 | producto='Vacuna aftosa' | categoria='todos' | cantidad=259 | fecha='{HOY-30}' | origen='seed' | created_by=4
+=== audit_log ===

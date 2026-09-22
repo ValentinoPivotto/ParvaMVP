@@ -13,6 +13,22 @@ from urllib.parse import quote
 
 NAN = float('nan')
 
+# Lo que cuenta como espacio en el texto que escribe una persona: además de los
+# de siempre, los que meten los teclados de celular y el copy-paste — el no
+# separable U+00A0 que pone iOS al escribir "lote 4", y el U+FEFF (BOM) que
+# arrastra algún copy-paste al principio de un mensaje.
+#
+# `str.strip()` no sirve para esto: no quita el U+FEFF, así que un "sí" pegado
+# con un BOM adelante no confirmaba nada. Y quita los separadores de control
+# U+001C–U+001F, que no son espacios que escriba nadie.
+ESPACIOS = ('\t\n\v\f\r \u00a0\u1680' + ''.join(chr(c) for c in range(0x2000, 0x200b))
+            + '\u2028\u2029\u202f\u205f\u3000\ufeff')
+
+
+def recortar(texto: str) -> str:
+    """Saca los espacios de las puntas, con la noción de espacio de ESPACIOS."""
+    return texto.strip(ESPACIOS)
+
 # Formas decimales que se aceptan al leer un número de un texto. Python por su
 # cuenta también toma '1_000', 'inf' y 'nan', que acá no son números válidos.
 _NUMERICO = re.compile(r'^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$')
@@ -32,7 +48,7 @@ def numero(valor: object, por_defecto: object = None) -> float | int:
         return NAN
     if isinstance(valor, (int, float)):
         return valor
-    s = str(valor).strip()
+    s = recortar(str(valor))
     if s == '':
         return 0
     if s in ('Infinity', '+Infinity'):
@@ -87,7 +103,16 @@ def pesos(n: float | int) -> str:
 
     `math.floor(n + 0.5)` y no `round()`: Python redondea al par (`round(2.5)`
     es 2) y acá los .5 van para arriba.
+
+    Nunca tira. Un monto infinito no debería existir —el parser los descarta—,
+    pero si ya quedó uno guardado, `math.floor` explotaría en cada consulta
+    que lo sume, y el gasto total de ese productor dejaría de contestarse para
+    siempre. Mejor mostrar que el número es inválido.
     """
+    if math.isnan(n):
+        return '$—'
+    if math.isinf(n):
+        return '$∞' if n > 0 else '$-∞'
     return '$' + miles(math.floor(n + 0.5))
 
 
@@ -103,26 +128,6 @@ def fecha_iso(offset_dias: int = 0) -> str:
     """
     local = datetime.now() + timedelta(days=offset_dias)
     return local.astimezone(timezone.utc).date().isoformat()
-
-
-def texto_o_undefined(v: object) -> str:
-    """Un valor para meter en un mensaje; si falta, la palabra "undefined".
-
-    ⚠ El nombre es feo porque el comportamiento lo es. Se llega acá por el
-    camino de confirmación: el productor responde "sí" a un pendiente al que le
-    falta un campo requerido, el registro se guarda igual y el bot contesta
-    "✅ Registré undefined.".
-
-    Es un defecto conocido y está acá aislado, en vez de escondido detrás de
-    cuatro f-strings. Arreglarlo cambia lo que el bot contesta, así que es una
-    decisión aparte: o no se persiste un pendiente incompleto, o el mensaje se
-    redacta sin ese campo.
-    """
-    if v is None:
-        return 'undefined'
-    if isinstance(v, (int, float)):
-        return texto_numero(v)
-    return str(v)
 
 
 def _numeros_json(v: object) -> object:

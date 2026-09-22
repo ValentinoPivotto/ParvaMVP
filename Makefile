@@ -28,3 +28,6 @@ tunnel:               ## abre el túnel ngrok hacia el puerto del .env
 test:                 ## todos los tests: los del backend y los del frontend
 	$(PY) -m unittest discover -s test -t .
 	node --test test/
+
+test-golden:          ## regenera los golden de test/golden (revisá el git diff)
+	ACTUALIZAR_GOLDEN=1 $(PY) -m unittest discover -s test -t .
