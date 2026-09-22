@@ -5,6 +5,7 @@ que parece cuando pasa: el server sin arrancar, la conexión envenenada, un
 mensaje que se pierde sin rastro o un movimiento guardado en el lote
 equivocado.
 """
+import http.client
 import socket
 import threading
 import unittest
@@ -95,16 +96,22 @@ class ChunksDelWebhook(unittest.TestCase):
             with self.subTest(tamano=tamano):
                 self.assertIn('401', self._enviar(tamano))
 
-    def _con_content_length(self, valor: bytes) -> str:
+    def _respuesta(self, pedido: bytes) -> str:
+        """El status y el cuerpo de la respuesta a un pedido crudo."""
         s = socket.create_connection(('127.0.0.1', self.puerto), timeout=5)
         try:
-            s.sendall(b'POST /webhook/whatsapp HTTP/1.1\r\nHost: x\r\nContent-Length: '
-                      + valor + b'\r\nX-Hub-Signature-256: sha256=00\r\n\r\nhola')
-            return s.recv(200).split(b'\r\n')[0].decode(errors='replace')
-        except OSError:
+            s.sendall(pedido)
+            res = http.client.HTTPResponse(s)
+            res.begin()
+            return f'{res.status} {res.read().decode(errors="replace")}'
+        except (OSError, http.client.HTTPException):
             return '(conexión cortada)'
         finally:
             s.close()
+
+    def _con_content_length(self, valor: bytes) -> str:
+        return self._respuesta(b'POST /webhook/whatsapp HTTP/1.1\r\nHost: x\r\nContent-Length: '
+                               + valor + b'\r\nX-Hub-Signature-256: sha256=00\r\n\r\nhola')
 
     def test_rechaza_un_content_length_mal_formado(self) -> None:
         # Un valor no numérico tiraba un traceback entero por pedido, y el
@@ -112,6 +119,25 @@ class ChunksDelWebhook(unittest.TestCase):
         for valor in (b'abc', b'-5', b'99999999999999999999', b'4,5'):
             with self.subTest(valor=valor):
                 self.assertIn('500', self._con_content_length(valor))
+
+    def test_un_content_length_con_digitos_que_no_son_ascii(self) -> None:
+        # '²' es un dígito para `isdigit()`, pero `int()` no lo convierte.
+        self.assertEqual(self._con_content_length(b'\xb2'), '500 {"error":"Content-Length inválido"}')
+
+    def test_un_content_length_de_miles_de_cifras(self) -> None:
+        # `int()` no convierte más de 4300 cifras.
+        self.assertEqual(self._con_content_length(b'9' * 5000), '500 {"error":"body demasiado grande"}')
+
+    def test_un_content_length_con_ceros_adelante(self) -> None:
+        # 0…04 es 4, por más cifras que tenga.
+        self.assertEqual(self._con_content_length(b'0' * 5000 + b'4'), '401 firma inválida')
+
+    def test_una_linea_de_chunk_sin_fin(self) -> None:
+        # Sin límite, el server se queda leyendo (y guardando) hasta que
+        # llegue un fin de línea que nunca llega.
+        pedido = (b'POST /webhook/whatsapp HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n'
+                  b'X-Hub-Signature-256: sha256=00\r\n\r\n4;' + b'x' * 65535)
+        self.assertEqual(self._respuesta(pedido), '500 {"error":"línea de chunk demasiado larga"}')
 
     def test_acepta_un_content_length_normal(self) -> None:
         # Llega a verificar la firma, que es falsa: 401, no 500.

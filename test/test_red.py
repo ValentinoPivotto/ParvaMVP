@@ -5,6 +5,7 @@ Se prueban contra un servidor local, así que no salen a internet.
 import http.server
 import socket
 import ssl
+import sys
 import threading
 import time
 import unittest
@@ -65,11 +66,20 @@ class _Servidor(http.server.BaseHTTPRequestHandler):
             self._responder(201, b'POST ' + cuerpo + b' ' + self.headers.get('Content-Type', '').encode())
 
 
+class _ServidorQueTolera(http.server.ThreadingHTTPServer):
+    daemon_threads = True
+
+    def handle_error(self, request, client_address) -> None:
+        # Los tests del plazo cortan la conexión a propósito: el traceback de
+        # eso en la salida de los tests parecería una falla.
+        if not isinstance(sys.exc_info()[1], ConnectionError):
+            super().handle_error(request, client_address)
+
+
 class Pedir(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.servidor = http.server.ThreadingHTTPServer(('127.0.0.1', 0), _Servidor)
-        cls.servidor.daemon_threads = True
+        cls.servidor = _ServidorQueTolera(('127.0.0.1', 0), _Servidor)
         threading.Thread(target=cls.servidor.serve_forever, daemon=True).start()
         cls.base = f'http://127.0.0.1:{cls.servidor.server_address[1]}'
 

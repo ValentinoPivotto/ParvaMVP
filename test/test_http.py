@@ -8,11 +8,18 @@ se congela la respuesta cruda.
 El servidor se levanta en proceso, en un puerto efímero (`PORT=0`, que fija
 `test/__init__.py`), así que el test no pisa una instancia que estés corriendo.
 """
+import contextlib
+import errno
 import hashlib
 import hmac
 import http.client
+import io
+import socket
+import struct
 import threading
+import time
 import unittest
+from typing import Callable
 
 from backend.config import config
 from backend.handler.server import _crear_servidor
@@ -177,6 +184,227 @@ class RedDeSeguridad(unittest.TestCase):
 
         self.assertEqual(len(enviados), 1, 'tendría que haber contestado exactamente una vez')
         self.assertIn('Se me rompió algo', enviados[0])
+
+
+class OtrosMetodos(unittest.TestCase):
+    """GET y POST no son los únicos métodos que llegan.
+
+    Sin un `do_<MÉTODO>`, `http.server` contesta 501 con una página HTML
+    propia, en inglés. Los monitores de uptime preguntan con HEAD: un 501 ahí
+    da al server por caído.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        base_limpia()
+        cls.servidor = _crear_servidor()
+        cls.puerto = cls.servidor.server_address[1]
+        threading.Thread(target=cls.servidor.serve_forever, daemon=True).start()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.servidor.shutdown()
+        cls.servidor.server_close()
+
+    def _crudo(self, metodo: str, ruta: str) -> tuple[list[bytes], bytes]:
+        """Los headers y todo lo que viene después, tal cual llegan por el socket.
+
+        Por el socket y no con http.client, que en un HEAD no lee el cuerpo
+        aunque el server lo mande.
+        """
+        with socket.create_connection(('127.0.0.1', self.puerto), timeout=5) as s:
+            s.sendall(f'{metodo} {ruta} HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n'.encode())
+            recibido = b''
+            while parte := s.recv(65536):
+                recibido += parte
+        headers, _, cuerpo = recibido.partition(b'\r\n\r\n')
+        return [h for h in headers.split(b'\r\n') if not h.lower().startswith(b'date:')], cuerpo
+
+    def test_head_es_un_get_sin_cuerpo(self) -> None:
+        for ruta in ('/healthz', '/', '/api/state?productorId=1', '/api/export?productorId=1'):
+            with self.subTest(ruta=ruta):
+                headers_get, cuerpo_get = self._crudo('GET', ruta)
+                headers_head, cuerpo_head = self._crudo('HEAD', ruta)
+                self.assertTrue(cuerpo_get)
+                self.assertEqual(headers_head, headers_get)     # Content-Length incluido
+                self.assertEqual(cuerpo_head, b'')
+
+    def test_cualquier_otro_metodo_es_el_404_de_siempre(self) -> None:
+        for metodo in ('PUT', 'DELETE', 'OPTIONS', 'PATCH', 'TRACE', 'PROPFIND'):
+            with self.subTest(metodo=metodo):
+                con = http.client.HTTPConnection('127.0.0.1', self.puerto, timeout=10)
+                try:
+                    con.request(metodo, '/api/state')
+                    res = con.getresponse()
+                    self.assertEqual((res.status, res.getheader('Content-Type'), res.read()),
+                                     (404, 'text/plain', 'No encontrado'.encode()))
+                finally:
+                    con.close()
+
+
+class ClientesQueSeVan(unittest.TestCase):
+    """Un cliente que corta la conexión no es un error del server.
+
+    Una pestaña que se cierra, o ngrok cortando una conexión inactiva, no puede
+    dejar un traceback en el log: parece una falla y tapa las de verdad.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        base_limpia()
+        cls.servidor = _crear_servidor()
+        cls.puerto = cls.servidor.server_address[1]
+        threading.Thread(target=cls.servidor.serve_forever, daemon=True).start()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.servidor.shutdown()
+        cls.servidor.server_close()
+
+    def _log_del_server(self, cliente: Callable[[], None]) -> str:
+        """Lo que el server escribe en stderr mientras atiende a `cliente`."""
+        hilos = threading.active_count()
+        log = io.StringIO()
+        with contextlib.redirect_stderr(log):
+            cliente()
+            # Hasta que termine el hilo que atendía la conexión.
+            limite = time.monotonic() + 5
+            while threading.active_count() > hilos and time.monotonic() < limite:
+                time.sleep(0.01)
+        return log.getvalue()
+
+    def _conectar(self) -> socket.socket:
+        return socket.create_connection(('127.0.0.1', self.puerto), timeout=5)
+
+    @staticmethod
+    def _resetear(s: socket.socket) -> None:
+        # SO_LINGER en 0: el close manda un reset en vez de un cierre prolijo.
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
+        s.close()
+
+    def test_entre_un_pedido_y_el_siguiente(self) -> None:
+        def cliente() -> None:
+            s = self._conectar()
+            s.sendall(b'GET /healthz HTTP/1.1\r\nHost: x\r\n\r\n')
+            s.recv(500)     # contesta y queda esperando el pedido siguiente
+            self._resetear(s)
+
+        self.assertNotIn('Traceback', self._log_del_server(cliente))
+
+    def test_a_mitad_del_cuerpo(self) -> None:
+        def cliente() -> None:
+            s = self._conectar()
+            s.sendall(b'POST /webhook/whatsapp HTTP/1.1\r\nHost: x\r\n'
+                      b'Content-Length: 1000\r\n\r\n{"entry": [')
+            time.sleep(0.3)     # que el server ya esté esperando el resto
+            self._resetear(s)
+
+        log = self._log_del_server(cliente)
+        self.assertNotIn('Traceback', log)
+        self.assertNotIn('Error', log)
+        con = http.client.HTTPConnection('127.0.0.1', self.puerto, timeout=5)
+        try:
+            con.request('GET', '/healthz')
+            self.assertEqual(con.getresponse().status, 200)
+        finally:
+            con.close()
+
+    def test_si_se_va_antes_del_ack_el_mensaje_se_procesa_igual(self) -> None:
+        """El cuerpo ya llegó completo y con la firma verificada: perderlo
+        porque falló el ack deja al productor sin respuesta hasta el reintento
+        de Meta, que puede tardar."""
+        from backend.handler import server
+
+        encolados: list[str] = []
+        responder, encolar = server._Handler._responder, server.encolar
+
+        def responder_sin_cliente(handler, code, cuerpo, headers=None):
+            if code == 200 and handler.path == '/webhook/whatsapp':
+                raise BrokenPipeError(32, 'Broken pipe')
+            return responder(handler, code, cuerpo, headers)
+
+        server._Handler._responder = responder_sin_cliente
+        server.encolar = lambda clave, fn: encolados.append(clave)
+        cuerpo = CUERPO_WEBHOOK.replace('wamid.prueba.http', 'wamid.sin.ack')
+
+        def cliente() -> None:
+            con = http.client.HTTPConnection('127.0.0.1', self.puerto, timeout=5)
+            try:
+                con.request('POST', '/webhook/whatsapp', body=cuerpo.encode(),
+                            headers={'X-Hub-Signature-256': _firmar(cuerpo)})
+                with self.assertRaises(http.client.RemoteDisconnected):
+                    con.getresponse()
+            finally:
+                con.close()
+
+        try:
+            log = self._log_del_server(cliente)
+        finally:
+            server._Handler._responder, server.encolar = responder, encolar
+        self.assertEqual(encolados, ['5491100000999'])
+        self.assertNotIn('Traceback', log)
+
+
+class PuertoOcupado(unittest.TestCase):
+    """Si el puerto ya está tomado, el server lo tiene que decir y no arrancar."""
+
+    def setUp(self) -> None:
+        self.puerto_antes = config.port
+        self.addCleanup(setattr, config, 'port', self.puerto_antes)
+
+    def test_dos_servidores_en_el_mismo_puerto_chocan(self) -> None:
+        primero = _crear_servidor()
+        self.addCleanup(primero.server_close)
+        config.port = primero.server_address[1]
+        with self.assertRaises(OSError) as ctx:
+            _crear_servidor().server_close()
+        self.assertEqual(ctx.exception.errno, errno.EADDRINUSE)
+
+    def test_no_cae_a_ipv4_si_el_otro_escucha_solo_en_ipv6(self) -> None:
+        """El bind en IPv4 funcionaría, y `localhost` —que en macOS resuelve
+        primero a ::1— le hablaría al otro proceso sin que nada avise."""
+        otro = socket.socket(socket.AF_INET6)
+        self.addCleanup(otro.close)
+        otro.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+        otro.bind(('::', 0))
+        otro.listen()
+        config.port = otro.getsockname()[1]
+        with self.assertRaises(OSError) as ctx:
+            _crear_servidor().server_close()
+        self.assertEqual(ctx.exception.errno, errno.EADDRINUSE)
+
+    def test_sin_ipv6_cae_a_ipv4(self) -> None:
+        from backend.handler import server
+
+        def sin_ipv6(*_a, **_k):
+            raise OSError(errno.EAFNOSUPPORT, 'Address family not supported by protocol')
+
+        clase = server._ServidorDual
+        server._ServidorDual = sin_ipv6
+        try:
+            servidor = _crear_servidor()
+        finally:
+            server._ServidorDual = clase
+        self.addCleanup(servidor.server_close)
+        self.assertEqual(servidor.server_address[0], '0.0.0.0')
+
+    def test_el_arranque_lo_dice_en_una_linea(self) -> None:
+        from backend.handler import server
+
+        def ocupado():
+            raise OSError(errno.EADDRINUSE, 'Address already in use')
+
+        crear = server._crear_servidor
+        server._crear_servidor = ocupado
+        errores = io.StringIO()
+        try:
+            with contextlib.redirect_stderr(errores), self.assertRaises(SystemExit) as ctx:
+                server.main()
+        finally:
+            server._crear_servidor = crear
+        self.assertEqual(ctx.exception.code, 1)
+        self.assertEqual(errores.getvalue(), f'✗ El puerto {config.port} ya está en uso: ¿quedó otro '
+                                             f'Parva corriendo? Fijate con:  lsof -i :{config.port}\n')
 
 
 if __name__ == '__main__':

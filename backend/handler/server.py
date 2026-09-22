@@ -3,6 +3,7 @@
 Sirve la web app, la API del dashboard y el webhook de Meta Cloud API, que es
 por donde entran los mensajes reales de WhatsApp.
 """
+import errno
 import json
 import os
 import queue
@@ -37,6 +38,18 @@ TIPOS: dict[str, str] = {'html': 'text/html', 'css': 'text/css', 'js': 'text/jav
 # read(-1) — o sea, leer sin límite hasta EOF, y encima antes de verificar la
 # firma. La validación va sobre el texto crudo, antes de convertir.
 _TAMANO_CHUNK = re.compile(rb'^[0-9a-fA-F]+$')
+
+# Lo mismo con el Content-Length, en decimal: una regex y no `isdigit()`, que
+# acepta dígitos Unicode como '²' que después `int()` no puede convertir.
+_LARGO = re.compile(r'^[0-9]+$')
+
+# Una línea del encoding chunked tiene el mismo límite que `http.server` le pone
+# a cada header. Sin límite, un cliente que nunca manda el fin de línea hace
+# leer y guardar en memoria todo lo que quiera, antes de verificar la firma.
+_MAX_LINEA = 65536
+
+#: El cliente cortó la conexión. No es un error del server.
+_CLIENTE_SE_FUE = (BrokenPipeError, ConnectionResetError, ConnectionAbortedError)
 
 
 class _PedidoInvalido(ValueError):
@@ -167,7 +180,10 @@ class _Handler(BaseHTTPRequestHandler):
             self.send_header(k, v)
         self.send_header('Content-Length', str(len(cuerpo)))
         self.end_headers()
-        self.wfile.write(cuerpo)
+        # Un HEAD lleva los mismos headers que el GET, Content-Length incluido,
+        # pero no el cuerpo.
+        if self.command != 'HEAD':
+            self.wfile.write(cuerpo)
 
     def _send_json(self, code: int, data: Any) -> None:
         self._responder(code, a_json(data).encode('utf-8'),
@@ -196,31 +212,42 @@ class _Handler(BaseHTTPRequestHandler):
             chunks: list[bytes] = []
             size = 0
             while True:
-                crudo = self.rfile.readline().split(b';')[0].strip()
+                crudo = self._linea_de_chunk().split(b';')[0].strip()
                 if not _TAMANO_CHUNK.match(crudo):
                     self.close_connection = True
                     raise _PedidoInvalido('tamaño de chunk inválido')
                 largo = int(crudo, 16)
                 if largo == 0:
-                    self.rfile.readline()   # el CRLF que cierra el body
+                    self._linea_de_chunk()   # el CRLF que cierra el body
                     break
                 size += largo
                 if size > MAX_BODY:
                     self.close_connection = True
                     raise _PedidoInvalido('body demasiado grande')
                 chunks.append(self.rfile.read(largo))
-                self.rfile.readline()       # el CRLF que cierra el chunk
+                self._linea_de_chunk()       # el CRLF que cierra el chunk
             return b''.join(chunks)
 
         crudo_largo = (self.headers.get('Content-Length') or '0').strip()
-        if not crudo_largo.isdigit():
+        if not _LARGO.match(crudo_largo):
             self.close_connection = True
             raise _PedidoInvalido('Content-Length inválido')
-        largo = int(crudo_largo)
+        # Las cifras se cuentan antes de convertir: `int()` no acepta más de
+        # 4300, y con más de 9 el número ya supera el máximo. Los ceros de
+        # adelante no cuentan: 0004 es 4.
+        cifras = crudo_largo.lstrip('0')
+        largo = int(cifras or '0') if len(cifras) <= 9 else MAX_BODY + 1
         if largo > MAX_BODY:
             self.close_connection = True
             raise _PedidoInvalido('body demasiado grande')
         return self.rfile.read(largo) if largo > 0 else b''
+
+    def _linea_de_chunk(self) -> bytes:
+        linea = self.rfile.readline(_MAX_LINEA + 1)
+        if len(linea) > _MAX_LINEA:
+            self.close_connection = True
+            raise _PedidoInvalido('línea de chunk demasiado larga')
+        return linea
 
     # --- ruteo ---
 
@@ -229,6 +256,23 @@ class _Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         self._manejar('POST')
+
+    def do_HEAD(self) -> None:
+        """Un HEAD es un GET sin cuerpo: los monitores de uptime lo usan para
+        preguntar si el server está vivo, y un 404 ahí lo daría por caído."""
+        self._manejar('GET')
+
+    def __getattr__(self, nombre: str) -> Any:
+        """Cualquier otro método (PUT, DELETE, OPTIONS…) va al mismo ruteo y
+        termina en el 404 de siempre, como cualquier ruta desconocida.
+
+        `http.server` busca un `do_<MÉTODO>` para cada pedido, y si no lo
+        encuentra contesta 501 con una página HTML propia, en inglés, que no se
+        parece en nada al resto de las respuestas del server.
+        """
+        if nombre.startswith('do_'):
+            return lambda: self._manejar(nombre[3:])
+        raise AttributeError(nombre)
 
     def _manejar(self, method: str) -> None:
         partes = urlsplit(self.path)
@@ -314,8 +358,15 @@ class _Handler(BaseHTTPRequestHandler):
                 # ACK primero: Meta reintenta durante días si el webhook tarda, y el
                 # pipeline puede esperar al modelo. Recién después se procesa.
                 enviado = True
-                self._send_json(200, {'status': 'received', 'procesados': len(entrantes)})
-                self.wfile.flush()
+                try:
+                    self._send_json(200, {'status': 'received', 'procesados': len(entrantes)})
+                    self.wfile.flush()
+                except _CLIENTE_SE_FUE:
+                    # Si la conexión se cortó antes del ack, lo que llegó se
+                    # procesa igual: ya está completo y con la firma verificada.
+                    # Meta va a reintentar, y el reintento se descarta por
+                    # wa_message_id.
+                    self.close_connection = True
                 for m in entrantes:
                     # Qué número propio recibió el mensaje: es el dato que falta cuando la
                     # WABA tiene el de test y el propio y uno de los dos "no contesta".
@@ -326,6 +377,11 @@ class _Handler(BaseHTTPRequestHandler):
 
             enviado = True
             return self._responder(404, b'No encontrado', {'Content-Type': 'text/plain'})
+        except _CLIENTE_SE_FUE:
+            # El cliente cortó a mitad del pedido o de la respuesta: no hay a
+            # quién mandarle un 500, y un traceback por cada pestaña cerrada
+            # ensuciaría el log.
+            self.close_connection = True
         except _PedidoInvalido as err:
             print(f'[http] pedido inválido: {err}', file=sys.stderr)
             if not enviado:
@@ -342,6 +398,21 @@ class _Handler(BaseHTTPRequestHandler):
 
 class _Servidor(ThreadingHTTPServer):
     daemon_threads = True
+
+    def handle_error(self, request: Any, client_address: Any) -> None:
+        """Sin traceback cuando el cliente se fue.
+
+        `socketserver` imprime un traceback por cualquier excepción que escape
+        del handler, incluido un navegador que cierra la pestaña o ngrok
+        cortando una conexión inactiva. En el log eso parece una falla y tapa
+        las de verdad.
+        """
+        if isinstance(sys.exc_info()[1], _CLIENTE_SE_FUE):
+            return
+        super().handle_error(request, client_address)
+
+
+class _ServidorDual(_Servidor):
     # Dual-stack sobre '::'. En macOS `localhost` resuelve primero a ::1, así
     # que un servidor solo-IPv4 dejaría afuera esa mitad.
     address_family = socket.AF_INET6
@@ -353,16 +424,30 @@ class _Servidor(ThreadingHTTPServer):
 
 def _crear_servidor() -> ThreadingHTTPServer:
     try:
-        return _Servidor(('::', config.port), _Handler)
-    except OSError:
+        return _ServidorDual(('::', config.port), _Handler)
+    except OSError as e:
+        # Con el puerto ocupado no se cae a IPv4: si el otro proceso escucha
+        # sólo en IPv6, el bind en IPv4 funciona, y `localhost` —que en macOS
+        # resuelve primero a ::1— le hablaría al otro proceso sin que nada avise.
+        if e.errno == errno.EADDRINUSE:
+            raise
         # Host sin IPv6: se cae a IPv4 en vez de no arrancar.
-        return ThreadingHTTPServer(('0.0.0.0', config.port), _Handler)
+        return _Servidor(('0.0.0.0', config.port), _Handler)
 
 
 def main() -> None:
     init_schema()
     seed_if_empty()
-    server = _crear_servidor()
+    try:
+        server = _crear_servidor()
+    except OSError as e:
+        if e.errno != errno.EADDRINUSE:
+            raise
+        # El caso típico: quedó otro Parva corriendo en otra terminal. Sin este
+        # mensaje, el traceback parece un problema de IPv6.
+        print(f'✗ El puerto {config.port} ya está en uso: ¿quedó otro Parva corriendo? '
+              f'Fijate con:  lsof -i :{config.port}', file=sys.stderr)
+        sys.exit(1)
     threading.Thread(target=server.serve_forever, daemon=True).start()
 
     print(f'\n🌾 Parva MVP corriendo en http://localhost:{config.port}')
