@@ -12,6 +12,14 @@ verdad, y el dato aparece en el dashboard.
 - **Nada más para ejecutar.** Cero dependencias de ejecución, sin `pip install`,
   sin entorno virtual, sin Docker ni base externa.
 
+Si usás el Python del instalador de python.org en macOS, corré una vez
+**Install Certificates.command** (está en la carpeta de Python dentro de
+Aplicaciones). Sin eso, ese Python no puede verificar ningún certificado TLS y
+fallan todas las llamadas a Meta y a Bedrock. El de Homebrew ya viene listo.
+
+Las llamadas salientes (Meta, Bedrock, Ollama) van directo: no pasan por un
+proxy, ni por el de las variables `https_proxy` ni por el del sistema.
+
 El código lleva anotaciones de tipo en todo el backend. No hace falta ningún
 chequeador para ejecutarlo; si querés validarlas en el editor, cualquier
 `mypy`/`pyright` instalado aparte las lee sin configuración extra.
@@ -331,6 +339,7 @@ backend/
     seed.py          Datos de ejemplo; también ejecutable con make seed/reset
   scripts/           link_phone.py, check_meta.py, tunnel.py, dev.py
   config.py          Configuración por entorno, .env y ruta de la base
+  red.py             Pedidos HTTP salientes, con plazo total y errores legibles
   types.py           Tipos compartidos del dominio y mensajes
   phone.py           Normalización de teléfonos compartida
   formato.py         Números, fechas y JSON en los formatos que usa la app
@@ -384,20 +393,25 @@ texto exacto que el bot contesta, los bytes exactos del CSV que se baja el
 productor, las respuestas HTTP con sus headers. Son cosas que no se pueden
 cambiar sin que alguien lo note, así que tampoco se cambian sin querer.
 
-| Archivo | Qué congela |
+| Archivo | Qué cubre |
 |---|---|
 | `test_parser.py` | las reglas determinísticas sobre 115 mensajes reales |
 | `test_pipeline.py` | 230 interacciones punta a punta: respuesta del bot + base resultante |
-| `test_http.py` | las 24 respuestas HTTP con status, headers y cuerpo |
+| `test_http.py` | las 24 respuestas HTTP con status, headers y cuerpo; HEAD, otros métodos, clientes que cortan y puerto ocupado |
 | `test_seed.py` | los datos de ejemplo y el esquema |
 | `test_export.py` | los CSV de las tres planillas |
 | `test_prompt.py` | el prompt que se le manda al modelo |
 | `test_sigv4.py` | la firma de Bedrock, con vectores fijos |
 | `test_phone.py`, `test_formato.py` | teléfonos, montos, fechas y JSON |
 | `test_concurrencia.py` | el stock bajo escrituras en paralelo (ver abajo) |
+| `test_bordes.py` | lo que no pasa en el camino feliz: pedidos mal formados, importes que no son números, espacios raros, un `.env` con BOM, un COMMIT que falla |
+| `test_red.py` | los pedidos salientes: plazo total, redirecciones y errores legibles, contra un servidor local |
+| `test_check_meta.py` | el diagnóstico de `make check-meta` en nueve escenarios, contra una Graph API falsa |
+| `test_scripts.py` | `link-phone`, `tunnel` (con un ngrok falso) y que ningún script haga nada al importarse |
+| `dashboard.test.mjs` | el refresco del dashboard: respuestas viejas, cambio de productor, pestaña oculta |
 
-Los tests no tocan `data/parva.db` ni leen tu `.env`: `test/__init__.py` fija un
-entorno propio con una base temporal antes de importar el backend.
+Los tests no tocan `data/parva.db` ni dependen de tu `.env`: `test/__init__.py`
+fija todas las variables, con una base temporal, antes de importar el backend.
 
 Un golden que cambia **no es** un permiso para regenerarlo. Primero hay que
 mirar el diff y decidir si el cambio era la intención.
