@@ -1,0 +1,115 @@
+{"mensaje":"Compré 200 litros de gasoil para el lote 4","intent":"create_record","recordType":"insumo","fields":{"producto":"gasoil","cantidad":200,"unidad":"litros","loteRef":"4","fecha":"{HOY}"},"query":null,"confidence":0.88}
+{"mensaje":"compre 200 litros de gasoil","intent":"create_record","recordType":"insumo","fields":{"producto":"gasoil","cantidad":200,"unidad":"litros","fecha":"{HOY}"},"query":null,"confidence":0.88}
+{"mensaje":"Pagué $600.000 de fumigación en el lote 4","intent":"create_record","recordType":"labor","fields":{"laborTipo":"fumigación en","loteRef":"4","monto":600000,"fecha":"{HOY}","descripcion":"Pagué $600.000 de fumigación en el lote 4"},"query":null,"confidence":0.85}
+{"mensaje":"Vendí 240 tn de soja por $9.600.000","intent":"create_record","recordType":"venta","fields":{"producto":"soja","cantidad":240,"unidad":"tn","monto":9600000,"fecha":"{HOY}"},"query":null,"confidence":0.88}
+{"mensaje":"¿Cuál es el margen del lote 1?","intent":"query","recordType":null,"fields":{},"query":{"metric":"margen","loteRef":"1"},"confidence":0.92}
+{"mensaje":"Cual es el margen del lote 1","intent":"query","recordType":null,"fields":{},"query":{"metric":"margen","loteRef":"1"},"confidence":0.92}
+{"mensaje":"Nacieron 8 terneros","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"ternero","eventoTipo":"nacimiento","cantidad":8,"fecha":"{HOY}"},"query":null,"confidence":0.9}
+{"mensaje":"Se murieron 2 vacas","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"vaca","eventoTipo":"muerte","cantidad":2,"fecha":"{HOY}"},"query":null,"confidence":0.9}
+{"mensaje":"¿Cuántos terneros tengo?","intent":"query","recordType":null,"fields":{},"query":{"metric":"stock_animal","categoriaAnimal":"ternero"},"confidence":0.9}
+{"mensaje":"Vacuné 120 vacas contra la aftosa","intent":"create_record","recordType":"evento_sanitario","fields":{"producto":"sanidad","categoria":"vaca","cantidad":120,"fecha":"{HOY}"},"query":null,"confidence":0.82}
+{"mensaje":"sí","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"si","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"sip","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"dale","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"ok","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"okey","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"oka","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"listo","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"correcto","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"confirmo","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"confirma","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"confirmá","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"exacto","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"así es","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"asi es","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"de una","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"tal cual","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"sí dale","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"si, dale","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"sí.","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"sí!","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"sino","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"sillón","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"dalelo","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"oka que si","intent":"confirm","recordType":null,"fields":{},"query":null,"confidence":0.99}
+{"mensaje":"ayer vendí 30 novillos a 1.200.000 en total","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"novillo","eventoTipo":"venta","cantidad":30,"fecha":"{HOY-1}"},"query":null,"confidence":0.9}
+{"mensaje":"anteayer compré 100 kg de urea","intent":"create_record","recordType":"insumo","fields":{"producto":"urea","cantidad":100,"unidad":"kg","fecha":"{HOY-2}"},"query":null,"confidence":0.88}
+{"mensaje":"hoy sembré el lote 7","intent":"create_record","recordType":"labor","fields":{"laborTipo":"labor","loteRef":"7","fecha":"{HOY}","descripcion":"hoy sembré el lote 7"},"query":null,"confidence":0.85}
+{"mensaje":"le di 3 dosis de ivermectina a las vacas del lote 2","intent":"create_record","recordType":"evento_sanitario","fields":{"producto":"ivermectina a","categoria":"vaca","cantidad":3,"fecha":"{HOY}"},"query":null,"confidence":0.82}
+{"mensaje":"compré gasoil","intent":"create_record","recordType":"insumo","fields":{"producto":"gasoil","fecha":"{HOY}"},"query":null,"confidence":0.62}
+{"mensaje":"gasté 50000 en nada","intent":"create_record","recordType":"gasto","fields":{"fecha":"{HOY}","descripcion":"gasté 50000 en nada"},"query":null,"confidence":0.5}
+{"mensaje":"¿cuánto gasté?","intent":"query","recordType":null,"fields":{},"query":{"metric":"gasto_total"},"confidence":0.88}
+{"mensaje":"cuanto vendí?","intent":"query","recordType":null,"fields":{},"query":{"metric":"venta_total"},"confidence":0.88}
+{"mensaje":"¿qué stock tengo?","intent":"query","recordType":null,"fields":{},"query":{"metric":"stock_animal"},"confidence":0.9}
+{"mensaje":"que hay de hacienda","intent":"query","recordType":null,"fields":{},"query":{"metric":"stock_animal"},"confidence":0.9}
+{"mensaje":"mostrame el stock","intent":"query","recordType":null,"fields":{},"query":{"metric":"stock_animal"},"confidence":0.9}
+{"mensaje":"decime el margen","intent":"query","recordType":null,"fields":{},"query":{"metric":"margen"},"confidence":0.92}
+{"mensaje":"tengo cabezas?","intent":"query","recordType":null,"fields":{},"query":{"metric":"stock_animal"},"confidence":0.9}
+{"mensaje":"stock","intent":"query","recordType":null,"fields":{},"query":{"metric":"stock_animal"},"confidence":0.9}
+{"mensaje":"hacienda","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"animales","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"cabezas","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"vendí 2,5 tn de trigo","intent":"create_record","recordType":"venta","fields":{"producto":"trigo","cantidad":2.5,"unidad":"tn","fecha":"{HOY}"},"query":null,"confidence":0.6}
+{"mensaje":"compré 1.500 kg de semilla","intent":"create_record","recordType":"insumo","fields":{"producto":"semilla","cantidad":1500,"unidad":"kg","fecha":"{HOY}"},"query":null,"confidence":0.88}
+{"mensaje":"pagué 1.200.000 pesos","intent":"create_record","recordType":"gasto","fields":{"monto":1200000,"fecha":"{HOY}","descripcion":"pagué 1.200.000 pesos"},"query":null,"confidence":0.85}
+{"mensaje":"pagué $ 1.200.000","intent":"create_record","recordType":"gasto","fields":{"monto":1200000,"fecha":"{HOY}","descripcion":"pagué $ 1.200.000"},"query":null,"confidence":0.85}
+{"mensaje":"trasladé 20 novillos","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"novillo","eventoTipo":"traslado","cantidad":20,"fecha":"{HOY}"},"query":null,"confidence":0.9}
+{"mensaje":"pasé 10 vacas al lote 3","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"vaca","eventoTipo":"traslado","cantidad":10,"fecha":"{HOY}"},"query":null,"confidence":0.9}
+{"mensaje":"moví 5 toros","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"toro","eventoTipo":"traslado","cantidad":5,"fecha":"{HOY}"},"query":null,"confidence":0.9}
+{"mensaje":"perdí 3 terneros","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"ternero","eventoTipo":"muerte","cantidad":3,"fecha":"{HOY}"},"query":null,"confidence":0.9}
+{"mensaje":"murió una vaca","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"vaca","eventoTipo":"muerte","fecha":"{HOY}"},"query":null,"confidence":0.55}
+{"mensaje":"compré vaquillonas","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"vaquillona","eventoTipo":"compra","fecha":"{HOY}"},"query":null,"confidence":0.55}
+{"mensaje":"vendí vaquillonas a $500.000","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"vaquillona","eventoTipo":"venta","monto":500000,"fecha":"{HOY}"},"query":null,"confidence":0.55}
+{"mensaje":"aré el lote 4","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"are el lote 4","intent":"create_record","recordType":"labor","fields":{"laborTipo":"labor","loteRef":"4","fecha":"{HOY}","descripcion":"are el lote 4"},"query":null,"confidence":0.85}
+{"mensaje":"rastreé el lote 1","intent":"create_record","recordType":"labor","fields":{"laborTipo":"labor","loteRef":"1","fecha":"{HOY}","descripcion":"rastreé el lote 1"},"query":null,"confidence":0.85}
+{"mensaje":"fertilicé con urea","intent":"create_record","recordType":"labor","fields":{"laborTipo":"urea","fecha":"{HOY}","descripcion":"fertilicé con urea"},"query":null,"confidence":0.7}
+{"mensaje":"apliqué glifosato en el lote 7","intent":"create_record","recordType":"labor","fields":{"laborTipo":"glifosato","loteRef":"7","fecha":"{HOY}","descripcion":"apliqué glifosato en el lote 7"},"query":null,"confidence":0.85}
+{"mensaje":"pulvericé el lote 2","intent":"create_record","recordType":"labor","fields":{"laborTipo":"labor","loteRef":"2","fecha":"{HOY}","descripcion":"pulvericé el lote 2"},"query":null,"confidence":0.85}
+{"mensaje":"coseché soja","intent":"create_record","recordType":"labor","fields":{"laborTipo":"soja","fecha":"{HOY}","descripcion":"coseché soja"},"query":null,"confidence":0.7}
+{"mensaje":"desparasité las vacas","intent":"create_record","recordType":"evento_sanitario","fields":{"producto":"sanidad","categoria":"vaca","fecha":"{HOY}"},"query":null,"confidence":0.82}
+{"mensaje":"tratamiento sanitario","intent":"create_record","recordType":"evento_sanitario","fields":{"producto":"sanidad","categoria":"todos","fecha":"{HOY}"},"query":null,"confidence":0.82}
+{"mensaje":"3 dosis","intent":"create_record","recordType":"evento_sanitario","fields":{"producto":"sanidad","categoria":"todos","cantidad":3,"fecha":"{HOY}"},"query":null,"confidence":0.82}
+{"mensaje":"abonél 200","intent":"create_record","recordType":"gasto","fields":{"fecha":"{HOY}","descripcion":"abonél 200"},"query":null,"confidence":0.5}
+{"mensaje":"abone 200","intent":"create_record","recordType":"gasto","fields":{"fecha":"{HOY}","descripcion":"abone 200"},"query":null,"confidence":0.5}
+{"mensaje":"cargué 300 litros","intent":"create_record","recordType":"insumo","fields":{"cantidad":300,"unidad":"litros","fecha":"{HOY}"},"query":null,"confidence":0.62}
+{"mensaje":"","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"   ","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"hola","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"cualquier cosa rara","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"¿?","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"lote 4","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"200 litros","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"$5000","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"5000 pesos","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"compré 200 l de gasoil","intent":"create_record","recordType":"insumo","fields":{"producto":"gasoil","cantidad":200,"unidad":"l","fecha":"{HOY}"},"query":null,"confidence":0.88}
+{"mensaje":"compré 200 lts de gasoil","intent":"create_record","recordType":"insumo","fields":{"producto":"gasoil","cantidad":200,"unidad":"lts","fecha":"{HOY}"},"query":null,"confidence":0.88}
+{"mensaje":"compré 2 bolsas","intent":"create_record","recordType":"insumo","fields":{"cantidad":2,"unidad":"bolsas","fecha":"{HOY}"},"query":null,"confidence":0.62}
+{"mensaje":"vendí 3 cabezas","intent":"create_record","recordType":"venta","fields":{"cantidad":3,"unidad":"cabezas","fecha":"{HOY}"},"query":null,"confidence":0.6}
+{"mensaje":"compré 5 unidades","intent":"create_record","recordType":"insumo","fields":{"cantidad":5,"unidad":"unidades","fecha":"{HOY}"},"query":null,"confidence":0.62}
+{"mensaje":"sembré 10 has","intent":"create_record","recordType":"labor","fields":{"laborTipo":"labor","fecha":"{HOY}","descripcion":"sembré 10 has"},"query":null,"confidence":0.7}
+{"mensaje":"sembré 10 hectáreas","intent":"create_record","recordType":"labor","fields":{"laborTipo":"labor","fecha":"{HOY}","descripcion":"sembré 10 hectáreas"},"query":null,"confidence":0.7}
+{"mensaje":"sembré 10 hectareas","intent":"create_record","recordType":"labor","fields":{"laborTipo":"labor","fecha":"{HOY}","descripcion":"sembré 10 hectareas"},"query":null,"confidence":0.7}
+{"mensaje":"vendí 1 tonelada","intent":"create_record","recordType":"venta","fields":{"cantidad":1,"unidad":"tonelada","fecha":"{HOY}"},"query":null,"confidence":0.6}
+{"mensaje":"compré 4 toneladas","intent":"create_record","recordType":"insumo","fields":{"cantidad":4,"unidad":"toneladas","fecha":"{HOY}"},"query":null,"confidence":0.62}
+{"mensaje":"qué tengo","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"que tengo","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"¿qué hay?","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"nacio un ternero","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"ternero","eventoTipo":"nacimiento","fecha":"{HOY}"},"query":null,"confidence":0.55}
+{"mensaje":"nacieron terneros","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"ternero","eventoTipo":"nacimiento","fecha":"{HOY}"},"query":null,"confidence":0.55}
+{"mensaje":"vendí soja","intent":"create_record","recordType":"venta","fields":{"producto":"soja","fecha":"{HOY}"},"query":null,"confidence":0.6}
+{"mensaje":"Compré 200 LITROS de GASOIL","intent":"create_record","recordType":"insumo","fields":{"producto":"gasoil","cantidad":200,"unidad":"litros","fecha":"{HOY}"},"query":null,"confidence":0.88}
+{"mensaje":"VENDÍ 30 NOVILLOS","intent":"create_record","recordType":"evento_hacienda","fields":{"categoriaAnimal":"novillo","eventoTipo":"venta","cantidad":30,"fecha":"{HOY}"},"query":null,"confidence":0.9}
+{"mensaje":"No entiendo nada de esto","intent":"unknown","recordType":null,"fields":{},"query":null,"confidence":0}
+{"mensaje":"compré 200 litros de gasoil para el lote norte","intent":"create_record","recordType":"insumo","fields":{"producto":"gasoil","cantidad":200,"unidad":"litros","loteRef":"norte","fecha":"{HOY}"},"query":null,"confidence":0.88}
+{"mensaje":"gasté $10.000,50","intent":"create_record","recordType":"gasto","fields":{"monto":10000.5,"fecha":"{HOY}","descripcion":"gasté $10.000,50"},"query":null,"confidence":0.85}
+{"mensaje":"vendí 0 tn","intent":"create_record","recordType":"venta","fields":{"cantidad":0,"unidad":"tn","fecha":"{HOY}"},"query":null,"confidence":0.6}
+{"mensaje":"que vendí","intent":"query","recordType":null,"fields":{},"query":{"metric":"venta_total"},"confidence":0.88}
+{"mensaje":"qué vendí","intent":"create_record","recordType":"venta","fields":{"fecha":"{HOY}"},"query":null,"confidence":0.6}
+{"mensaje":"que gasté","intent":"query","recordType":null,"fields":{},"query":{"metric":"gasto_total"},"confidence":0.88}
+{"mensaje":"qué gasté","intent":"create_record","recordType":"gasto","fields":{"fecha":"{HOY}","descripcion":"qué gasté"},"query":null,"confidence":0.5}
+{"mensaje":"que compré","intent":"create_record","recordType":"insumo","fields":{"fecha":"{HOY}"},"query":null,"confidence":0.62}
+{"mensaje":"qué compré","intent":"create_record","recordType":"insumo","fields":{"fecha":"{HOY}"},"query":null,"confidence":0.62}
+{"mensaje":"compré gasoil por $5.000","intent":"create_record","recordType":"insumo","fields":{"producto":"gasoil","monto":5000,"fecha":"{HOY}"},"query":null,"confidence":0.62}
+{"mensaje":"compré 3 bolsas de semilla","intent":"create_record","recordType":"insumo","fields":{"producto":"semilla","cantidad":3,"unidad":"bolsas","fecha":"{HOY}"},"query":null,"confidence":0.88}

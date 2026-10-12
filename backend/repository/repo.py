@@ -5,7 +5,7 @@ TODA lectura/escritura va filtrada por productor_id => aislamiento por tenant
 """
 from typing import Any
 
-from ..formato import texto_numero
+from ..formato import recortar, texto_numero
 from ..phone import phone_variants
 from ..types import Sender
 from . import db
@@ -63,7 +63,12 @@ def list_campanias(productor_id: Any) -> list[dict[str, Any]]:
 
 def find_lote_by_ref(productor_id: Any, ref: str) -> dict[str, Any] | None:
     """Resuelve una referencia informal de lote ("4", "lote 4", "norte") a un lote real."""
-    r = ref.strip().lower()
+    r = recortar(ref).lower()
+    # Una referencia vacía no es "ningún lote en particular": sin esta guarda,
+    # el último criterio (`r in nombre`) la daba por contenida en cualquier
+    # nombre y el movimiento se cargaba al primer lote sin que nadie lo dijera.
+    if not r:
+        return None
     lotes = list_lotes(productor_id)
 
     def buscar(pred) -> dict[str, Any] | None:

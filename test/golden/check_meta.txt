@@ -1,0 +1,185 @@
+### falta el token · exit 1
+--- stdout ---
+
+🔎 Chequeo de Meta Cloud API (Graph v25.0)
+
+--- stderr ---
+✗ Faltan variables en .env: META_ACCESS_TOKEN
+  Copiá .env.example a .env y completalas. Sin token no se puede chequear nada más.
+
+
+### token vencido · exit 1
+--- stdout ---
+
+🔎 Chequeo de Meta Cloud API (Graph v25.0)
+
+✓ .env completo
+--- stderr ---
+✗ META_PHONE_NUMBER_ID=PNID — Error validating access token (código 190)
+     → access token vencido o revocado — el temporal del panel dura 24 h
+
+
+### todo en orden · exit 0
+--- stdout ---
+
+🔎 Chequeo de Meta Cloud API (Graph v25.0)
+
+✓ .env completo
+✓ META_PHONE_NUMBER_ID=PNID
+  +54 9 11 5555-1234 · nombre "Parva" · calidad GREEN · VERIFIED
+✓ Webhook en Meta: https://parva.ngrok-free.app/webhook/whatsapp
+  campos: messages
+✓ Esa URL contesta el handshake ahora mismo
+✓ Token permanente (no vence)
+✓ WABA que alcanza el token: WABA1
+  · WABA WABA1: 1 número(s) ← contiene el del .env
+      ▸ PNID  +54 9 11 5555-1234  "Parva"
+✓ App suscrita a la WABA WABA1: parva-dev
+
+✅ Lado Meta OK. Escribile al número y mirá el log `[wa] ←` en la terminal.
+   Falta un paso fuera de Meta: el número DESDE el que escribís tiene que
+   estar vinculado en la base, o el bot lo ignora en silencio. Chequealo con:
+     python3 -m backend.scripts.link_phone --list
+
+--- stderr ---
+
+### número de test, sin webhook y WABA ajena · exit 1
+--- stdout ---
+
+🔎 Chequeo de Meta Cloud API (Graph v25.0)
+
+✓ .env completo
+✓ META_PHONE_NUMBER_ID=PNID
+  +1 555 123 4567 · nombre "Test Number" · calidad n/d · n/d
+✗ Token vence {FECHA LOCAL}
+✓ WABA que alcanza el token: WABA2
+  · WABA WABA2: 1 número(s)
+        OTRO  +54 11 0000  "Otro"
+
+⚠ 3 cosa(s) para arreglar:
+
+  • El .env apunta al número de TEST (+1 555 123 4567), no al tuyo.
+     Sólo habla con los 5 destinatarios allow-listeados y no se puede renombrar.
+     Cambiá META_PHONE_NUMBER_ID por el ID de tu número y volvé a correr esto.
+
+  • La app no tiene webhook de `whatsapp_business_account`. Configuralo en WhatsApp → Configuration → Webhook.
+
+  • Ninguna WABA visible contiene el número del .env (PNID). Si tenés más de una WABA, pasá la otra: python3 -m backend.scripts.check_meta <WABA_ID>
+
+--- stderr ---
+
+### túnel efímero, sin el campo messages y con 403 · exit 1
+--- stdout ---
+
+🔎 Chequeo de Meta Cloud API (Graph v25.0)
+
+✓ .env completo
+✓ META_PHONE_NUMBER_ID=PNID
+  +54 9 11 5555-1234 · nombre "Parva" · calidad GREEN · VERIFIED
+✓ Webhook en Meta: https://abc.trycloudflare.com/webhook/whatsapp
+  campos: statuses · INACTIVO
+  · No pude inspeccionar el token: Invalid OAuth access token
+
+⚠ 2 cosa(s) para arreglar:
+
+  • El webhook no está suscrito al campo `messages`: verificar la URL es un paso, suscribirse es otro.
+
+  • La URL que Meta tiene guardada NO responde: el server contesta 403: el META_VERIFY_TOKEN que tiene corriendo no coincide con el de este .env
+     Meta está entregando los webhooks a la nada y del lado del server no se ve ningún error.
+     Es un túnel efímero: levantá cloudflared, copiá la URL NUEVA y re-pegala en
+     WhatsApp → Configuration → Webhook (y revisá Manage → campo `messages`).
+
+
+⚠ Chequeo INCOMPLETO — no pude verificar:
+
+  • si la app está suscrita a la WABA del número (no pude averiguar qué WABA es).
+     El ID está en el panel de Meta → WhatsApp → API Setup, arriba de todo:
+     "WhatsApp Business Account ID". Después:  python3 -m backend.scripts.check_meta <WABA_ID>
+
+  No es un OK: lo que no se chequeó es donde suele estar la falla.
+
+--- stderr ---
+
+### la WABA pasada es en realidad un número · exit 1
+--- stdout ---
+
+🔎 Chequeo de Meta Cloud API (Graph v25.0)
+
+✓ .env completo
+✓ META_PHONE_NUMBER_ID=PNID
+  +54 9 11 5555-1234 · nombre "Parva" · calidad GREEN · VERIFIED
+
+⚠ 1 cosa(s) para arreglar:
+
+  • PNID2 es un phone_number_id (+54 9 11 9999), no un WABA ID.
+     Ese va en META_PHONE_NUMBER_ID. El WABA ID está en WhatsApp Manager →
+     Configuración de la cuenta, o lo deduce solo si cargás META_APP_ID en .env.
+
+
+⚠ Chequeo INCOMPLETO — no pude verificar:
+
+  • la callback URL registrada (no pude leer las subscriptions de la app: HTTP 500)
+
+  • si la app está suscrita a la WABA del número (no pude averiguar qué WABA es).
+     El ID está en el panel de Meta → WhatsApp → API Setup, arriba de todo:
+     "WhatsApp Business Account ID". Después:  python3 -m backend.scripts.check_meta <WABA_ID>
+
+  No es un OK: lo que no se chequeó es donde suele estar la falla.
+
+--- stderr ---
+
+### handshake caído y app sin suscribir · exit 1
+--- stdout ---
+
+🔎 Chequeo de Meta Cloud API (Graph v25.0)
+
+✓ .env completo
+✓ META_PHONE_NUMBER_ID=PNID
+  +54 9 11 5555-1234 · nombre "Parva" · calidad GREEN · VERIFIED
+✓ Webhook en Meta: https://parva.ngrok-free.app/webhook/whatsapp
+  campos: messages
+  · WABA WABA3: 1 número(s) ← contiene el del .env
+      ▸ PNID  +54 9 11 5555-1234  "Parva"
+
+⚠ 2 cosa(s) para arreglar:
+
+  • La URL que Meta tiene guardada NO responde: no responde — conexión rechazada
+     Meta está entregando los webhooks a la nada y del lado del server no se ve ningún error.
+     Verificá que el server esté corriendo y que la URL sea alcanzable desde afuera.
+
+  • La app NO está suscrita a la WABA WABA3 — por eso no llega ni un mensaje. Arreglo:
+     curl -X POST "https://graph.facebook.com/v25.0/WABA3/subscribed_apps" -H "Authorization: Bearer $META_ACCESS_TOKEN"
+
+--- stderr ---
+
+### sin META_APP_ID · exit 1
+--- stdout ---
+
+🔎 Chequeo de Meta Cloud API (Graph v25.0)
+
+✓ .env completo
+✓ META_PHONE_NUMBER_ID=PNID
+  +54 9 11 5555-1234 · nombre "Parva" · calidad GREEN · VERIFIED
+  · Para deducir la WABA sola, cargá META_APP_ID en .env (Settings → Basic).
+
+⚠ Chequeo INCOMPLETO — no pude verificar:
+
+  • la callback URL registrada (falta META_APP_ID en .env)
+
+  • si la app está suscrita a la WABA del número (no pude averiguar qué WABA es).
+     El ID está en el panel de Meta → WhatsApp → API Setup, arriba de todo:
+     "WhatsApp Business Account ID". Después:  python3 -m backend.scripts.check_meta <WABA_ID>
+
+  No es un OK: lo que no se chequeó es donde suele estar la falla.
+
+--- stderr ---
+
+### un error de Meta que no es un objeto · exit 1
+--- stdout ---
+
+🔎 Chequeo de Meta Cloud API (Graph v25.0)
+
+✓ .env completo
+--- stderr ---
+✗ META_PHONE_NUMBER_ID=PNID — HTTP 400 (código ?)
+

@@ -21,9 +21,9 @@ Intent = Literal['create_record', 'query', 'confirm', 'unknown']
 RecordType = Literal['insumo', 'labor', 'gasto', 'venta', 'evento_hacienda', 'evento_sanitario']
 QueryMetric = Literal['stock_animal', 'margen', 'gasto_total', 'venta_total']
 
-# Los campos que extrae el parser (`ParsedFields` en la versión TS) y la consulta
-# (`ParsedQuery`) quedan como dicts: los tres caminos del parser los reciben del
-# JSON de un modelo, que puede traer cualquier cosa. Las claves son las mismas:
+# Los campos que extrae el parser (`ParsedFields`) y la consulta (`ParsedQuery`)
+# quedan como dicts: los tres caminos del parser los reciben del JSON de un
+# modelo, que puede traer cualquier cosa. Las claves:
 #   fields: producto, cantidad, unidad, monto, moneda, loteRef, categoriaAnimal,
 #           eventoTipo, laborTipo, categoria, fecha, descripcion
 #   query:  metric, loteRef, categoriaAnimal
@@ -67,6 +67,7 @@ class ProcessResult:
 
     reply: str
     intent: Intent
-    status: Literal['created', 'needs_confirmation', 'confirmed', 'denied', 'query_answer', 'unknown']
+    status: Literal['created', 'needs_confirmation', 'needs_data', 'confirmed',
+                    'denied', 'query_answer', 'unknown']
     confidence: float
     detail: Any = None

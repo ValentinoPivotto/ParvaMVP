@@ -3,12 +3,12 @@
 Respeta permisos por rol (el gestor no ve margen ni ventas).
 """
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, get_args
 
 from ..formato import pesos as fmt
 from ..repository.db import transaccion
 from ..repository.repo import find_lote_by_ref, gasto_total, list_hacienda, venta_total
-from ..types import ParsedQuery, Rol
+from ..types import ParsedQuery, QueryMetric, Rol
 from .margin import margen_por_lote
 from .permissions import puede_consultar
 
@@ -32,6 +32,10 @@ def _responder(productor_id: Any, rol: Rol, q: ParsedQuery) -> QueryAnswer:
     categoria_animal = q.get('categoriaAnimal')
     lote_ref = q.get('loteRef')
 
+    # Primero si la métrica existe: contestar "tu rol no puede consultar
+    # lo_que_sea" manda a buscar un problema de permisos que no hay.
+    if metric not in get_args(QueryMetric):
+        return QueryAnswer(ok=False, text='No pude responder esa consulta.')
     if not puede_consultar(rol, metric):
         return QueryAnswer(ok=False, text=f'🚫 Tu rol ({rol}) no puede consultar {metric}.')
 

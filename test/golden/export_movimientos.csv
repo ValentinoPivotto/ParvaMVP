@@ -1,0 +1,14 @@
+--- productor 1 → movimientos.csv ---
+fecha,tipo,lote,producto,cantidad,unidad,monto,moneda,categoria,origen
+{HOY-10},venta,Lote 1,Soja,240,tn,9600000,ARS,grano,seed
+{HOY-60},gasto,Lote 1,Fumigación,,,600000,ARS,servicios,seed
+{HOY-97},labor,Lote 4,Siembra,,,900000,ARS,labor,seed
+{HOY-98},insumo,Lote 4,Urea,5000,kg,1800000,ARS,fertilizante,seed
+{HOY-100},insumo,Lote 4,Semilla maíz,1,bolsa,1500000,ARS,semilla,seed
+{HOY-107},labor,Lote 1,Siembra,,,800000,ARS,labor,seed
+{HOY-108},insumo,Lote 1,Fertilizante,4000,kg,2500000,ARS,fertilizante,seed
+{HOY-110},insumo,Lote 1,Semilla soja,80,bolsa,1200000,ARS,semilla,seed
+--- productor 2 → movimientos.csv ---
+fecha,tipo,lote,producto,cantidad,unidad,monto,moneda,categoria,origen
+{HOY-15},venta,,Venta novillos,15,cabeza,7500000,ARS,hacienda,seed
+{HOY-40},gasto,,Ración,8000,kg,1200000,ARS,alimentacion,seed
