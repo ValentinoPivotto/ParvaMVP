@@ -17,3 +17,10 @@ venv/
 # El frontend no tiene dependencias; esto es por si alguna herramienta lo crea.
 node_modules/
 
+# Configuración local del IDE
+/.idea/
+
+# Material local de tesis: documentos, resultados y herramientas de diagnóstico
+/PLAN_PRETESIS_15_OCTUBRE_2026.md
+/docs/tesis/
+/scripts/tesis/
